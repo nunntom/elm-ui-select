@@ -4,7 +4,7 @@ module Select exposing
     , toValue, toInputValue
     , Msg, update
     , view, toElement, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuMaxHeight, withMenuAttributes, withNoMatchElement, OptionState(..), withOptionElement
-    , Effect
+    , Effect, updateEffect
     )
 
 {-| A select dropdown for Elm-Ui
@@ -37,7 +37,7 @@ module Select exposing
 
 # Effect
 
-@docs Effect
+@docs Effect, updateEffect
 
 -}
 
