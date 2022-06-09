@@ -1,4 +1,4 @@
-module Msg exposing (Msg(..))
+module Select.Msg exposing (Msg(..))
 
 import Browser.Dom as Dom
 import Internal.Option exposing (Option)

@@ -2,7 +2,7 @@ module Internal.Effect exposing (Effect(..), batch, none, perform)
 
 import Browser.Dom as Dom
 import Internal.Placement exposing (Placement(..))
-import Msg exposing (Msg(..))
+import Select.Msg exposing (Msg(..))
 import Task exposing (Task)
 
 

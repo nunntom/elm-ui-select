@@ -56,7 +56,7 @@ import Internal.List as List
 import Internal.Option exposing (Option)
 import Internal.Placement as Placement exposing (Placement(..))
 import Json.Decode as Decode
-import Msg
+import Select.Msg as Msg
 
 
 
