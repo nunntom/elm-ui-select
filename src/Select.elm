@@ -29,13 +29,12 @@ import Element.Border as Border
 import Element.Events exposing (onClick, onFocus, onLoseFocus, onMouseEnter)
 import Element.Font as Font
 import Element.Input as Input
-import Html
 import Html.Attributes
 import Html.Events
 import Internal.Filter as Filter exposing (Filter)
+import Internal.List as List
 import Internal.Placement as Placement exposing (Placement(..))
 import Json.Decode as Decode
-import List.Extra as List
 import Task exposing (Task)
 
 
@@ -134,10 +133,6 @@ view :
         }
     -> ViewConfigInternal a msg
 view attribs v =
-    let
-        d =
-            unwrap v.select
-    in
     { onChange = v.onChange
     , inputAttribs = attribs
     , select = v.select
