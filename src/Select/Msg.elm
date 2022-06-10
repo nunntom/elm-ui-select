@@ -15,3 +15,4 @@ type Msg a
     | KeyDown (List (Option a)) String
     | GotMenuHeightAndPlacement (Result Dom.Error ( Maybe Int, Placement ))
     | GotScrollMenuResult (Result Dom.Error ())
+    | ClearButtonPressed

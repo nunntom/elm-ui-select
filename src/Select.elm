@@ -5,6 +5,7 @@ module Select exposing
     , Msg, update
     , view, toElement, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuMaxHeight, withMenuAttributes, withNoMatchElement, OptionState(..), withOptionElement
     , Effect, updateEffect
+    , clearButton, withClearButton
     )
 
 {-| A select dropdown for Elm-Ui
@@ -200,6 +201,9 @@ updateEffect msg (Select state) =
         Msg.GotScrollMenuResult _ ->
             ( Select state, Effect.none )
 
+        Msg.ClearButtonPressed ->
+            ( Select { state | inputValue = "", selected = Nothing }, Effect.none )
+
 
 handleKey : InternalState a -> String -> List (Option a) -> ( Select a, Effect )
 handleKey ({ highlighted } as state) key filteredOptions =
@@ -276,6 +280,7 @@ type ViewConfig a msg
         , menuAttributes : List (Attribute msg)
         , noMatchElement : Element msg
         , optionElement : OptionState -> a -> Element msg
+        , clearButton : Maybe (Element msg)
         }
 
 
@@ -303,6 +308,7 @@ view attribs v =
         , menuMaxHeight = Nothing
         , menuAttributes = defaultDropdownAttrs
         , noMatchElement = defaultNoMatchElement
+        , clearButton = Nothing
         }
 
 
@@ -345,6 +351,20 @@ withOptionElement toEl (ViewConfig config) =
 withNoMatchElement : Element msg -> ViewConfig a msg -> ViewConfig a msg
 withNoMatchElement element (ViewConfig config) =
     ViewConfig { config | noMatchElement = element }
+
+
+type ClearButton msg
+    = ClearButton (List (Attribute msg)) (Element msg)
+
+
+withClearButton : ClearButton msg -> ViewConfig a msg -> ViewConfig a msg
+withClearButton (ClearButton attribs label) (ViewConfig config) =
+    ViewConfig { config | clearButton = Just (clearButtonElement config.onChange attribs label) }
+
+
+clearButton : List (Attribute msg) -> Element msg -> ClearButton msg
+clearButton attribs label =
+    ClearButton attribs label
 
 
 toElement : ViewConfig a msg -> Element msg
@@ -397,6 +417,7 @@ toElement (ViewConfig ({ select } as config)) =
                    , onLoseFocus (config.onChange Msg.InputLostFocus)
                    , onKeyDown (Msg.KeyDown filteredOptions >> config.onChange)
                    , htmlAttribute (Html.Attributes.id <| d.id ++ "-input")
+                   , inFront <| Maybe.withDefault Element.none config.clearButton
                    , Placement.toAttribute config.menuPlacement <|
                         dropdownMenu
                             { onChange = config.onChange
@@ -503,6 +524,14 @@ optionElement v i (( a, _ ) as opt) =
         , width fill
         ]
         [ v.optionElement optionState a ]
+
+
+clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
+clearButtonElement toMsg attribs element =
+    Input.button attribs
+        { onPress = Just (toMsg Msg.ClearButtonPressed)
+        , label = element
+        }
 
 
 
