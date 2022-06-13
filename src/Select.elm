@@ -417,7 +417,12 @@ toElement (ViewConfig ({ select } as config)) =
                    , onLoseFocus (config.onChange Msg.InputLostFocus)
                    , onKeyDown (Msg.KeyDown filteredOptions >> config.onChange)
                    , htmlAttribute (Html.Attributes.id <| d.id ++ "-input")
-                   , inFront <| Maybe.withDefault Element.none config.clearButton
+                   , inFront <|
+                        if toValue select /= Nothing || toInputValue select /= "" then
+                            Maybe.withDefault Element.none config.clearButton
+
+                        else
+                            Element.none
                    , Placement.toAttribute config.menuPlacement <|
                         dropdownMenu
                             { onChange = config.onChange
