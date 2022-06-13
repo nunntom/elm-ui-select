@@ -6,31 +6,31 @@ import Select.Msg exposing (Msg(..))
 import Task exposing (Task)
 
 
-type Effect
-    = GetMenuHeightAndPlacement String
-    | GetElementsAndScrollMenu String Int
-    | Batch (List Effect)
+type Effect msg
+    = GetMenuHeightAndPlacement (Result Dom.Error ( Maybe Int, Placement ) -> msg) String
+    | GetElementsAndScrollMenu (Result Dom.Error () -> msg) String Int
+    | Batch (List (Effect msg))
     | None
 
 
-none : Effect
+none : Effect msg
 none =
     None
 
 
-batch : List Effect -> Effect
+batch : List (Effect msg) -> Effect msg
 batch effects =
     Batch effects
 
 
-perform : Effect -> Cmd (Msg a)
+perform : Effect msg -> Cmd msg
 perform effect =
     case effect of
-        GetMenuHeightAndPlacement id ->
-            getMenuHeightAndPlacement id
+        GetMenuHeightAndPlacement msg id ->
+            getMenuHeightAndPlacement msg id
 
-        GetElementsAndScrollMenu id optionIdx ->
-            getElementsAndScrollMenu id optionIdx
+        GetElementsAndScrollMenu msg id optionIdx ->
+            getElementsAndScrollMenu msg id optionIdx
 
         Batch effects ->
             List.foldl (\eff cmds -> perform eff :: cmds) [] effects
@@ -40,8 +40,8 @@ perform effect =
             Cmd.none
 
 
-getMenuHeightAndPlacement : String -> Cmd (Msg a)
-getMenuHeightAndPlacement id =
+getMenuHeightAndPlacement : (Result Dom.Error ( Maybe Int, Placement ) -> msg) -> String -> Cmd msg
+getMenuHeightAndPlacement msg id =
     Task.map2
         (\input menu ->
             let
@@ -60,11 +60,11 @@ getMenuHeightAndPlacement id =
         )
         (Dom.getElement (id ++ "-input"))
         (Dom.getElement (id ++ "-menu"))
-        |> Task.attempt GotMenuHeightAndPlacement
+        |> Task.attempt msg
 
 
-getElementsAndScrollMenu : String -> Int -> Cmd (Msg a)
-getElementsAndScrollMenu id highlightedOption =
+getElementsAndScrollMenu : (Result Dom.Error () -> msg) -> String -> Int -> Cmd msg
+getElementsAndScrollMenu msg id highlightedOption =
     Task.map3
         (\option menu menuViewport ->
             { option = option
@@ -76,7 +76,7 @@ getElementsAndScrollMenu id highlightedOption =
         (Dom.getElement (id ++ "-menu"))
         (Dom.getViewportOf (id ++ "-menu"))
         |> Task.andThen (scrollMenuTask id)
-        |> Task.attempt GotScrollMenuResult
+        |> Task.attempt msg
 
 
 optionId : Int -> String -> String

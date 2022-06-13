@@ -57,7 +57,7 @@ import Internal.List as List
 import Internal.Option exposing (Option)
 import Internal.Placement as Placement exposing (Placement(..))
 import Json.Decode as Decode
-import Select.Msg as Msg
+import Select.Msg as Msg exposing (Msg(..))
 
 
 
@@ -134,12 +134,12 @@ type alias Msg a =
 
 update : Msg.Msg a -> Select a -> ( Select a, Cmd (Msg.Msg a) )
 update msg select =
-    updateEffect msg select
+    updateEffect identity msg select
         |> Tuple.mapSecond Effect.perform
 
 
-updateEffect : Msg.Msg a -> Select a -> ( Select a, Effect )
-updateEffect msg (Select state) =
+updateEffect : (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect msg )
+updateEffect toMsg msg (Select state) =
     case msg of
         Msg.InputChanged val ->
             ( Select
@@ -148,7 +148,7 @@ updateEffect msg (Select state) =
                     , highlighted = 0
                     , selected = Nothing
                 }
-            , Effect.GetMenuHeightAndPlacement state.id
+            , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
             )
 
         Msg.OptionClicked ( a, s ) ->
@@ -164,12 +164,12 @@ updateEffect msg (Select state) =
         Msg.InputFocused ->
             ( Select
                 { state | highlighted = 0 }
-            , Effect.GetMenuHeightAndPlacement state.id
+            , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
             )
 
         Msg.InputClicked ->
             ( Select state
-            , Effect.GetMenuHeightAndPlacement state.id
+            , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
             )
 
         Msg.InputLostFocus ->
@@ -186,7 +186,7 @@ updateEffect msg (Select state) =
             )
 
         Msg.KeyDown filteredOptions key ->
-            handleKey state key filteredOptions
+            handleKey toMsg state key filteredOptions
 
         Msg.GotMenuHeightAndPlacement result ->
             ( Select
@@ -205,8 +205,8 @@ updateEffect msg (Select state) =
             ( Select { state | inputValue = "", selected = Nothing }, Effect.none )
 
 
-handleKey : InternalState a -> String -> List (Option a) -> ( Select a, Effect )
-handleKey ({ highlighted } as state) key filteredOptions =
+handleKey : (Msg a -> msg) -> InternalState a -> String -> List (Option a) -> ( Select a, Effect msg )
+handleKey toMsg ({ highlighted } as state) key filteredOptions =
     let
         moveHighlight newHighlighted =
             ( Select
@@ -214,8 +214,8 @@ handleKey ({ highlighted } as state) key filteredOptions =
                     | highlighted = newHighlighted
                 }
             , Effect.batch
-                [ Effect.GetElementsAndScrollMenu state.id newHighlighted
-                , Effect.GetMenuHeightAndPlacement state.id
+                [ Effect.GetElementsAndScrollMenu (GotScrollMenuResult >> toMsg) state.id newHighlighted
+                , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
                 ]
             )
     in
@@ -619,5 +619,5 @@ hijackKey tagger key =
     For use with the Effect pattern
 
 -}
-type alias Effect =
-    Effect.Effect
+type alias Effect msg =
+    Effect.Effect msg

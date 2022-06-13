@@ -1,13 +1,12 @@
 module Select.Effect exposing (Effect, perform)
 
 import Internal.Effect as Effect
-import Select.Msg exposing (Msg)
 
 
-type alias Effect =
-    Effect.Effect
+type alias Effect msg =
+    Effect.Effect msg
 
 
-perform : Effect -> Cmd (Msg a)
+perform : Effect msg -> Cmd msg
 perform =
     Effect.perform
