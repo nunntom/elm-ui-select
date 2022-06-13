@@ -1,4 +1,4 @@
-module Internal.Effect exposing (Effect(..), batch, none, perform)
+module Internal.Effect exposing (Effect(..), batch, map, none, perform)
 
 import Browser.Dom as Dom
 import Internal.Placement exposing (Placement(..))
@@ -115,3 +115,20 @@ scrollMenuTask id { option, menu, menuViewport } =
                 menuViewport.viewport.y
     in
     Dom.setViewportOf (id ++ "-menu") 0 scrollTop
+
+
+map : (msg1 -> msg2) -> Effect msg1 -> Effect msg2
+map toMsg effect =
+    case effect of
+        GetMenuHeightAndPlacement msg id ->
+            GetMenuHeightAndPlacement (msg >> toMsg) id
+
+        GetElementsAndScrollMenu msg id optionIdx ->
+            GetElementsAndScrollMenu (msg >> toMsg) id optionIdx
+
+        Batch effects ->
+            List.map (map toMsg) effects
+                |> Batch
+
+        None ->
+            None
