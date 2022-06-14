@@ -491,7 +491,10 @@ dropdownMenu v =
                             []
 
                         else
-                            [ htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
+                            [ htmlAttribute (Html.Attributes.style "visibility" "hidden")
+                            , Element.height (Element.px 0)
+                            , Element.clipY
+                            ]
                        )
                 )
 
