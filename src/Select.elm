@@ -5,7 +5,7 @@ module Select exposing
     , Msg, update
     , view, toElement, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuMaxHeight, withMenuAttributes, withNoMatchElement, OptionState(..), withOptionElement
     , Effect, updateEffect
-    , clearButton, withClearButton
+    , RequestState, clearButton, gotRequestResponse, isLoading, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton
     )
 
 {-| A select dropdown for Elm-Ui
@@ -54,10 +54,11 @@ import Internal
 import Internal.Effect as Effect
 import Internal.Filter as Filter exposing (Filter)
 import Internal.List as List
+import Internal.Msg as Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
 import Internal.Placement as Placement exposing (Placement(..))
 import Json.Decode as Decode
-import Select.Msg as Msg exposing (Msg(..))
+import Select.Request as Request exposing (Request)
 
 
 
@@ -73,6 +74,12 @@ type Select a
     = Select (InternalState a)
 
 
+type RequestState
+    = NotRequested
+    | Loading
+    | Failed
+
+
 type alias InternalState a =
     { id : String
     , items : List a
@@ -82,6 +89,7 @@ type alias InternalState a =
     , menuOpen : Bool
     , menuHeight : Maybe Int
     , menuPlacement : Placement
+    , requestState : Maybe RequestState
     }
 
 
@@ -96,6 +104,7 @@ init id =
         , menuOpen = False
         , menuHeight = Nothing
         , menuPlacement = Below
+        , requestState = Nothing
         }
 
 
@@ -125,6 +134,20 @@ toInputValue (Select { inputValue }) =
 
 
 
+-- CHECKS
+
+
+isLoading : Select a -> Bool
+isLoading (Select { requestState }) =
+    requestState == Just Loading
+
+
+isRequestFailed : Select a -> Bool
+isRequestFailed (Select { requestState }) =
+    requestState == Just Failed
+
+
+
 -- UPDATE
 
 
@@ -135,11 +158,36 @@ type alias Msg a =
 update : Msg.Msg a -> Select a -> ( Select a, Cmd (Msg.Msg a) )
 update msg select =
     updateEffect identity msg select
-        |> Tuple.mapSecond Effect.perform
+        |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
-updateEffect : (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect msg )
-updateEffect toMsg msg (Select state) =
+type alias Request eff =
+    Request.Request eff
+
+
+request : (String -> eff) -> Request eff
+request =
+    Request.request
+
+
+updateWithRequest : Request (Cmd (Msg a)) -> Msg.Msg a -> Select a -> ( Select a, Cmd (Msg.Msg a) )
+updateWithRequest requestCmd msg select =
+    updateEffectInternal (Just (Request.request identity)) identity msg select
+        |> Tuple.mapSecond (Effect.perform (Request.toEffect requestCmd))
+
+
+updateEffect : (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect Never msg )
+updateEffect =
+    updateEffectInternal Nothing
+
+
+updateEffectWithRequest : Request eff -> (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect eff msg )
+updateEffectWithRequest req =
+    updateEffectInternal (Just req)
+
+
+updateEffectInternal : Maybe (Request eff) -> (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect eff msg )
+updateEffectInternal maybeRequest toMsg msg (Select state) =
     case msg of
         Msg.InputChanged val ->
             ( Select
@@ -147,8 +195,32 @@ updateEffect toMsg msg (Select state) =
                     | inputValue = val
                     , highlighted = 0
                     , selected = Nothing
+                    , items =
+                        if maybeRequest /= Nothing && val == "" then
+                            []
+
+                        else
+                            state.items
+                    , requestState =
+                        if maybeRequest /= Nothing then
+                            Just NotRequested
+
+                        else
+                            state.requestState
                 }
-            , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
+            , Effect.batch
+                [ Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
+                , case maybeRequest of
+                    Just req ->
+                        if String.length val >= Request.toMinLength req then
+                            Effect.Debounce (Request.toDelay req) (InputDebounceReturned val |> toMsg)
+
+                        else
+                            Effect.none
+
+                    Nothing ->
+                        Effect.none
+                ]
             )
 
         Msg.OptionClicked ( a, s ) ->
@@ -202,10 +274,46 @@ updateEffect toMsg msg (Select state) =
             ( Select state, Effect.none )
 
         Msg.ClearButtonPressed ->
-            ( Select { state | inputValue = "", selected = Nothing }, Effect.none )
+            ( Select
+                { state
+                    | inputValue = ""
+                    , selected = Nothing
+                    , items =
+                        if maybeRequest == Nothing then
+                            state.items
+
+                        else
+                            []
+                }
+            , Effect.none
+            )
+
+        Msg.InputDebounceReturned val ->
+            if val == state.inputValue then
+                ( Select { state | requestState = Just Loading }
+                , Maybe.map (Request.toEffect >> (\eff -> Effect.Request (eff val))) maybeRequest
+                    |> Maybe.withDefault Effect.none
+                )
+
+            else
+                ( Select state, Effect.none )
+
+        Msg.GotRequestResponse (Ok items) ->
+            ( Select
+                { state
+                    | items = items
+                    , requestState = Nothing
+                }
+            , Effect.none
+            )
+
+        Msg.GotRequestResponse (Err _) ->
+            ( Select { state | requestState = Just Failed }
+            , Effect.none
+            )
 
 
-handleKey : (Msg a -> msg) -> InternalState a -> String -> List (Option a) -> ( Select a, Effect msg )
+handleKey : (Msg a -> msg) -> InternalState a -> String -> List (Option a) -> ( Select a, Effect eff msg )
 handleKey toMsg ({ highlighted } as state) key filteredOptions =
     let
         moveHighlight newHighlighted =
@@ -260,6 +368,11 @@ handleKey toMsg ({ highlighted } as state) key filteredOptions =
 
         _ ->
             ( Select state, Effect.none )
+
+
+gotRequestResponse : Result err (List a) -> Msg a
+gotRequestResponse =
+    Result.mapError (\_ -> ()) >> GotRequestResponse
 
 
 
@@ -445,7 +558,12 @@ toElement (ViewConfig ({ select } as config)) =
                                     _ ->
                                         Nothing
                             , menuAttributes = config.menuAttributes
-                            , noMatchElement = config.noMatchElement
+                            , noMatchElement =
+                                if d.inputValue /= "" && (d.requestState /= Just NotRequested && d.requestState /= Just Loading) then
+                                    el config.menuAttributes config.noMatchElement
+
+                                else
+                                    Element.none
                             , optionElement = config.optionElement
                             }
                    ]
@@ -498,8 +616,11 @@ dropdownMenu v =
                        )
                 )
 
+    else if v.menuOpen then
+        v.noMatchElement
+
     else
-        el v.menuAttributes v.noMatchElement
+        Element.none
 
 
 optionElement :
@@ -627,5 +748,5 @@ hijackKey tagger key =
     For use with the Effect pattern
 
 -}
-type alias Effect msg =
-    Effect.Effect msg
+type alias Effect eff msg =
+    Effect.Effect eff msg

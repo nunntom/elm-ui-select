@@ -1,30 +1,33 @@
 module Internal.Effect exposing (Effect(..), batch, map, none, perform)
 
 import Browser.Dom as Dom
+import Internal.Msg exposing (Msg(..))
 import Internal.Placement exposing (Placement(..))
-import Select.Msg exposing (Msg(..))
+import Process
 import Task exposing (Task)
 
 
-type Effect msg
+type Effect eff msg
     = GetMenuHeightAndPlacement (Result Dom.Error ( Maybe Int, Placement ) -> msg) String
     | GetElementsAndScrollMenu (Result Dom.Error () -> msg) String Int
-    | Batch (List (Effect msg))
+    | Batch (List (Effect eff msg))
+    | Request eff
+    | Debounce Float msg
     | None
 
 
-none : Effect msg
+none : Effect eff msg
 none =
     None
 
 
-batch : List (Effect msg) -> Effect msg
+batch : List (Effect eff msg) -> Effect eff msg
 batch effects =
     Batch effects
 
 
-perform : Effect msg -> Cmd msg
-perform effect =
+perform : (eff -> Cmd msg) -> Effect eff msg -> Cmd msg
+perform requestCmd effect =
     case effect of
         GetMenuHeightAndPlacement msg id ->
             getMenuHeightAndPlacement msg id
@@ -33,8 +36,15 @@ perform effect =
             getElementsAndScrollMenu msg id optionIdx
 
         Batch effects ->
-            List.foldl (\eff cmds -> perform eff :: cmds) [] effects
+            List.foldl (\eff cmds -> perform requestCmd eff :: cmds) [] effects
                 |> Cmd.batch
+
+        Request eff ->
+            requestCmd eff
+
+        Debounce delay msg ->
+            Process.sleep delay
+                |> Task.perform (\_ -> msg)
 
         None ->
             Cmd.none
@@ -117,7 +127,7 @@ scrollMenuTask id { option, menu, menuViewport } =
     Dom.setViewportOf (id ++ "-menu") 0 scrollTop
 
 
-map : (msg1 -> msg2) -> Effect msg1 -> Effect msg2
+map : (msg1 -> msg2) -> Effect eff msg1 -> Effect eff msg2
 map toMsg effect =
     case effect of
         GetMenuHeightAndPlacement msg id ->
@@ -129,6 +139,12 @@ map toMsg effect =
         Batch effects ->
             List.map (map toMsg) effects
                 |> Batch
+
+        Request eff ->
+            Request eff
+
+        Debounce delay msg ->
+            Debounce delay (toMsg msg)
 
         None ->
             None

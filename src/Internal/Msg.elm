@@ -1,4 +1,4 @@
-module Select.Msg exposing (Msg(..))
+module Internal.Msg exposing (Msg(..))
 
 import Browser.Dom as Dom
 import Internal.Option exposing (Option)
@@ -16,3 +16,5 @@ type Msg a
     | GotMenuHeightAndPlacement (Result Dom.Error ( Maybe Int, Placement ))
     | GotScrollMenuResult (Result Dom.Error ())
     | ClearButtonPressed
+    | InputDebounceReturned String
+    | GotRequestResponse (Result () (List a))
