@@ -8,7 +8,8 @@ import Task exposing (Task)
 
 
 type Effect eff msg
-    = GetMenuHeightAndPlacement (Result Dom.Error ( Maybe Int, Placement ) -> msg) String
+    = GetMenuDimensionsAndPlacement (Result Dom.Error ( { width : Int, height : Int }, Placement ) -> msg) String
+    | GetMenuWidth (Result Dom.Error Float -> msg) String
     | GetElementsAndScrollMenu (Result Dom.Error () -> msg) String Int
     | Batch (List (Effect eff msg))
     | Request eff
@@ -29,11 +30,16 @@ batch effects =
 perform : (eff -> Cmd msg) -> Effect eff msg -> Cmd msg
 perform requestCmd effect =
     case effect of
-        GetMenuHeightAndPlacement msg id ->
-            getMenuHeightAndPlacement msg id
+        GetMenuDimensionsAndPlacement msg id ->
+            getMenuDimensionsAndPlacement msg id
 
         GetElementsAndScrollMenu msg id optionIdx ->
             getElementsAndScrollMenu msg id optionIdx
+
+        GetMenuWidth msg id ->
+            Dom.getElement (id ++ "-menu")
+                |> Task.map (.element >> .width)
+                |> Task.attempt msg
 
         Batch effects ->
             List.foldl (\eff cmds -> perform requestCmd eff :: cmds) [] effects
@@ -50,25 +56,29 @@ perform requestCmd effect =
             Cmd.none
 
 
-getMenuHeightAndPlacement : (Result Dom.Error ( Maybe Int, Placement ) -> msg) -> String -> Cmd msg
-getMenuHeightAndPlacement msg id =
+getMenuDimensionsAndPlacement : (Result Dom.Error ( { width : Int, height : Int }, Placement ) -> msg) -> String -> Cmd msg
+getMenuDimensionsAndPlacement msg id =
     Task.map2
-        (\input menu ->
+        (\container menu ->
             let
                 { above, below } =
-                    calculateSpace input
+                    calculateSpace container
             in
             if below < Basics.round menu.scene.height && above > below then
-                ( Just <| Basics.min (Basics.round menu.scene.height) (above - 10)
+                ( { width = Basics.round container.element.width
+                  , height = Basics.min (Basics.round menu.scene.height) (above - 10)
+                  }
                 , Above
                 )
 
             else
-                ( Just <| Basics.min (Basics.round menu.scene.height) (below - 10)
+                ( { width = Basics.round container.element.width
+                  , height = Basics.min (Basics.round menu.scene.height) (below - 10)
+                  }
                 , Below
                 )
         )
-        (Dom.getElement (id ++ "-input"))
+        (Dom.getElement (id ++ "-element"))
         (Dom.getElement (id ++ "-menu"))
         |> Task.attempt msg
 
@@ -130,11 +140,14 @@ scrollMenuTask id { option, menu, menuViewport } =
 map : (msg1 -> msg2) -> Effect eff msg1 -> Effect eff msg2
 map toMsg effect =
     case effect of
-        GetMenuHeightAndPlacement msg id ->
-            GetMenuHeightAndPlacement (msg >> toMsg) id
+        GetMenuDimensionsAndPlacement msg id ->
+            GetMenuDimensionsAndPlacement (msg >> toMsg) id
 
         GetElementsAndScrollMenu msg id optionIdx ->
             GetElementsAndScrollMenu (msg >> toMsg) id optionIdx
+
+        GetMenuWidth msg id ->
+            GetMenuWidth (msg >> toMsg) id
 
         Batch effects ->
             List.map (map toMsg) effects

@@ -89,6 +89,7 @@ type alias InternalState a =
     , menuOpen : Bool
     , menuHeight : Maybe Int
     , menuPlacement : Placement
+    , menuWidth : Maybe Int
     , requestState : Maybe RequestState
     }
 
@@ -104,6 +105,7 @@ init id =
         , menuOpen = False
         , menuHeight = Nothing
         , menuPlacement = Below
+        , menuWidth = Nothing
         , requestState = Nothing
         }
 
@@ -155,7 +157,7 @@ type alias Msg a =
     Msg.Msg a
 
 
-update : Msg.Msg a -> Select a -> ( Select a, Cmd (Msg.Msg a) )
+update : Msg a -> Select a -> ( Select a, Cmd (Msg a) )
 update msg select =
     updateEffect identity msg select
         |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
@@ -170,26 +172,26 @@ request =
     Request.request
 
 
-updateWithRequest : Request (Cmd (Msg a)) -> Msg.Msg a -> Select a -> ( Select a, Cmd (Msg.Msg a) )
+updateWithRequest : Request (Cmd (Msg a)) -> Msg a -> Select a -> ( Select a, Cmd (Msg a) )
 updateWithRequest requestCmd msg select =
     updateEffectInternal (Just (Request.request identity)) identity msg select
         |> Tuple.mapSecond (Effect.perform (Request.toEffect requestCmd))
 
 
-updateEffect : (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect Never msg )
+updateEffect : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect Never msg )
 updateEffect =
     updateEffectInternal Nothing
 
 
-updateEffectWithRequest : Request eff -> (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect eff msg )
+updateEffectWithRequest : Request eff -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect eff msg )
 updateEffectWithRequest req =
     updateEffectInternal (Just req)
 
 
-updateEffectInternal : Maybe (Request eff) -> (Msg a -> msg) -> Msg.Msg a -> Select a -> ( Select a, Effect eff msg )
+updateEffectInternal : Maybe (Request eff) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect eff msg )
 updateEffectInternal maybeRequest toMsg msg (Select state) =
     case msg of
-        Msg.InputChanged val ->
+        InputChanged val ->
             ( Select
                 { state
                     | inputValue = val
@@ -209,7 +211,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                             state.requestState
                 }
             , Effect.batch
-                [ Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
+                [ Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
                 , case maybeRequest of
                     Just req ->
                         if String.length val >= Request.toMinLength req then
@@ -223,7 +225,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                 ]
             )
 
-        Msg.OptionClicked ( a, s ) ->
+        OptionClicked ( a, s ) ->
             ( Select
                 { state
                     | selected = Just a
@@ -233,23 +235,23 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             , Effect.none
             )
 
-        Msg.InputFocused ->
+        InputFocused ->
             ( Select
                 { state | highlighted = 0 }
-            , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
+            , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
             )
 
-        Msg.InputClicked ->
+        InputClicked ->
             ( Select state
-            , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
+            , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
             )
 
-        Msg.InputLostFocus ->
+        InputLostFocus ->
             ( Select { state | menuOpen = False }
             , Effect.none
             )
 
-        Msg.MouseEnteredOption i ->
+        MouseEnteredOption i ->
             ( Select
                 { state
                     | highlighted = i
@@ -257,23 +259,27 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             , Effect.none
             )
 
-        Msg.KeyDown filteredOptions key ->
+        KeyDown filteredOptions key ->
             handleKey toMsg state key filteredOptions
 
-        Msg.GotMenuHeightAndPlacement result ->
+        GotMenuDimensionsAndPlacement (Ok ( { width, height }, placement )) ->
             ( Select
                 { state
                     | menuOpen = True
-                    , menuHeight = Maybe.andThen Tuple.first (Result.toMaybe result)
-                    , menuPlacement = Maybe.map Tuple.second (Result.toMaybe result) |> Maybe.withDefault state.menuPlacement
+                    , menuHeight = Just height
+                    , menuWidth = Just width
+                    , menuPlacement = placement
                 }
             , Effect.none
             )
 
-        Msg.GotScrollMenuResult _ ->
+        GotMenuDimensionsAndPlacement (Err _) ->
             ( Select state, Effect.none )
 
-        Msg.ClearButtonPressed ->
+        GotScrollMenuResult _ ->
+            ( Select state, Effect.none )
+
+        ClearButtonPressed ->
             ( Select
                 { state
                     | inputValue = ""
@@ -288,7 +294,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             , Effect.none
             )
 
-        Msg.InputDebounceReturned val ->
+        InputDebounceReturned val ->
             if val == state.inputValue then
                 ( Select { state | requestState = Just Loading }
                 , Maybe.map (Request.toEffect >> (\eff -> Effect.Request (eff val))) maybeRequest
@@ -298,16 +304,16 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             else
                 ( Select state, Effect.none )
 
-        Msg.GotRequestResponse (Ok items) ->
+        GotRequestResponse (Ok items) ->
             ( Select
                 { state
                     | items = items
                     , requestState = Nothing
                 }
-            , Effect.none
+            , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
             )
 
-        Msg.GotRequestResponse (Err _) ->
+        GotRequestResponse (Err _) ->
             ( Select { state | requestState = Just Failed }
             , Effect.none
             )
@@ -323,7 +329,7 @@ handleKey toMsg ({ highlighted } as state) key filteredOptions =
                 }
             , Effect.batch
                 [ Effect.GetElementsAndScrollMenu (GotScrollMenuResult >> toMsg) state.id newHighlighted
-                , Effect.GetMenuHeightAndPlacement (GotMenuHeightAndPlacement >> toMsg) state.id
+                , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
                 ]
             )
     in
@@ -381,7 +387,7 @@ gotRequestResponse =
 
 type ViewConfig a msg
     = ViewConfig
-        { onChange : Msg.Msg a -> msg
+        { onChange : Msg a -> msg
         , inputAttribs : List (Attribute msg)
         , select : Select a
         , itemToString : a -> String
@@ -400,7 +406,7 @@ type ViewConfig a msg
 view :
     List (Attribute msg)
     ->
-        { onChange : Msg.Msg a -> msg
+        { onChange : Msg a -> msg
         , select : Select a
         , itemToString : a -> String
         , label : Input.Label msg
@@ -419,7 +425,7 @@ view attribs v =
         , filter = Just Filter.startsWithThenContains
         , menuPlacement = Nothing
         , menuMaxHeight = Nothing
-        , menuAttributes = defaultDropdownAttrs
+        , menuAttributes = defaultDropdownAttrs (unwrap v.select).menuWidth
         , noMatchElement = defaultNoMatchElement
         , clearButton = Nothing
         }
@@ -447,7 +453,7 @@ withMenuMaxHeight height (ViewConfig config) =
 
 withMenuAttributes : List (Attribute msg) -> ViewConfig a msg -> ViewConfig a msg
 withMenuAttributes attribs (ViewConfig config) =
-    ViewConfig { config | menuAttributes = attribs }
+    ViewConfig { config | menuAttributes = config.menuAttributes ++ attribs }
 
 
 type OptionState
@@ -525,10 +531,10 @@ toElement (ViewConfig ({ select } as config)) =
     <|
         Input.text
             (config.inputAttribs
-                ++ [ onFocus (config.onChange Msg.InputFocused)
-                   , onClick (config.onChange Msg.InputClicked)
-                   , onLoseFocus (config.onChange Msg.InputLostFocus)
-                   , onKeyDown (Msg.KeyDown filteredOptions >> config.onChange)
+                ++ [ onFocus (config.onChange InputFocused)
+                   , onClick (config.onChange InputClicked)
+                   , onLoseFocus (config.onChange InputLostFocus)
+                   , onKeyDown (KeyDown filteredOptions >> config.onChange)
                    , htmlAttribute (Html.Attributes.id <| d.id ++ "-input")
                    , inFront <|
                         if toValue select /= Nothing || toInputValue select /= "" then
@@ -568,7 +574,7 @@ toElement (ViewConfig ({ select } as config)) =
                             }
                    ]
             )
-            { onChange = Msg.InputChanged >> config.onChange
+            { onChange = InputChanged >> config.onChange
             , text = inputVal
             , placeholder = config.placeholder
             , label = config.label
@@ -576,7 +582,7 @@ toElement (ViewConfig ({ select } as config)) =
 
 
 dropdownMenu :
-    { onChange : Msg.Msg a -> msg
+    { onChange : Msg a -> msg
     , menuOpen : Bool
     , id : String
     , options : List (Option a)
@@ -627,7 +633,7 @@ optionElement :
     { b
         | highlighted : Int
         , selected : Maybe a
-        , onChange : Msg.Msg a -> msg
+        , onChange : Msg a -> msg
         , id : String
         , optionElement : OptionState -> a -> Element msg
     }
@@ -648,8 +654,8 @@ optionElement v i (( a, _ ) as opt) =
     in
     row
         [ htmlAttribute (Html.Attributes.id <| Internal.optionId i v.id)
-        , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange <| Msg.OptionClicked opt, True )))
-        , onMouseEnter (v.onChange <| Msg.MouseEnteredOption i)
+        , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
+        , onMouseEnter (v.onChange <| MouseEnteredOption i)
         , width fill
         ]
         [ v.optionElement optionState a ]
@@ -658,7 +664,7 @@ optionElement v i (( a, _ ) as opt) =
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
 clearButtonElement toMsg attribs element =
     Input.button attribs
-        { onPress = Just (toMsg Msg.ClearButtonPressed)
+        { onPress = Just (toMsg ClearButtonPressed)
         , label = element
         }
 
@@ -667,14 +673,20 @@ clearButtonElement toMsg attribs element =
 -- DEFAULT STYLE
 
 
-defaultDropdownAttrs : List (Attribute msg)
-defaultDropdownAttrs =
+defaultDropdownAttrs : Maybe Int -> List (Attribute msg)
+defaultDropdownAttrs menuWidth =
     [ Border.solid
     , Border.color (rgb255 180 180 180)
     , Border.width 1
     , Border.rounded 5
     , Background.color (rgb 1 1 1)
-    , width fill
+    , width <|
+        case menuWidth of
+            Just w ->
+                minimum (Maybe.withDefault 0 menuWidth) shrink
+
+            Nothing ->
+                fill
     , paddingXY 0 5
     ]
 

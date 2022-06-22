@@ -13,7 +13,7 @@ type Msg a
     | InputLostFocus
     | MouseEnteredOption Int
     | KeyDown (List (Option a)) String
-    | GotMenuHeightAndPlacement (Result Dom.Error ( Maybe Int, Placement ))
+    | GotMenuDimensionsAndPlacement (Result Dom.Error ( { width : Int, height : Int }, Placement ))
     | GotScrollMenuResult (Result Dom.Error ())
     | ClearButtonPressed
     | InputDebounceReturned String
