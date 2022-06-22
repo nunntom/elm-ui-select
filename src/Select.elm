@@ -510,17 +510,6 @@ toElement (ViewConfig ({ select } as config)) =
                 _ ->
                     Nothing
 
-        maxWidth =
-            case [ config.menuMaxWidth, d.menuWidth ] |> List.filterMap identity of
-                [ w1, w2 ] ->
-                    Just (Basics.min w1 w2)
-
-                [ w ] ->
-                    Just w
-
-                _ ->
-                    Nothing
-
         filteredOptions =
             List.map (\i -> ( i, config.itemToString i )) d.items
                 |> Filter.filterOptions d.inputValue config.filter
@@ -580,7 +569,7 @@ toElement (ViewConfig ({ select } as config)) =
                             , highlighted = d.highlighted
                             , selected = d.selected
                             , maxHeight = maxHeight
-                            , menuAttributes = defaultDropdownAttrs maxWidth ++ config.menuAttributes
+                            , menuAttributes = defaultDropdownAttrs d.menuWidth config.menuMaxWidth ++ config.menuAttributes
                             , noMatchElement =
                                 if d.inputValue /= "" && (d.requestState /= Just NotRequested && d.requestState /= Just Loading) then
                                     el config.menuAttributes config.noMatchElement
@@ -690,8 +679,8 @@ clearButtonElement toMsg attribs element =
 -- DEFAULT STYLE
 
 
-defaultDropdownAttrs : Maybe Int -> List (Attribute msg)
-defaultDropdownAttrs menuWidth =
+defaultDropdownAttrs : Maybe Int -> Maybe Int -> List (Attribute msg)
+defaultDropdownAttrs menuWidth maxWidth =
     [ Border.solid
     , Border.color (rgb255 180 180 180)
     , Border.width 1
@@ -700,7 +689,9 @@ defaultDropdownAttrs menuWidth =
     , width <|
         case menuWidth of
             Just w ->
-                minimum (Maybe.withDefault 0 menuWidth) shrink
+                shrink
+                    |> minimum w
+                    |> (Maybe.map maximum maxWidth |> Maybe.withDefault identity)
 
             Nothing ->
                 fill

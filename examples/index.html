@@ -16710,31 +16710,33 @@ var $mdgriffith$elm_ui$Element$Border$width = function (v) {
 			v,
 			v));
 };
-var $author$project$Select$defaultDropdownAttrs = function (menuWidth) {
-	return _List_fromArray(
-		[
-			$mdgriffith$elm_ui$Element$Border$solid,
-			$mdgriffith$elm_ui$Element$Border$color(
-			A3($mdgriffith$elm_ui$Element$rgb255, 180, 180, 180)),
-			$mdgriffith$elm_ui$Element$Border$width(1),
-			$mdgriffith$elm_ui$Element$Border$rounded(5),
-			$mdgriffith$elm_ui$Element$Background$color(
-			A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1)),
-			$mdgriffith$elm_ui$Element$width(
-			function () {
-				if (menuWidth.$ === 'Just') {
-					var w = menuWidth.a;
-					return A2(
-						$mdgriffith$elm_ui$Element$minimum,
-						A2($elm$core$Maybe$withDefault, 0, menuWidth),
-						$mdgriffith$elm_ui$Element$shrink);
-				} else {
-					return $mdgriffith$elm_ui$Element$fill;
-				}
-			}()),
-			A2($mdgriffith$elm_ui$Element$paddingXY, 0, 5)
-		]);
-};
+var $author$project$Select$defaultDropdownAttrs = F2(
+	function (menuWidth, maxWidth) {
+		return _List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$Border$solid,
+				$mdgriffith$elm_ui$Element$Border$color(
+				A3($mdgriffith$elm_ui$Element$rgb255, 180, 180, 180)),
+				$mdgriffith$elm_ui$Element$Border$width(1),
+				$mdgriffith$elm_ui$Element$Border$rounded(5),
+				$mdgriffith$elm_ui$Element$Background$color(
+				A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1)),
+				$mdgriffith$elm_ui$Element$width(
+				function () {
+					if (menuWidth.$ === 'Just') {
+						var w = menuWidth.a;
+						return A3(
+							$elm$core$Basics$apR,
+							A2($elm$core$Maybe$map, $mdgriffith$elm_ui$Element$maximum, maxWidth),
+							$elm$core$Maybe$withDefault($elm$core$Basics$identity),
+							A2($mdgriffith$elm_ui$Element$minimum, w, $mdgriffith$elm_ui$Element$shrink));
+					} else {
+						return $mdgriffith$elm_ui$Element$fill;
+					}
+				}()),
+				A2($mdgriffith$elm_ui$Element$paddingXY, 0, 5)
+			]);
+	});
 var $mdgriffith$elm_ui$Internal$Flag$overflow = $mdgriffith$elm_ui$Internal$Flag$flag(20);
 var $mdgriffith$elm_ui$Element$clipY = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$overflow, $mdgriffith$elm_ui$Internal$Style$classes.clipY);
 var $author$project$Select$Highlighted = {$: 'Highlighted'};
@@ -17830,65 +17832,36 @@ var $author$project$Select$toElement = function (_v0) {
 				return $elm$core$List$head(
 					A2(
 						$elm$core$List$filterMap,
-						function (_v5) {
-							var a = _v5.a;
-							var s = _v5.b;
+						function (_v3) {
+							var a = _v3.a;
+							var s = _v3.b;
 							return _Utils_eq(a, sel) ? $elm$core$Maybe$Just(s) : $elm$core$Maybe$Nothing;
 						},
 						filteredOptions));
 			},
 			d.selected));
 	var maxHeight = function () {
-		var _v3 = A2(
-			$elm$core$List$filterMap,
-			$elm$core$Basics$identity,
-			_List_fromArray(
-				[config.menuMaxHeight, d.menuHeight]));
-		_v3$2:
-		while (true) {
-			if (_v3.b) {
-				if (_v3.b.b) {
-					if (!_v3.b.b.b) {
-						var h1 = _v3.a;
-						var _v4 = _v3.b;
-						var h2 = _v4.a;
-						return $elm$core$Maybe$Just(
-							A2($elm$core$Basics$min, h1, h2));
-					} else {
-						break _v3$2;
-					}
-				} else {
-					var h = _v3.a;
-					return $elm$core$Maybe$Just(h);
-				}
-			} else {
-				break _v3$2;
-			}
-		}
-		return $elm$core$Maybe$Nothing;
-	}();
-	var maxWidth = function () {
 		var _v1 = A2(
 			$elm$core$List$filterMap,
 			$elm$core$Basics$identity,
 			_List_fromArray(
-				[config.menuMaxWidth, d.menuWidth]));
+				[config.menuMaxHeight, d.menuHeight]));
 		_v1$2:
 		while (true) {
 			if (_v1.b) {
 				if (_v1.b.b) {
 					if (!_v1.b.b.b) {
-						var w1 = _v1.a;
+						var h1 = _v1.a;
 						var _v2 = _v1.b;
-						var w2 = _v2.a;
+						var h2 = _v2.a;
 						return $elm$core$Maybe$Just(
-							A2($elm$core$Basics$min, w1, w2));
+							A2($elm$core$Basics$min, h1, h2));
 					} else {
 						break _v1$2;
 					}
 				} else {
-					var w = _v1.a;
-					return $elm$core$Maybe$Just(w);
+					var h = _v1.a;
+					return $elm$core$Maybe$Just(h);
 				}
 			} else {
 				break _v1$2;
@@ -17942,7 +17915,7 @@ var $author$project$Select$toElement = function (_v0) {
 								id: d.id,
 								maxHeight: maxHeight,
 								menuAttributes: _Utils_ap(
-									$author$project$Select$defaultDropdownAttrs(maxWidth),
+									A2($author$project$Select$defaultDropdownAttrs, d.menuWidth, config.menuMaxWidth),
 									config.menuAttributes),
 								menuOpen: d.menuOpen,
 								noMatchElement: ((d.inputValue !== '') && ((!_Utils_eq(
