@@ -10,7 +10,6 @@ import Html exposing (Html)
 import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Extra as Decode
 import Select exposing (OptionState(..), Select)
 
 
@@ -157,5 +156,5 @@ decodeIngredients =
             Decode.field ("strIngredient" ++ String.fromInt i) (Decode.maybe Decode.string)
         )
         (List.range 1 15)
-        |> Decode.combine
+        |> List.foldr (Decode.map2 (::)) (Decode.succeed [])
         |> Decode.map (List.filterMap identity >> List.filter ((/=) ""))

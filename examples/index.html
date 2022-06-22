@@ -9851,10 +9851,6 @@ var $author$project$Example2$CockTail = F4(
 	function (name, imgUrl, instructions, ingredients) {
 		return {imgUrl: imgUrl, ingredients: ingredients, instructions: instructions, name: name};
 	});
-var $elm_community$json_extra$Json$Decode$Extra$combine = A2(
-	$elm$core$List$foldr,
-	$elm$json$Json$Decode$map2($elm$core$List$cons),
-	$elm$json$Json$Decode$succeed(_List_Nil));
 var $elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(
@@ -9887,7 +9883,10 @@ var $author$project$Example2$decodeIngredients = A2(
 		$elm$core$List$filterMap($elm$core$Basics$identity),
 		$elm$core$List$filter(
 			$elm$core$Basics$neq(''))),
-	$elm_community$json_extra$Json$Decode$Extra$combine(
+	A3(
+		$elm$core$List$foldr,
+		$elm$json$Json$Decode$map2($elm$core$List$cons),
+		$elm$json$Json$Decode$succeed(_List_Nil),
 		A2(
 			$elm$core$List$map,
 			function (i) {
