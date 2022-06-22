@@ -5,7 +5,7 @@ module Select exposing
     , Msg, update
     , view, toElement, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuMaxHeight, withMenuAttributes, withNoMatchElement, OptionState(..), withOptionElement
     , Effect, updateEffect
-    , RequestState, clearButton, gotRequestResponse, isLoading, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton
+    , RequestState, ViewConfig, clearButton, gotRequestResponse, isLoading, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton
     )
 
 {-| A select dropdown for Elm-Ui
