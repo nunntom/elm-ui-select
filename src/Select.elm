@@ -5,7 +5,7 @@ module Select exposing
     , Msg, update
     , view, toElement, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuMaxHeight, withMenuAttributes, withNoMatchElement, OptionState(..), withOptionElement
     , Effect, updateEffect
-    , RequestState, ViewConfig, clearButton, gotRequestResponse, isLoading, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton
+    , RequestState, ViewConfig, clearButton, gotRequestResponse, isLoading, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton, withMenuMaxWidth
     )
 
 {-| A select dropdown for Elm-Ui
@@ -396,6 +396,7 @@ type ViewConfig a msg
         , filter : Maybe (Filter a)
         , menuPlacement : Maybe Placement
         , menuMaxHeight : Maybe Int
+        , menuMaxWidth : Maybe Int
         , menuAttributes : List (Attribute msg)
         , noMatchElement : Element msg
         , optionElement : OptionState -> a -> Element msg
@@ -425,7 +426,8 @@ view attribs v =
         , filter = Just Filter.startsWithThenContains
         , menuPlacement = Nothing
         , menuMaxHeight = Nothing
-        , menuAttributes = defaultDropdownAttrs (unwrap v.select).menuWidth
+        , menuMaxWidth = Nothing
+        , menuAttributes = []
         , noMatchElement = defaultNoMatchElement
         , clearButton = Nothing
         }
@@ -449,6 +451,11 @@ withMenuAlwaysBelow (ViewConfig config) =
 withMenuMaxHeight : Int -> ViewConfig a msg -> ViewConfig a msg
 withMenuMaxHeight height (ViewConfig config) =
     ViewConfig { config | menuMaxHeight = Just height }
+
+
+withMenuMaxWidth : Int -> ViewConfig a msg -> ViewConfig a msg
+withMenuMaxWidth height (ViewConfig config) =
+    ViewConfig { config | menuMaxWidth = Just height }
 
 
 withMenuAttributes : List (Attribute msg) -> ViewConfig a msg -> ViewConfig a msg
@@ -491,6 +498,28 @@ toElement (ViewConfig ({ select } as config)) =
     let
         d =
             unwrap select
+
+        maxHeight =
+            case [ config.menuMaxHeight, d.menuHeight ] |> List.filterMap identity of
+                [ h1, h2 ] ->
+                    Just (Basics.min h1 h2)
+
+                [ h ] ->
+                    Just h
+
+                _ ->
+                    Nothing
+
+        maxWidth =
+            case [ config.menuMaxWidth, d.menuWidth ] |> List.filterMap identity of
+                [ w1, w2 ] ->
+                    Just (Basics.min w1 w2)
+
+                [ w ] ->
+                    Just w
+
+                _ ->
+                    Nothing
 
         filteredOptions =
             List.map (\i -> ( i, config.itemToString i )) d.items
@@ -550,20 +579,8 @@ toElement (ViewConfig ({ select } as config)) =
                             , options = filteredOptions
                             , highlighted = d.highlighted
                             , selected = d.selected
-                            , maxHeight =
-                                case ( config.menuMaxHeight, d.menuHeight ) of
-                                    ( Just h1, Just h2 ) ->
-                                        Just (Basics.min h1 h2)
-
-                                    ( Just h1, Nothing ) ->
-                                        Just h1
-
-                                    ( Nothing, Just h2 ) ->
-                                        Just h2
-
-                                    _ ->
-                                        Nothing
-                            , menuAttributes = config.menuAttributes
+                            , maxHeight = maxHeight
+                            , menuAttributes = defaultDropdownAttrs maxWidth ++ config.menuAttributes
                             , noMatchElement =
                                 if d.inputValue /= "" && (d.requestState /= Just NotRequested && d.requestState /= Just Loading) then
                                     el config.menuAttributes config.noMatchElement
