@@ -214,19 +214,16 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                         else
                             state.requestState
                 }
-            , Effect.batch
-                [ Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
-                , case maybeRequest of
-                    Just req ->
-                        if String.length val >= Request.toMinLength req then
-                            Effect.Debounce (Request.toDelay req) (InputDebounceReturned val |> toMsg)
+            , case maybeRequest of
+                Just req ->
+                    if String.length val >= Request.toMinLength req then
+                        Effect.Debounce (Request.toDelay req) (InputDebounceReturned val |> toMsg)
 
-                        else
-                            Effect.none
-
-                    Nothing ->
+                    else
                         Effect.none
-                ]
+
+                Nothing ->
+                    Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
             )
 
         OptionClicked ( a, s ) ->
