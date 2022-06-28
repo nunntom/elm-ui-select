@@ -38,32 +38,23 @@ init _ =
 
 view : Model -> Html Msg
 view model =
-    Element.layout
-        [ Element.inFront <|
-            Element.column
-                [ centerX
-                , paddingXY 0 100
-                , spacing 10
-                , width (px 500)
-                , height (px 300)
-                , Background.color (rgb 0.8 0.8 0.8)
-                , padding 20
-                , Element.htmlAttribute (Html.Attributes.style "top" "50px")
-                , scrollbarY
-                ]
-                [ Select.view []
-                    { onChange = DropdownMsg
-                    , label = Input.labelAbove [] (text "Choose one")
-                    , placeholder = Just (Input.placeholder [] (text "Type to search"))
-                    , itemToString = \c -> c.flag ++ " " ++ c.name
-                    }
-                    |> Select.withClearButton (Select.clearButton [ alignRight, centerY, moveLeft 12 ] (el [ Font.size 10, htmlAttribute (Html.Attributes.title "clear selection") ] (text "❌")))
-                    |> Select.toElement model.select
-                , Maybe.map (\{ name } -> text ("You chose " ++ name)) (Select.toValue model.select)
-                    |> Maybe.withDefault Element.none
-                ]
-        ]
-        Element.none
+    Element.layout [] <|
+        Element.column
+            [ centerX
+            , spacing 20
+            , padding 30
+            ]
+            [ Select.view []
+                { onChange = DropdownMsg
+                , label = Input.labelAbove [] (text "Choose one")
+                , placeholder = Just (Input.placeholder [] (text "Type to search"))
+                , itemToString = \c -> c.flag ++ " " ++ c.name
+                }
+                |> Select.withClearButton (Select.clearButton [ alignRight, centerY, moveLeft 12 ] (el [ Font.size 10, htmlAttribute (Html.Attributes.title "clear selection") ] (text "❌")))
+                |> Select.toElement model.select
+            , Maybe.map (\{ name } -> text ("You chose " ++ name)) (Select.toValue model.select)
+                |> Maybe.withDefault Element.none
+            ]
 
 
 type Msg

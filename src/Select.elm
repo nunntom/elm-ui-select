@@ -46,7 +46,7 @@ import Browser.Dom as Dom
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events exposing (onClick, onFocus, onLoseFocus, onMouseEnter)
+import Element.Events exposing (onClick, onFocus, onLoseFocus, onMouseDown, onMouseEnter)
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
@@ -92,6 +92,7 @@ type alias InternalState a =
     , containerElement : Maybe Dom.Element
     , menuElement : Maybe Dom.Element
     , requestState : Maybe RequestState
+    , applyFilter : Bool
     }
 
 
@@ -107,6 +108,7 @@ init id =
         , containerElement = Nothing
         , menuElement = Nothing
         , requestState = Nothing
+        , applyFilter = False
         }
 
 
@@ -202,6 +204,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                     | inputValue = val
                     , highlighted = 0
                     , selected = Nothing
+                    , applyFilter = True
                     , items =
                         if maybeRequest /= Nothing && val == "" then
                             []
@@ -227,45 +230,28 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                     Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
             )
 
-        OptionClicked ( a, s ) ->
-            ( Select
-                { state
-                    | selected = Just a
-                    , menuOpen = False
-                    , inputValue = s
-                }
+        OptionClicked opt ->
+            ( selectOption opt (Select state)
             , Effect.none
             )
 
         InputFocused ->
-            ( Select
-                { state | highlighted = 0 }
-            , if maybeRequest == Nothing || state.requestState == Just Success then
-                Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
-
-              else
-                Effect.none
-            )
+            onFocusMenu toMsg maybeRequest state
 
         InputClicked ->
-            ( Select state
-            , if maybeRequest == Nothing || state.requestState == Just Success then
-                Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
-
-              else
-                Effect.none
-            )
+            onFocusMenu toMsg maybeRequest state
 
         InputLostFocus ->
-            ( Select { state | menuOpen = False }
+            ( Select
+                { state
+                    | menuOpen = False
+                    , applyFilter = False
+                }
             , Effect.none
             )
 
         MouseEnteredOption i ->
-            ( Select
-                { state
-                    | highlighted = i
-                }
+            ( Select { state | highlighted = i }
             , Effect.none
             )
 
@@ -282,14 +268,14 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             , Effect.none
             )
 
-        GotScrollMenuResult _ ->
-            ( Select state, Effect.none )
-
         ClearButtonPressed ->
             ( Select
                 { state
                     | inputValue = ""
                     , selected = Nothing
+                    , highlighted = 0
+                    , applyFilter = False
+                    , menuOpen = False
                     , items =
                         if maybeRequest == Nothing then
                             state.items
@@ -324,20 +310,48 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             , Effect.none
             )
 
+        NoOp ->
+            ( Select state, Effect.none )
+
+
+onFocusMenu : (Msg a -> msg) -> Maybe (Request eff) -> InternalState a -> ( Select a, Effect eff msg )
+onFocusMenu toMsg maybeRequest state =
+    ( Select { state | highlighted = 0 }
+    , if maybeRequest == Nothing || state.requestState == Just Success then
+        Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
+
+      else
+        Effect.none
+    )
+
+
+selectOption : ( a, String ) -> Select a -> Select a
+selectOption ( a, s ) (Select state) =
+    Select
+        { state
+            | menuOpen = False
+            , selected = Just a
+            , inputValue = s
+            , applyFilter = False
+        }
+
 
 handleKey : (Msg a -> msg) -> InternalState a -> String -> List (Option a) -> ( Select a, Effect eff msg )
 handleKey toMsg ({ highlighted } as state) key filteredOptions =
     let
         moveHighlight newHighlighted =
-            ( Select
-                { state
-                    | highlighted = newHighlighted
-                }
-            , Effect.batch
-                [ Effect.GetElementsAndScrollMenu (GotScrollMenuResult >> toMsg) state.id newHighlighted
+            if state.menuOpen then
+                ( Select { state | highlighted = newHighlighted }
+                , Effect.batch
+                    [ Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
+                    , Effect.GetElementsAndScrollMenu (\_ -> toMsg NoOp) state.id newHighlighted
+                    ]
+                )
+
+            else
+                ( Select state
                 , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
-                ]
-            )
+                )
     in
     case key of
         "ArrowDown" ->
@@ -354,13 +368,8 @@ handleKey toMsg ({ highlighted } as state) key filteredOptions =
 
         "Enter" ->
             case List.getAt highlighted filteredOptions of
-                Just ( a, s ) ->
-                    ( Select
-                        { state
-                            | menuOpen = False
-                            , selected = Just a
-                            , inputValue = s
-                        }
+                Just opt ->
+                    ( selectOption opt (Select state)
                     , Effect.none
                     )
 
@@ -513,7 +522,12 @@ toElement ((Select s) as select) (ViewConfig config) =
 
         filteredOptions =
             List.map (\i -> ( i, config.itemToString i )) s.items
-                |> Filter.filterOptions s.inputValue config.filter
+                |> (if s.applyFilter then
+                        Filter.filterOptions s.inputValue config.filter
+
+                    else
+                        identity
+                   )
     in
     el
         ([ htmlAttribute (Html.Attributes.id <| s.id ++ "-element")
@@ -640,7 +654,8 @@ optionElement v i (( a, _ ) as opt) =
     in
     row
         [ htmlAttribute (Html.Attributes.id <| Internal.optionId i v.id)
-        , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
+        , htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
+        , htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
         , onMouseEnter (v.onChange <| MouseEnteredOption i)
         , width fill
         ]
@@ -649,7 +664,12 @@ optionElement v i (( a, _ ) as opt) =
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
 clearButtonElement toMsg attribs element =
-    Input.button attribs
+    Input.button
+        ([ Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( toMsg NoOp, True )))
+         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( toMsg ClearButtonPressed, True )))
+         ]
+            ++ attribs
+        )
         { onPress = Just (toMsg ClearButtonPressed)
         , label = element
         }
@@ -675,7 +695,7 @@ defaultDropdownAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
                 shrink
     , scrollbarY
     , Border.solid
-    , Border.color (rgb255 180 180 180)
+    , Border.color (rgb 0.8 0.8 0.8)
     , Border.width 1
     , Border.rounded 5
     , Background.color (rgb 1 1 1)
@@ -698,14 +718,14 @@ defaultOptionElement toString optionState a =
         optionAttrs =
             [ width fill
             , pointer
-            , paddingXY 5 5
+            , paddingXY 14 10
             ]
     in
     case optionState of
         Highlighted ->
             el
-                ([ Background.color (rgb 0.5 0.5 1)
-                 , Font.color (rgb 1 1 1)
+                ([ Background.color (rgb 0.9 0.9 0.9)
+                 , Font.color (rgb 0 0 0)
                  ]
                     ++ optionAttrs
                 )
@@ -713,8 +733,8 @@ defaultOptionElement toString optionState a =
 
         Selected ->
             el
-                ([ Background.color (rgb 0.8 0.8 1)
-                 , Font.color (rgb 1 1 1)
+                ([ Background.color (rgb 0.65 0.84 0.98)
+                 , Font.color (rgb 0 0 0)
                  ]
                     ++ optionAttrs
                 )
@@ -726,7 +746,16 @@ defaultOptionElement toString optionState a =
 
 defaultNoMatchElement : Element msg
 defaultNoMatchElement =
-    el [ paddingXY 5 0 ] (text "No matches")
+    el
+        [ padding 5
+        , Border.solid
+        , Border.color (rgb 0.8 0.8 0.8)
+        , Border.width 1
+        , Border.rounded 5
+        , Background.color (rgb 1 1 1)
+        , width fill
+        ]
+        (text "No matches")
 
 
 
@@ -755,13 +784,13 @@ calculateMenuDimensionsAndPlacement container menu =
     in
     if below < Basics.round menu.scene.height && above > below then
         { minWidth = Basics.round container.element.width
-        , maxHeight = Basics.min (Basics.round menu.scene.height) (above - 10)
+        , maxHeight = Basics.min (Basics.round menu.scene.height) (above - 20)
         , placement = Above
         }
 
     else
         { minWidth = Basics.round container.element.width
-        , maxHeight = Basics.min (Basics.round menu.scene.height) (below - 10)
+        , maxHeight = Basics.min (Basics.round menu.scene.height) (below - 20)
         , placement = Below
         }
 

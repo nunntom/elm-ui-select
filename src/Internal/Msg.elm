@@ -13,7 +13,7 @@ type Msg a
     | MouseEnteredOption Int
     | KeyDown (List (Option a)) String
     | GotContainerAndMenuElements (Result Dom.Error { menu : Element, container : Element })
-    | GotScrollMenuResult (Result Dom.Error ())
     | ClearButtonPressed
     | InputDebounceReturned String
     | GotRequestResponse (Result () (List a))
+    | NoOp
