@@ -10572,17 +10572,21 @@ var $author$project$Select$updateEffectInternal = F4(
 						_Utils_update(
 							state,
 							{highlighted: 0})),
-					A2(
+					(_Utils_eq(maybeRequest, $elm$core$Maybe$Nothing) || _Utils_eq(
+						state.requestState,
+						$elm$core$Maybe$Just($author$project$Select$Success))) ? A2(
 						$author$project$Internal$Effect$GetContainerAndMenuElements,
 						A2($elm$core$Basics$composeR, $author$project$Internal$Msg$GotContainerAndMenuElements, toMsg),
-						state.id));
+						state.id) : $author$project$Internal$Effect$none);
 			case 'InputClicked':
 				return _Utils_Tuple2(
 					$author$project$Select$Select(state),
-					A2(
+					(_Utils_eq(maybeRequest, $elm$core$Maybe$Nothing) || _Utils_eq(
+						state.requestState,
+						$elm$core$Maybe$Just($author$project$Select$Success))) ? A2(
 						$author$project$Internal$Effect$GetContainerAndMenuElements,
 						A2($elm$core$Basics$composeR, $author$project$Internal$Msg$GotContainerAndMenuElements, toMsg),
-						state.id));
+						state.id) : $author$project$Internal$Effect$none);
 			case 'InputLostFocus':
 				return _Utils_Tuple2(
 					$author$project$Select$Select(

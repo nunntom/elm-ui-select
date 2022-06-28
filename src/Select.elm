@@ -240,12 +240,20 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
         InputFocused ->
             ( Select
                 { state | highlighted = 0 }
-            , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
+            , if maybeRequest == Nothing || state.requestState == Just Success then
+                Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
+
+              else
+                Effect.none
             )
 
         InputClicked ->
             ( Select state
-            , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
+            , if maybeRequest == Nothing || state.requestState == Just Success then
+                Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
+
+              else
+                Effect.none
             )
 
         InputLostFocus ->
