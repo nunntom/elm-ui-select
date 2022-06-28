@@ -78,6 +78,7 @@ type Select a
 type RequestState
     = NotRequested
     | Loading
+    | Success
     | Failed
 
 
@@ -305,7 +306,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
             ( Select
                 { state
                     | items = items
-                    , requestState = Nothing
+                    , requestState = Just Success
                 }
             , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
             )
@@ -531,6 +532,12 @@ toElement ((Select s) as select) (ViewConfig config) =
 
                         else
                             Element.none
+                   , Element.below <|
+                        if List.length filteredOptions == 0 && not (String.isEmpty s.inputValue) && s.requestState == Nothing || s.requestState == Just Success then
+                            config.noMatchElement
+
+                        else
+                            Element.none
                    , Placement.toAttribute placement <|
                         dropdownMenu
                             (defaultDropdownAttrs
@@ -584,16 +591,11 @@ dropdownMenu :
         }
     -> Element msg
 dropdownMenu attribs v =
-    (if List.length v.options > 0 then
-        List.indexedMap (optionElement v) v.options
-
-     else
-        [ v.noMatchElement ]
-    )
+    List.indexedMap (optionElement v) v.options
         |> column (attribs ++ [ htmlAttribute <| Html.Attributes.id (v.id ++ "-menu") ])
         |> el
             (width fill
-                :: (if v.menuOpen then
+                :: (if v.menuOpen && List.length v.options > 0 then
                         []
 
                     else

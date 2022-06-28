@@ -77,7 +77,15 @@ fetchCocktails : String -> Cmd (Select.Msg CockTail)
 fetchCocktails query =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
-        , expect = Http.expectJson Select.gotRequestResponse (Decode.field "drinks" (Decode.list cocktailDecoder))
+        , expect =
+            Http.expectJson Select.gotRequestResponse
+                (Decode.field "drinks"
+                    (Decode.oneOf
+                        [ Decode.list cocktailDecoder
+                        , Decode.succeed []
+                        ]
+                    )
+                )
         }
 
 

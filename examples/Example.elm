@@ -57,7 +57,6 @@ view model =
                     , placeholder = Just (Input.placeholder [] (text "Type to search"))
                     , itemToString = \c -> c.flag ++ " " ++ c.name
                     }
-                    |> Select.withFixedPosition True
                     |> Select.withClearButton (Select.clearButton [ alignRight, centerY, moveLeft 12 ] (el [ Font.size 10, htmlAttribute (Html.Attributes.title "clear selection") ] (text "❌")))
                     |> Select.toElement model.select
                 , Maybe.map (\{ name } -> text ("You chose " ++ name)) (Select.toValue model.select)
