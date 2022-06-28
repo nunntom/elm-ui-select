@@ -9,7 +9,6 @@ import Task exposing (Task)
 
 type Effect eff msg
     = GetContainerAndMenuElements (Result Dom.Error { menu : Element, container : Element } -> msg) String
-    | GetMenuWidth (Result Dom.Error Float -> msg) String
     | GetElementsAndScrollMenu (Result Dom.Error () -> msg) String Int
     | Batch (List (Effect eff msg))
     | Request eff
@@ -35,11 +34,6 @@ perform requestCmd effect =
 
         GetElementsAndScrollMenu msg id optionIdx ->
             getElementsAndScrollMenu msg id optionIdx
-
-        GetMenuWidth msg id ->
-            Dom.getElement (id ++ "-menu")
-                |> Task.map (.element >> .width)
-                |> Task.attempt msg
 
         Batch effects ->
             List.foldl (\eff cmds -> perform requestCmd eff :: cmds) [] effects
@@ -90,17 +84,6 @@ optionId i id =
     id ++ "-" ++ String.fromInt i
 
 
-calculateSpace : Dom.Element -> { above : Int, below : Int }
-calculateSpace { viewport, element } =
-    { above = Basics.round (element.y - viewport.y)
-    , below =
-        Basics.round
-            ((viewport.y + viewport.height)
-                - (element.y + element.height)
-            )
-    }
-
-
 scrollMenuTask : String -> { option : Dom.Element, menu : Dom.Element, menuViewport : Dom.Viewport } -> Task Dom.Error ()
 scrollMenuTask id { option, menu, menuViewport } =
     let
@@ -131,9 +114,6 @@ map toMsg effect =
 
         GetElementsAndScrollMenu msg id optionIdx ->
             GetElementsAndScrollMenu (msg >> toMsg) id optionIdx
-
-        GetMenuWidth msg id ->
-            GetMenuWidth (msg >> toMsg) id
 
         Batch effects ->
             List.map (map toMsg) effects

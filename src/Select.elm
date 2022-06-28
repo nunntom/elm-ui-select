@@ -587,27 +587,25 @@ dropdownMenu :
         }
     -> Element msg
 dropdownMenu attribs v =
-    if List.length v.options > 0 then
+    (if List.length v.options > 0 then
         List.indexedMap (optionElement v) v.options
-            |> column (attribs ++ [ htmlAttribute <| Html.Attributes.id (v.id ++ "-menu") ])
-            |> el
-                (width fill
-                    :: (if v.menuOpen then
-                            []
 
-                        else
-                            [ htmlAttribute (Html.Attributes.style "visibility" "hidden")
-                            , Element.height (Element.px 0)
-                            , Element.clipY
-                            ]
-                       )
-                )
+     else
+        [ v.noMatchElement ]
+    )
+        |> column (attribs ++ [ htmlAttribute <| Html.Attributes.id (v.id ++ "-menu") ])
+        |> el
+            (width fill
+                :: (if v.menuOpen then
+                        []
 
-    else if v.menuOpen then
-        v.noMatchElement
-
-    else
-        Element.none
+                    else
+                        [ htmlAttribute (Html.Attributes.style "visibility" "hidden")
+                        , Element.height (Element.px 0)
+                        , Element.clipY
+                        ]
+                   )
+            )
 
 
 optionElement :
