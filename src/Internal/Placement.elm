@@ -8,11 +8,11 @@ type Placement
     | Below
 
 
-toAttribute : Maybe Placement -> (Element msg -> Attribute msg)
+toAttribute : Placement -> (Element msg -> Attribute msg)
 toAttribute placement =
     case placement of
-        Just Above ->
+        Above ->
             Element.above
 
-        _ ->
+        Below ->
             Element.below

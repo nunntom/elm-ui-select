@@ -1,6 +1,6 @@
 module Internal.Effect exposing (Effect(..), batch, map, none, perform)
 
-import Browser.Dom as Dom
+import Browser.Dom as Dom exposing (Element)
 import Internal.Msg exposing (Msg(..))
 import Internal.Placement exposing (Placement(..))
 import Process
@@ -8,7 +8,7 @@ import Task exposing (Task)
 
 
 type Effect eff msg
-    = GetMenuDimensionsAndPlacement (Result Dom.Error ( { width : Int, height : Int }, Placement ) -> msg) String
+    = GetContainerAndMenuElements (Result Dom.Error { menu : Element, container : Element } -> msg) String
     | GetMenuWidth (Result Dom.Error Float -> msg) String
     | GetElementsAndScrollMenu (Result Dom.Error () -> msg) String Int
     | Batch (List (Effect eff msg))
@@ -30,8 +30,8 @@ batch effects =
 perform : (eff -> Cmd msg) -> Effect eff msg -> Cmd msg
 perform requestCmd effect =
     case effect of
-        GetMenuDimensionsAndPlacement msg id ->
-            getMenuDimensionsAndPlacement msg id
+        GetContainerAndMenuElements msg id ->
+            getContainerAndMenuElements msg id
 
         GetElementsAndScrollMenu msg id optionIdx ->
             getElementsAndScrollMenu msg id optionIdx
@@ -56,27 +56,13 @@ perform requestCmd effect =
             Cmd.none
 
 
-getMenuDimensionsAndPlacement : (Result Dom.Error ( { width : Int, height : Int }, Placement ) -> msg) -> String -> Cmd msg
-getMenuDimensionsAndPlacement msg id =
+getContainerAndMenuElements : (Result Dom.Error { menu : Element, container : Element } -> msg) -> String -> Cmd msg
+getContainerAndMenuElements msg id =
     Task.map2
         (\container menu ->
-            let
-                { above, below } =
-                    calculateSpace container
-            in
-            if below < Basics.round menu.scene.height && above > below then
-                ( { width = Basics.round container.element.width
-                  , height = Basics.min (Basics.round menu.scene.height) (above - 10)
-                  }
-                , Above
-                )
-
-            else
-                ( { width = Basics.round container.element.width
-                  , height = Basics.min (Basics.round menu.scene.height) (below - 10)
-                  }
-                , Below
-                )
+            { container = container
+            , menu = menu
+            }
         )
         (Dom.getElement (id ++ "-element"))
         (Dom.getElement (id ++ "-menu"))
@@ -140,8 +126,8 @@ scrollMenuTask id { option, menu, menuViewport } =
 map : (msg1 -> msg2) -> Effect eff msg1 -> Effect eff msg2
 map toMsg effect =
     case effect of
-        GetMenuDimensionsAndPlacement msg id ->
-            GetMenuDimensionsAndPlacement (msg >> toMsg) id
+        GetContainerAndMenuElements msg id ->
+            GetContainerAndMenuElements (msg >> toMsg) id
 
         GetElementsAndScrollMenu msg id optionIdx ->
             GetElementsAndScrollMenu (msg >> toMsg) id optionIdx

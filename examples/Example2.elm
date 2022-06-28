@@ -95,14 +95,13 @@ view model =
             , width (maximum 500 shrink)
             ]
             [ Select.view []
-                { select = model.select
-                , onChange = DropdownMsg
+                { onChange = DropdownMsg
                 , label = Input.labelHidden "Find a cocktail"
                 , placeholder = Just (Input.placeholder [] (text "Type to search cocktails"))
                 , itemToString = .name
                 }
                 |> Select.withClearButton (Select.clearButton [ alignRight, centerY, moveLeft 12 ] (el [ Font.size 10, htmlAttribute (Html.Attributes.title "clear selection") ] (text "❌")))
-                |> Select.toElement
+                |> Select.toElement model.select
             , Maybe.map drinkView (Select.toValue model.select)
                 |> Maybe.withDefault Element.none
             ]

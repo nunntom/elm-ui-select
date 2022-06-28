@@ -5,7 +5,7 @@ module Select exposing
     , Msg, update
     , view, toElement, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuMaxHeight, withMenuAttributes, withNoMatchElement, OptionState(..), withOptionElement
     , Effect, updateEffect
-    , RequestState, ViewConfig, clearButton, gotRequestResponse, isLoading, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton, withMenuMaxWidth
+    , RequestState, ViewConfig, clearButton, gotRequestResponse, isLoading, isOpen, isRequestFailed, request, updateEffectWithRequest, updateWithRequest, withClearButton, withMenuMaxWidth
     )
 
 {-| A select dropdown for Elm-Ui
@@ -42,6 +42,7 @@ module Select exposing
 
 -}
 
+import Browser.Dom as Dom
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -87,9 +88,8 @@ type alias InternalState a =
     , inputValue : String
     , highlighted : Int
     , menuOpen : Bool
-    , menuHeight : Maybe Int
-    , menuPlacement : Placement
-    , menuWidth : Maybe Int
+    , containerElement : Maybe Dom.Element
+    , menuElement : Maybe Dom.Element
     , requestState : Maybe RequestState
     }
 
@@ -103,9 +103,8 @@ init id =
         , inputValue = ""
         , highlighted = 0
         , menuOpen = False
-        , menuHeight = Nothing
-        , menuPlacement = Below
-        , menuWidth = Nothing
+        , containerElement = Nothing
+        , menuElement = Nothing
         , requestState = Nothing
         }
 
@@ -137,6 +136,11 @@ toInputValue (Select { inputValue }) =
 
 
 -- CHECKS
+
+
+isOpen : Select a -> Bool
+isOpen (Select { menuOpen }) =
+    menuOpen
 
 
 isLoading : Select a -> Bool
@@ -211,7 +215,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                             state.requestState
                 }
             , Effect.batch
-                [ Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
+                [ Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
                 , case maybeRequest of
                     Just req ->
                         if String.length val >= Request.toMinLength req then
@@ -238,12 +242,12 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
         InputFocused ->
             ( Select
                 { state | highlighted = 0 }
-            , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
+            , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
             )
 
         InputClicked ->
             ( Select state
-            , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
+            , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
             )
 
         InputLostFocus ->
@@ -262,19 +266,15 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
         KeyDown filteredOptions key ->
             handleKey toMsg state key filteredOptions
 
-        GotMenuDimensionsAndPlacement (Ok ( { width, height }, placement )) ->
+        GotContainerAndMenuElements result ->
             ( Select
                 { state
                     | menuOpen = True
-                    , menuHeight = Just height
-                    , menuWidth = Just width
-                    , menuPlacement = placement
+                    , menuElement = Maybe.map .menu (Result.toMaybe result)
+                    , containerElement = Maybe.map .container (Result.toMaybe result)
                 }
             , Effect.none
             )
-
-        GotMenuDimensionsAndPlacement (Err _) ->
-            ( Select state, Effect.none )
 
         GotScrollMenuResult _ ->
             ( Select state, Effect.none )
@@ -310,7 +310,7 @@ updateEffectInternal maybeRequest toMsg msg (Select state) =
                     | items = items
                     , requestState = Nothing
                 }
-            , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
+            , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
             )
 
         GotRequestResponse (Err _) ->
@@ -329,7 +329,7 @@ handleKey toMsg ({ highlighted } as state) key filteredOptions =
                 }
             , Effect.batch
                 [ Effect.GetElementsAndScrollMenu (GotScrollMenuResult >> toMsg) state.id newHighlighted
-                , Effect.GetMenuDimensionsAndPlacement (GotMenuDimensionsAndPlacement >> toMsg) state.id
+                , Effect.GetContainerAndMenuElements (GotContainerAndMenuElements >> toMsg) state.id
                 ]
             )
     in
@@ -389,7 +389,6 @@ type ViewConfig a msg
     = ViewConfig
         { onChange : Msg a -> msg
         , inputAttribs : List (Attribute msg)
-        , select : Select a
         , itemToString : a -> String
         , label : Input.Label msg
         , placeholder : Maybe (Input.Placeholder msg)
@@ -408,7 +407,6 @@ view :
     List (Attribute msg)
     ->
         { onChange : Msg a -> msg
-        , select : Select a
         , itemToString : a -> String
         , label : Input.Label msg
         , placeholder : Maybe (Input.Placeholder msg)
@@ -418,7 +416,6 @@ view attribs v =
     ViewConfig
         { onChange = v.onChange
         , inputAttribs = attribs
-        , select = v.select
         , itemToString = v.itemToString
         , optionElement = defaultOptionElement v.itemToString
         , label = v.label
@@ -493,53 +490,30 @@ clearButton attribs label =
     ClearButton attribs label
 
 
-toElement : ViewConfig a msg -> Element msg
-toElement (ViewConfig ({ select } as config)) =
+toElement : Select a -> ViewConfig a msg -> Element msg
+toElement ((Select s) as select) (ViewConfig config) =
     let
-        d =
-            unwrap select
+        dimensionsAndPlacement =
+            Maybe.map2 calculateMenuDimensionsAndPlacement s.containerElement s.menuElement
 
-        maxHeight =
-            case [ config.menuMaxHeight, d.menuHeight ] |> List.filterMap identity of
-                [ h1, h2 ] ->
-                    Just (Basics.min h1 h2)
+        placement =
+            case config.menuPlacement of
+                Just p ->
+                    p
 
-                [ h ] ->
-                    Just h
-
-                _ ->
-                    Nothing
+                Nothing ->
+                    Maybe.map .placement dimensionsAndPlacement
+                        |> Maybe.withDefault Placement.Below
 
         filteredOptions =
-            List.map (\i -> ( i, config.itemToString i )) d.items
-                |> Filter.filterOptions d.inputValue config.filter
-
-        inputVal =
-            if d.menuOpen then
-                d.inputValue
-
-            else
-                Maybe.andThen
-                    (\sel ->
-                        List.filterMap
-                            (\( a, s ) ->
-                                if a == sel then
-                                    Just s
-
-                                else
-                                    Nothing
-                            )
-                            filteredOptions
-                            |> List.head
-                    )
-                    d.selected
-                    |> Maybe.withDefault d.inputValue
+            List.map (\i -> ( i, config.itemToString i )) s.items
+                |> Filter.filterOptions s.inputValue config.filter
     in
     el
-        ([ htmlAttribute (Html.Attributes.id <| d.id ++ "-element")
+        ([ htmlAttribute (Html.Attributes.id <| s.id ++ "-element")
          , width fill
          ]
-            ++ (if d.menuOpen then
+            ++ (if s.menuOpen then
                     [ htmlAttribute <| Html.Attributes.style "z-index" "21" ]
 
                 else
@@ -553,25 +527,31 @@ toElement (ViewConfig ({ select } as config)) =
                    , onClick (config.onChange InputClicked)
                    , onLoseFocus (config.onChange InputLostFocus)
                    , onKeyDown (KeyDown filteredOptions >> config.onChange)
-                   , htmlAttribute (Html.Attributes.id <| d.id ++ "-input")
+                   , htmlAttribute (Html.Attributes.id <| s.id ++ "-input")
                    , inFront <|
                         if toValue select /= Nothing || toInputValue select /= "" then
                             Maybe.withDefault Element.none config.clearButton
 
                         else
                             Element.none
-                   , Placement.toAttribute config.menuPlacement <|
+                   , Placement.toAttribute placement <|
                         dropdownMenu
-                            { onChange = config.onChange
-                            , id = d.id
-                            , menuOpen = d.menuOpen
+                            (defaultDropdownAttrs
+                                { menuWidth = Maybe.map .minWidth dimensionsAndPlacement
+                                , maxWidth = config.menuMaxWidth
+                                , menuHeight = Maybe.map .maxHeight dimensionsAndPlacement
+                                , maxHeight = config.menuMaxHeight
+                                }
+                                ++ config.menuAttributes
+                            )
+                            { id = s.id
+                            , onChange = config.onChange
+                            , menuOpen = s.menuOpen
                             , options = filteredOptions
-                            , highlighted = d.highlighted
-                            , selected = d.selected
-                            , maxHeight = maxHeight
-                            , menuAttributes = defaultDropdownAttrs d.menuWidth config.menuMaxWidth ++ config.menuAttributes
+                            , highlighted = s.highlighted
+                            , selected = s.selected
                             , noMatchElement =
-                                if d.inputValue /= "" && (d.requestState /= Just NotRequested && d.requestState /= Just Loading) then
+                                if s.inputValue /= "" && (s.requestState /= Just NotRequested && s.requestState /= Just Loading) then
                                     el config.menuAttributes config.noMatchElement
 
                                 else
@@ -581,40 +561,35 @@ toElement (ViewConfig ({ select } as config)) =
                    ]
             )
             { onChange = InputChanged >> config.onChange
-            , text = inputVal
+            , text =
+                if s.menuOpen then
+                    s.inputValue
+
+                else
+                    Maybe.andThen (findOptionString filteredOptions) s.selected
+                        |> Maybe.withDefault s.inputValue
             , placeholder = config.placeholder
             , label = config.label
             }
 
 
 dropdownMenu :
-    { onChange : Msg a -> msg
-    , menuOpen : Bool
-    , id : String
-    , options : List (Option a)
-    , optionElement : OptionState -> a -> Element msg
-    , highlighted : Int
-    , selected : Maybe a
-    , maxHeight : Maybe Int
-    , menuAttributes : List (Attribute msg)
-    , noMatchElement : Element msg
-    }
+    List (Attribute msg)
+    ->
+        { id : String
+        , onChange : Msg a -> msg
+        , menuOpen : Bool
+        , options : List (Option a)
+        , optionElement : OptionState -> a -> Element msg
+        , highlighted : Int
+        , selected : Maybe a
+        , noMatchElement : Element msg
+        }
     -> Element msg
-dropdownMenu v =
+dropdownMenu attribs v =
     if List.length v.options > 0 then
         List.indexedMap (optionElement v) v.options
-            |> column
-                ([ height
-                    (shrink
-                        |> (Maybe.map maximum v.maxHeight
-                                |> Maybe.withDefault identity
-                           )
-                    )
-                 , htmlAttribute <| Html.Attributes.id (v.id ++ "-menu")
-                 , scrollbarY
-                 ]
-                    ++ v.menuAttributes
-                )
+            |> column (attribs ++ [ htmlAttribute <| Html.Attributes.id (v.id ++ "-menu") ])
             |> el
                 (width fill
                     :: (if v.menuOpen then
@@ -675,13 +650,26 @@ clearButtonElement toMsg attribs element =
         }
 
 
+defaultDropdownAttrs :
+    { menuWidth : Maybe Int
+    , maxWidth : Maybe Int
+    , menuHeight : Maybe Int
+    , maxHeight : Maybe Int
+    }
+    -> List (Attribute msg)
+defaultDropdownAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
+    [ height <|
+        case [ maxHeight, menuHeight ] |> List.filterMap identity of
+            [ h1, h2 ] ->
+                maximum (Basics.min h1 h2) shrink
 
--- DEFAULT STYLE
+            [ h ] ->
+                maximum h shrink
 
-
-defaultDropdownAttrs : Maybe Int -> Maybe Int -> List (Attribute msg)
-defaultDropdownAttrs menuWidth maxWidth =
-    [ Border.solid
+            _ ->
+                shrink
+    , scrollbarY
+    , Border.solid
     , Border.color (rgb255 180 180 180)
     , Border.width 1
     , Border.rounded 5
@@ -740,11 +728,6 @@ defaultNoMatchElement =
 -- PRIVATE HELPERS
 
 
-unwrap : Select a -> InternalState a
-unwrap (Select state) =
-    state
-
-
 onKeyDown : (String -> msg) -> Attribute msg
 onKeyDown tagger =
     htmlAttribute <|
@@ -757,6 +740,50 @@ onKeyDown tagger =
 hijackKey : (String -> msg) -> String -> ( msg, Bool )
 hijackKey tagger key =
     ( tagger key, List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ] )
+
+
+calculateMenuDimensionsAndPlacement : Dom.Element -> Dom.Element -> { minWidth : Int, maxHeight : Int, placement : Placement }
+calculateMenuDimensionsAndPlacement container menu =
+    let
+        { above, below } =
+            calculateSpace container
+    in
+    if below < Basics.round menu.scene.height && above > below then
+        { minWidth = Basics.round container.element.width
+        , maxHeight = Basics.min (Basics.round menu.scene.height) (above - 10)
+        , placement = Above
+        }
+
+    else
+        { minWidth = Basics.round container.element.width
+        , maxHeight = Basics.min (Basics.round menu.scene.height) (below - 10)
+        , placement = Below
+        }
+
+
+calculateSpace : Dom.Element -> { above : Int, below : Int }
+calculateSpace { viewport, element } =
+    { above = Basics.round (element.y - viewport.y)
+    , below =
+        Basics.round
+            ((viewport.y + viewport.height)
+                - (element.y + element.height)
+            )
+    }
+
+
+findOptionString : List (Option a) -> a -> Maybe String
+findOptionString list a =
+    case list of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            if a == Tuple.first x then
+                Just (Tuple.second x)
+
+            else
+                findOptionString xs a
 
 
 
