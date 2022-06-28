@@ -17937,9 +17937,9 @@ var $author$project$Select$toElement = F2(
 								$author$project$Select$toValue(select),
 								$elm$core$Maybe$Nothing)) || ($author$project$Select$toInputValue(select) !== '')) ? A2($elm$core$Maybe$withDefault, $mdgriffith$elm_ui$Element$none, config.clearButton) : $mdgriffith$elm_ui$Element$none),
 							$mdgriffith$elm_ui$Element$below(
-							(((!$elm$core$List$length(filteredOptions)) && ((!$elm$core$String$isEmpty(s.inputValue)) && _Utils_eq(s.requestState, $elm$core$Maybe$Nothing))) || _Utils_eq(
+							((!$elm$core$List$length(filteredOptions)) && (s.menuOpen && ((!$elm$core$String$isEmpty(s.inputValue)) && (_Utils_eq(s.requestState, $elm$core$Maybe$Nothing) || _Utils_eq(
 								s.requestState,
-								$elm$core$Maybe$Just($author$project$Select$Success))) ? config.noMatchElement : $mdgriffith$elm_ui$Element$none),
+								$elm$core$Maybe$Just($author$project$Select$Success)))))) ? config.noMatchElement : $mdgriffith$elm_ui$Element$none),
 							A2(
 							$author$project$Internal$Placement$toAttribute,
 							placement,

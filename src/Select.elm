@@ -533,7 +533,7 @@ toElement ((Select s) as select) (ViewConfig config) =
                         else
                             Element.none
                    , Element.below <|
-                        if List.length filteredOptions == 0 && not (String.isEmpty s.inputValue) && s.requestState == Nothing || s.requestState == Just Success then
+                        if List.length filteredOptions == 0 && s.menuOpen && not (String.isEmpty s.inputValue) && (s.requestState == Nothing || s.requestState == Just Success) then
                             config.noMatchElement
 
                         else
