@@ -43,7 +43,7 @@ view model =
             , Element.padding 30
             ]
             [ Select.view []
-                { onChange = DropdownMsg
+                { onChange = CountrySelectMsg
                 , label = Input.labelAbove [] (Element.text "Choose a country")
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
                 , itemToString = \c -> c.flag ++ " " ++ c.name
@@ -56,12 +56,12 @@ view model =
 
 
 type Msg
-    = DropdownMsg (Select.Msg Country)
+    = CountrySelectMsg (Select.Msg Country)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        DropdownMsg subMsg ->
-            Select.update DropdownMsg subMsg model.countrySelect
+        CountrySelectMsg subMsg ->
+            Select.update CountrySelectMsg subMsg model.countrySelect
                 |> Tuple.mapFirst (\select -> { model | countrySelect = select })

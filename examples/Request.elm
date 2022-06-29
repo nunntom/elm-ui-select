@@ -29,11 +29,11 @@ main =
 
 
 type alias Model =
-    { select : Select CockTail
+    { select : Select Cocktail
     }
 
 
-type alias CockTail =
+type alias Cocktail =
     { name : String
     , imgUrl : String
     , instructions : String
@@ -56,7 +56,7 @@ init _ =
 
 
 type Msg
-    = DropdownMsg (Select.Msg CockTail)
+    = DropdownMsg (Select.Msg Cocktail)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -67,7 +67,7 @@ update msg model =
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 
-fetchCocktails : String -> Cmd (Select.Msg CockTail)
+fetchCocktails : String -> Cmd (Select.Msg Cocktail)
 fetchCocktails query =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
@@ -111,7 +111,7 @@ view model =
             ]
 
 
-drinkView : CockTail -> Element Msg
+drinkView : Cocktail -> Element Msg
 drinkView cocktail =
     Element.column
         [ Element.spacing 30
@@ -143,9 +143,9 @@ drinkView cocktail =
 -- JSON
 
 
-cocktailDecoder : Decoder CockTail
+cocktailDecoder : Decoder Cocktail
 cocktailDecoder =
-    Decode.map4 CockTail
+    Decode.map4 Cocktail
         (Decode.field "strDrink" Decode.string)
         (Decode.field "strDrinkThumb" Decode.string)
         (Decode.field "strInstructions" Decode.string)
