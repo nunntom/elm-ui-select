@@ -1,43 +1,27 @@
-module Select.Request exposing (Request, request, toDelay, toEffect, toMinLength, withDelay, withMinLength)
+module Select.Request exposing (withDelay, withMinLength)
+
+{-| You don't need to use this module unless you want to customise the request debounce delay and minimum character count to perform a request.
 
 
-type Request eff
-    = Request
-        { effect : String -> eff
-        , delay : Float
-        , minLength : Int
-        }
+# Type
+
+@docs withDelay, withMinLength
+
+-}
+
+import Internal.Request as Request exposing (Request)
 
 
-request : (String -> eff) -> Request eff
-request eff =
-    Request
-        { effect = eff
-        , delay = 300
-        , minLength = 3
-        }
+{-| For debouncing. How long should we wait after a user stops typing before sending a request?
+-}
+withDelay : Float -> Request effect -> Request effect
+withDelay =
+    Request.withDelay
 
 
-withDelay : Float -> Request eff -> Request eff
-withDelay delay (Request req) =
-    Request { req | delay = delay }
-
-
-withMinLength : Int -> Request eff -> Request eff
-withMinLength len (Request req) =
-    Request { req | minLength = len }
-
-
-toEffect : Request eff -> (String -> eff)
-toEffect (Request { effect }) =
-    effect
-
-
-toDelay : Request eff -> Float
-toDelay (Request { delay }) =
-    delay
-
-
-toMinLength : Request eff -> Int
-toMinLength (Request { minLength }) =
-    minLength
+{-| How many characters does a user need to type before a request is sent.
+If this is too low you may get an unmanagable number of results!
+-}
+withMinLength : Int -> Request effect -> Request effect
+withMinLength =
+    Request.withMinLength

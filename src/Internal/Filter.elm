@@ -1,4 +1,4 @@
-module Internal.Filter exposing (Filter, contains, custom, filterOptions, startsWith, startsWithThenContains)
+module Internal.Filter exposing (Filter, contains, custom, customWithSort, filterOptions, startsWith, startsWithThenContains)
 
 
 type Filter a
@@ -38,6 +38,16 @@ custom f =
     Filter
         (\inputValue ->
             List.filter (\( a, _ ) -> f inputValue a)
+        )
+
+
+customWithSort : (String -> a -> Maybe Int) -> Filter a
+customWithSort toScore =
+    Filter
+        (\inputValue ->
+            List.filterMap (\opt -> Maybe.map (Tuple.pair opt) (toScore inputValue (Tuple.first opt)))
+                >> List.sortBy Tuple.second
+                >> List.map Tuple.first
         )
 
 

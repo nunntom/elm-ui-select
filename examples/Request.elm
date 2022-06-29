@@ -1,7 +1,8 @@
-module Example2 exposing (main)
+module Request exposing (main)
 
 import Browser
-import Element exposing (..)
+import ClearButton
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -62,15 +63,8 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         DropdownMsg subMsg ->
-            let
-                ( select, cmd ) =
-                    Select.updateWithRequest (Select.request fetchCocktails) subMsg model.select
-            in
-            ( { model
-                | select = select
-              }
-            , Cmd.map DropdownMsg cmd
-            )
+            Select.updateWithRequest DropdownMsg (Select.request fetchCocktails) subMsg model.select
+                |> Tuple.mapFirst (\select -> { model | select = select })
 
 
 fetchCocktails : String -> Cmd (Select.Msg CockTail)
@@ -97,18 +91,18 @@ view : Model -> Html Msg
 view model =
     Element.layout [] <|
         Element.column
-            [ centerX
-            , paddingXY 0 100
-            , spacing 40
-            , width (maximum 500 shrink)
+            [ Element.centerX
+            , Element.paddingXY 0 100
+            , Element.spacing 40
+            , Element.width (Element.maximum 500 Element.shrink)
             ]
             [ Select.view []
                 { onChange = DropdownMsg
                 , label = Input.labelHidden "Find a cocktail"
-                , placeholder = Just (Input.placeholder [] (text "Type to search cocktails"))
+                , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
                 , itemToString = .name
                 }
-                |> Select.withClearButton (Select.clearButton [ alignRight, centerY, moveLeft 12 ] (el [ Font.size 10, htmlAttribute (Html.Attributes.title "clear selection") ] (text "❌")))
+                |> Select.withClearButton (Just ClearButton.clearButton)
                 |> Select.toElement model.select
             , Maybe.map drinkView (Select.toValue model.select)
                 |> Maybe.withDefault Element.none
@@ -117,29 +111,29 @@ view model =
 
 drinkView : CockTail -> Element Msg
 drinkView cocktail =
-    column
-        [ spacing 30
+    Element.column
+        [ Element.spacing 30
         , Font.size 20
-        , Background.color (rgb 0.9 0.9 0.9)
-        , padding 40
+        , Background.color (Element.rgb 0.9 0.9 0.9)
+        , Element.padding 40
         , Border.rounded 10
         ]
-        [ el
+        [ Element.el
             [ Font.bold
-            , centerX
+            , Element.centerX
             , Font.size 24
             ]
-            (text cocktail.name)
-        , image [ centerX, height (maximum 300 fill) ] { src = cocktail.imgUrl, description = "" }
-        , el [ Font.bold ] (text "Ingredients")
-        , column
-            [ spacing 5
-            , paddingXY 20 0
+            (Element.text cocktail.name)
+        , Element.image [ Element.centerX, Element.height (Element.maximum 300 Element.fill) ] { src = cocktail.imgUrl, description = "" }
+        , Element.el [ Font.bold ] (Element.text "Ingredients")
+        , Element.column
+            [ Element.spacing 5
+            , Element.paddingXY 20 0
             , Font.size 16
             ]
-            (List.map ((++) "• " >> text) cocktail.ingredients)
-        , el [ Font.bold ] (text "Instructions")
-        , paragraph [] [ text cocktail.instructions ]
+            (List.map ((++) "• " >> Element.text) cocktail.ingredients)
+        , Element.el [ Font.bold ] (Element.text "Instructions")
+        , Element.paragraph [] [ Element.text cocktail.instructions ]
         ]
 
 

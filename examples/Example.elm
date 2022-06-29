@@ -1,13 +1,11 @@
 module Example exposing (main)
 
 import Browser
+import ClearButton
 import Countries exposing (Country)
 import Element exposing (..)
-import Element.Background as Background
-import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes
 import Select exposing (OptionState(..), Select)
 
 
@@ -22,14 +20,14 @@ main =
 
 
 type alias Model =
-    { select : Select Country
+    { countrySelect : Select Country
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { select =
-            Select.init "title-select"
+    ( { countrySelect =
+            Select.init "country-select"
                 |> Select.setItems Countries.all
       }
     , Cmd.none
@@ -46,13 +44,13 @@ view model =
             ]
             [ Select.view []
                 { onChange = DropdownMsg
-                , label = Input.labelAbove [] (text "Choose one")
+                , label = Input.labelAbove [] (text "Choose a country")
                 , placeholder = Just (Input.placeholder [] (text "Type to search"))
                 , itemToString = \c -> c.flag ++ " " ++ c.name
                 }
-                |> Select.withClearButton (Select.clearButton [ alignRight, centerY, moveLeft 12 ] (el [ Font.size 10, htmlAttribute (Html.Attributes.title "clear selection") ] (text "❌")))
-                |> Select.toElement model.select
-            , Maybe.map (\{ name } -> text ("You chose " ++ name)) (Select.toValue model.select)
+                |> Select.withClearButton (Just ClearButton.clearButton)
+                |> Select.toElement model.countrySelect
+            , Maybe.map (\{ name } -> text ("You chose " ++ name)) (Select.toValue model.countrySelect)
                 |> Maybe.withDefault Element.none
             ]
 
@@ -65,12 +63,5 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         DropdownMsg subMsg ->
-            let
-                ( select, cmd ) =
-                    Select.update subMsg model.select
-            in
-            ( { model
-                | select = select
-              }
-            , Cmd.map DropdownMsg cmd
-            )
+            Select.update DropdownMsg subMsg model.countrySelect
+                |> Tuple.mapFirst (\select -> { model | countrySelect = select })
