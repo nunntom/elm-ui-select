@@ -4,7 +4,7 @@ module Select exposing
     , toValue, toInputValue
     , isMenuOpen, isLoading, isRequestFailed
     , Msg, update, updateWithRequest, Request, request, gotRequestResponse
-    , view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
+    , ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
     , toElement
     , Effect
     )
@@ -39,7 +39,7 @@ module Select exposing
 
 # Configure View
 
-@docs view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
+@docs ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
 
 
 # Element
