@@ -62,4 +62,4 @@ view model =
 
 ## Limitations
 
-There are issues when the input is placed within a parent element that has overflow scroll or auto: the dropdown may be clipped by the parent. This can be overcome by adding `Element.htmlAttribute (Html.Attribute.style "position" "fixed")` as an attribute to the menu, but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
+There are issues when the input is placed within a parent element that has overflow scroll or auto: the dropdown may be clipped by the parent. This can be overcome by adding `Element.htmlAttribute (Html.Attribute.style "position" "fixed")` as an attribute to the menu, but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
