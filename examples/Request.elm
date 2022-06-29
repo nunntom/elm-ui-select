@@ -102,6 +102,8 @@ view model =
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
                 , itemToString = .name
                 }
+                |> Select.withMenuAttributes [ Border.color (Element.rgb 1 0 0) ]
+                |> Select.withMenuAlwaysAbove
                 |> Select.withClearButton (Just ClearButton.clearButton)
                 |> Select.toElement model.select
             , Maybe.map drinkView (Select.toValue model.select)

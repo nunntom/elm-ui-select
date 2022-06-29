@@ -79,7 +79,12 @@ toElement model config =
                     []
                )
         )
-        (inputView (Model.toMenuPlacement model) (Model.toFilteredOptions config.itemToString config.filter model) model config)
+        (inputView
+            (Model.toMenuPlacement config.menuPlacement model)
+            (Model.toFilteredOptions config.itemToString config.filter model)
+            model
+            config
+        )
 
 
 inputView : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
@@ -135,7 +140,7 @@ inputView placement filteredOptions model config =
                         (defaultDropdownAttrs
                             { menuWidth = Model.toMenuMinWidth model
                             , maxWidth = config.menuMaxWidth
-                            , menuHeight = Model.toMenuMaxHeight model
+                            , menuHeight = Model.toMenuMaxHeight config.menuPlacement model
                             , maxHeight = config.menuMaxHeight
                             }
                             ++ config.menuAttributes
