@@ -96,33 +96,6 @@ inputView placement filteredOptions model config =
                , Events.onLoseFocus (config.onChange InputLostFocus)
                , onKeyDown (KeyDown filteredOptions >> config.onChange)
                , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
-
-               -- ACCESSIBILITY
-               , htmlAttribute "role" "combobox"
-               , htmlAttribute "aria-owns" (Model.toMenuElementId model)
-               , htmlAttribute "aria-autocomplete" "list"
-               , htmlAttribute "aria-activedescendant" <|
-                    if Model.isOpen model then
-                        Model.toOptionElementId model (Model.toHighlighted model)
-
-                    else
-                        ""
-               , htmlAttribute "aria-expanded"
-                    (if Model.isOpen model then
-                        "true"
-
-                     else
-                        "false"
-                    )
-               , htmlAttribute "aria-haspopup" "listbox"
-               , Element.below <|
-                    if Model.isOpen model then
-                        ariaLive (List.length filteredOptions)
-
-                    else
-                        Element.none
-
-               --
                , Element.inFront <|
                     if Model.toValue model /= Nothing || Model.toInputValue model /= "" then
                         Maybe.withDefault Element.none config.clearButton
@@ -154,6 +127,7 @@ inputView placement filteredOptions model config =
                         , optionElement = config.optionElement
                         }
                ]
+            ++ inputAccessibilityAttributes filteredOptions model
         )
         { onChange = InputChanged >> config.onChange
         , text =
@@ -166,6 +140,34 @@ inputView placement filteredOptions model config =
         , placeholder = config.placeholder
         , label = config.label
         }
+
+
+inputAccessibilityAttributes : List (Option a) -> Model a -> List (Attribute msg)
+inputAccessibilityAttributes filteredOptions model =
+    [ htmlAttribute "role" "combobox"
+    , htmlAttribute "aria-owns" (Model.toMenuElementId model)
+    , htmlAttribute "aria-autocomplete" "list"
+    , htmlAttribute "aria-activedescendant" <|
+        if Model.isOpen model then
+            Model.toOptionElementId model (Model.toHighlighted model)
+
+        else
+            ""
+    , htmlAttribute "aria-expanded"
+        (if Model.isOpen model then
+            "true"
+
+         else
+            "false"
+        )
+    , htmlAttribute "aria-haspopup" "listbox"
+    , Element.below <|
+        if Model.isOpen model then
+            ariaLive (List.length filteredOptions)
+
+        else
+            Element.none
+    ]
 
 
 dropdownMenu :
@@ -189,7 +191,7 @@ dropdownMenu attribs v =
                         []
 
                     else
-                        [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden")
+                        [ style "visibility" "hidden"
                         , htmlAttribute "aria-visible"
                             (if v.menuOpen then
                                 "false"
