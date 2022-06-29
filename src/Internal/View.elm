@@ -1,4 +1,22 @@
-module Internal.View exposing (ClearButton, OptionState(..), ViewConfig, ViewConfigInternal, clearButton, clearButtonElement, toElement, view, withClearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement)
+module Internal.View exposing
+    ( ClearButton
+    , OptionState(..)
+    , ViewConfig
+    , ViewConfigInternal
+    , clearButton
+    , clearButtonElement
+    , toElement
+    , view
+    , withClearButton
+    , withFilter
+    , withMenuAlwaysAbove
+    , withMenuAlwaysBelow
+    , withMenuAttributes
+    , withMenuMaxHeight
+    , withMenuMaxWidth
+    , withNoMatchElement
+    , withOptionElement
+    )
 
 import Element exposing (Attribute, Element)
 import Element.Background as Background

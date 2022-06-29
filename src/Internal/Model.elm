@@ -1,4 +1,35 @@
-module Internal.Model exposing (Model, applyFilter, clear, closeMenu, highlightIndex, init, isLoading, isOpen, isRequestFailed, openMenu, selectOption, setElements, setInputValue, setItems, setRequestState, setSelected, toContainerElementId, toFilteredOptions, toHighlighted, toId, toInputElementId, toInputValue, toItems, toMenuElementId, toMenuMaxHeight, toMenuMinWidth, toMenuPlacement, toOptionElementId, toRequestState, toValue)
+module Internal.Model exposing
+    ( Model
+    , applyFilter
+    , clear
+    , closeMenu
+    , highlightIndex
+    , init
+    , isLoading
+    , isOpen
+    , isRequestFailed
+    , openMenu
+    , selectOption
+    , setElements
+    , setInputValue
+    , setItems
+    , setRequestState
+    , setSelected
+    , toContainerElementId
+    , toFilteredOptions
+    , toHighlighted
+    , toId
+    , toInputElementId
+    , toInputValue
+    , toItems
+    , toMenuElementId
+    , toMenuMaxHeight
+    , toMenuMinWidth
+    , toMenuPlacement
+    , toOptionElementId
+    , toRequestState
+    , toValue
+    )
 
 import Browser.Dom as Dom
 import Internal.Filter as Filter exposing (Filter)

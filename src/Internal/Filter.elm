@@ -1,4 +1,12 @@
-module Internal.Filter exposing (Filter, contains, custom, customWithSort, filterOptions, startsWith, startsWithThenContains)
+module Internal.Filter exposing
+    ( Filter
+    , contains
+    , custom
+    , customWithSort
+    , filterOptions
+    , startsWith
+    , startsWithThenContains
+    )
 
 
 type Filter a
