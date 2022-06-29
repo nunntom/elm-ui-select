@@ -1,8 +1,6 @@
-module Internal.Effect exposing (Effect(..), batch, map, none, perform)
+module Internal.Effect exposing (Effect(..), batch, none, perform)
 
 import Browser.Dom as Dom exposing (Element)
-import Internal.Msg exposing (Msg(..))
-import Internal.Placement exposing (Placement(..))
 import Process
 import Task exposing (Task)
 
@@ -81,44 +79,49 @@ getElementsAndScrollMenu msg { menuId, optionId } =
 
 scrollMenuTask : String -> { option : Dom.Element, menu : Dom.Element, menuViewport : Dom.Viewport } -> Task Dom.Error ()
 scrollMenuTask id { option, menu, menuViewport } =
-    let
-        optionTop =
-            option.element.y - menu.element.y + menuViewport.viewport.y
-
-        optionBottom =
-            optionTop + option.element.height
-
-        scrollTop =
-            if optionBottom > (menu.element.height + menuViewport.viewport.y) then
-                optionBottom - menu.element.height
-
-            else if optionTop < menuViewport.viewport.y then
-                optionTop
-
-            else
-                menuViewport.viewport.y
-    in
-    Dom.setViewportOf id 0 scrollTop
+    calculateScrollTop
+        { optionTop = option.element.y - menu.element.y + menuViewport.viewport.y
+        , optionBottom =
+            (option.element.y - menu.element.y + menuViewport.viewport.y)
+                + option.element.height
+        , menuViewPortY = menuViewport.viewport.y
+        , menuHeight = menu.element.height
+        }
+        |> Dom.setViewportOf id 0
 
 
-map : (msg1 -> msg2) -> Effect effect msg1 -> Effect effect msg2
-map toMsg effect =
-    case effect of
-        GetContainerAndMenuElements msg id ->
-            GetContainerAndMenuElements (msg >> toMsg) id
+calculateScrollTop : { optionTop : Float, optionBottom : Float, menuViewPortY : Float, menuHeight : Float } -> Float
+calculateScrollTop { optionTop, optionBottom, menuViewPortY, menuHeight } =
+    if optionBottom > (menuHeight + menuViewPortY) then
+        optionBottom - menuHeight
 
-        GetElementsAndScrollMenu msg ids ->
-            GetElementsAndScrollMenu (msg >> toMsg) ids
+    else if optionTop < menuViewPortY then
+        optionTop
 
-        Batch effects ->
-            List.map (map toMsg) effects
-                |> Batch
+    else
+        menuViewPortY
 
-        Request eff ->
-            Request eff
 
-        Debounce delay msg ->
-            Debounce delay (toMsg msg)
 
-        None ->
-            None
+{- map : (msg1 -> msg2) -> Effect effect msg1 -> Effect effect msg2
+   map toMsg effect =
+       case effect of
+           GetContainerAndMenuElements msg id ->
+               GetContainerAndMenuElements (msg >> toMsg) id
+
+           GetElementsAndScrollMenu msg ids ->
+               GetElementsAndScrollMenu (msg >> toMsg) ids
+
+           Batch effects ->
+               List.map (map toMsg) effects
+                   |> Batch
+
+           Request eff ->
+               Request eff
+
+           Debounce delay msg ->
+               Debounce delay (toMsg msg)
+
+           None ->
+               None
+-}

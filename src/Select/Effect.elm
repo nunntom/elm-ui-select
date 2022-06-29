@@ -12,12 +12,12 @@ module Select.Effect exposing
 @docs Effect
 
 
-# Update
+# Update Effect
 
 @docs update, updateWithRequest, Request, request
 
 
-# Perform
+# Perform Effect
 
 @docs perform, performWithRequest
 
@@ -30,7 +30,8 @@ import Internal.Request as Request
 import Internal.Update as Update
 
 
-{-| -}
+{-| The Effect type
+-}
 type alias Effect effect msg =
     Effect.Effect effect msg
 
@@ -53,7 +54,8 @@ updateWithRequest tagger req =
     Update.update tagger (Just req)
 
 
-{-| -}
+{-| A request that uses your Effect type
+-}
 type alias Request effect =
     Request.Request effect
 

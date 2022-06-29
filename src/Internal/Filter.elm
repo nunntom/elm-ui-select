@@ -27,18 +27,12 @@ contains =
 
 startsWithThenContains : Filter a
 startsWithThenContains =
-    (\inputValue options ->
-        let
-            startsWithOptions =
-                stringFilter String.startsWith inputValue options
-
-            containsOptions =
-                stringFilter String.contains inputValue options
-                    |> List.filter (\v -> not <| List.member v startsWithOptions)
-        in
-        List.append startsWithOptions containsOptions
-    )
-        |> Filter
+    Filter
+        (\inputValue options ->
+            List.append
+                (stringFilter String.startsWith inputValue options)
+                (stringFilter (\s input -> (not <| String.startsWith s input) && String.contains s input) inputValue options)
+        )
 
 
 custom : (String -> a -> Bool) -> Filter a

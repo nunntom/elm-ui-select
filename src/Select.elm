@@ -4,7 +4,8 @@ module Select exposing
     , toValue, toInputValue
     , isMenuOpen, isLoading, isRequestFailed
     , Msg, update, updateWithRequest, Request, request, gotRequestResponse
-    , view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, toElement
+    , view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
+    , toElement
     , Effect
     )
 
@@ -31,14 +32,19 @@ module Select exposing
 @docs isMenuOpen, isLoading, isRequestFailed
 
 
-# Update
+# Update and Requests
 
 @docs Msg, update, updateWithRequest, Request, request, gotRequestResponse
 
 
-# View
+# Configure View
 
-@docs view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, toElement
+@docs view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
+
+
+# Element
+
+@docs toElement
 
 
 # Effect
@@ -52,6 +58,7 @@ import Element.Input as Input
 import Internal.Effect as Effect
 import Internal.Model as Model exposing (Model)
 import Internal.Msg as Msg
+import Internal.OptionState as OptionState
 import Internal.Placement exposing (Placement(..))
 import Internal.Request as Request
 import Internal.Update as Update
@@ -63,7 +70,8 @@ import Select.Filter exposing (Filter)
 -- MODEL
 
 
-{-| -}
+{-| The main Select type
+-}
 type alias Select a =
     Model a
 
@@ -143,12 +151,14 @@ isRequestFailed =
 -- UPDATE
 
 
-{-| -}
+{-| The Msg type
+-}
 type alias Msg a =
     Msg.Msg a
 
 
-{-| -}
+{-| Update the Select
+-}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
     Update.update tagger Nothing msg select
@@ -164,14 +174,15 @@ updateWithRequest tagger requestCmd msg select =
         |> Tuple.mapSecond (Effect.perform (Request.toEffect requestCmd) >> Cmd.map tagger)
 
 
-{-| -}
+{-| A Request. See [Select.Request](Select-Request) for configuration options.
+-}
 type alias Request a =
     Request.Request (Cmd (Msg a))
 
 
 {-| Create a request. Provide a function that takes the input value and returns a Cmd.
 Update will return this Cmd when the user types in the input subject to a debounce delay
-and minimum number of characters which can be configured in the [Request](Select-Request) module.
+and minimum number of characters which can be configured in the [Select.Request](Select-Request) module.
 -}
 request : (String -> Cmd (Msg a)) -> Request a
 request =
@@ -189,7 +200,8 @@ gotRequestResponse =
 -- VIEW
 
 
-{-| -}
+{-| The View Configuration
+-}
 type ViewConfig a msg
     = ViewConfig (ViewConfigInternal a msg)
 
@@ -259,7 +271,8 @@ withOptionElement toEl (ViewConfig config) =
     ViewConfig { config | optionElement = \state -> toEl (mapOptionState state) }
 
 
-{-| -}
+{-| Option state for use with custom option element
+-}
 type OptionState
     = Idle
     | Highlighted
@@ -280,7 +293,8 @@ withClearButton cb (ViewConfig config) =
     ViewConfig { config | clearButton = Maybe.map (\(ClearButton attribs label) -> View.clearButtonElement config.onChange attribs label) cb }
 
 
-{-| -}
+{-| A button to clear the input
+-}
 type ClearButton msg
     = ClearButton (List (Attribute msg)) (Element msg)
 
@@ -313,14 +327,14 @@ type alias Effect effect msg =
 -- INTERNAL
 
 
-mapOptionState : View.OptionState -> OptionState
+mapOptionState : OptionState.OptionState -> OptionState
 mapOptionState state =
     case state of
-        View.Idle ->
+        OptionState.Idle ->
             Idle
 
-        View.Highlighted ->
+        OptionState.Highlighted ->
             Highlighted
 
-        View.Selected ->
+        OptionState.Selected ->
             Selected

@@ -18,7 +18,6 @@ module Internal.Model exposing
     , toContainerElementId
     , toFilteredOptions
     , toHighlighted
-    , toId
     , toInputElementId
     , toInputValue
     , toItems
@@ -27,6 +26,7 @@ module Internal.Model exposing
     , toMenuMinWidth
     , toMenuPlacement
     , toOptionElementId
+    , toOptionState
     , toRequestState
     , toValue
     )
@@ -34,6 +34,7 @@ module Internal.Model exposing
 import Browser.Dom as Dom
 import Internal.Filter as Filter exposing (Filter)
 import Internal.Option exposing (Option)
+import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement exposing (Placement(..))
 import Internal.RequestState exposing (RequestState(..))
 
@@ -82,11 +83,6 @@ init id =
 
 
 -- GET
-
-
-toId : Model a -> String
-toId (Model { id }) =
-    id
 
 
 toValue : Model a -> Maybe a
@@ -143,6 +139,18 @@ toMenuElementId (Model { id }) =
 toOptionElementId : Model a -> Int -> String
 toOptionElementId (Model { id }) idx =
     id ++ "-option-" ++ String.fromInt idx
+
+
+toOptionState : Model a -> ( Int, a ) -> OptionState
+toOptionState (Model { highlighted, selected }) ( idx, a ) =
+    if highlighted == idx then
+        Highlighted
+
+    else if selected == Just a then
+        Selected
+
+    else
+        Idle
 
 
 
@@ -269,29 +277,30 @@ applyFilter v (Model model) =
 
 calculateMenuDimensionsAndPlacement : Dom.Element -> Dom.Element -> { minWidth : Int, maxHeight : Int, placement : Placement }
 calculateMenuDimensionsAndPlacement container menu =
-    let
-        { above, below } =
-            calculateSpace container
-    in
-    if below < Basics.round menu.scene.height && above > below then
-        { minWidth = Basics.round container.element.width
-        , maxHeight = Basics.min (Basics.round menu.scene.height) (above - 20)
+    calculateMenuDimensionsAndPlacementHelper
+        { menuSceneHeight = menu.scene.height
+        , containerWidth = container.element.width
+        }
+        (calculateSpace container)
+
+
+calculateMenuDimensionsAndPlacementHelper : { menuSceneHeight : Float, containerWidth : Float } -> { above : Float, below : Float } -> { minWidth : Int, maxHeight : Int, placement : Placement }
+calculateMenuDimensionsAndPlacementHelper { menuSceneHeight, containerWidth } { above, below } =
+    if below < menuSceneHeight && above > below then
+        { minWidth = Basics.round containerWidth
+        , maxHeight = Basics.min (Basics.round menuSceneHeight) (Basics.round (above - 20))
         , placement = Above
         }
 
     else
-        { minWidth = Basics.round container.element.width
-        , maxHeight = Basics.min (Basics.round menu.scene.height) (below - 20)
+        { minWidth = Basics.round containerWidth
+        , maxHeight = Basics.min (Basics.round menuSceneHeight) (Basics.round (below - 20))
         , placement = Below
         }
 
 
-calculateSpace : Dom.Element -> { above : Int, below : Int }
+calculateSpace : Dom.Element -> { above : Float, below : Float }
 calculateSpace { viewport, element } =
-    { above = Basics.round (element.y - viewport.y)
-    , below =
-        Basics.round
-            ((viewport.y + viewport.height)
-                - (element.y + element.height)
-            )
+    { above = element.y - viewport.y
+    , below = (viewport.y + viewport.height) - (element.y + element.height)
     }

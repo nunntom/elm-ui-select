@@ -20,7 +20,8 @@ module Select.Filter exposing
 import Internal.Filter
 
 
-{-| -}
+{-| A Filter
+-}
 type alias Filter a =
     Internal.Filter.Filter a
 

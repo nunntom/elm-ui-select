@@ -128,56 +128,51 @@ onFocusMenu tagger maybeRequest model =
 
 handleKey : (Msg a -> msg) -> Model a -> String -> List (Option a) -> ( Model a, Effect effect msg )
 handleKey tagger model key filteredOptions =
-    let
-        moveHighlight newHighlighted =
-            if Model.isOpen model then
-                ( Model.highlightIndex newHighlighted model
-                , Effect.batch
-                    [ getContainerAndMenuElementsEffect tagger model
-                    , Effect.GetElementsAndScrollMenu (\_ -> tagger NoOp)
-                        { menuId = Model.toMenuElementId model
-                        , optionId = Model.toOptionElementId model newHighlighted
-                        }
-                    ]
-                )
-
-            else
-                ( model
-                , getContainerAndMenuElementsEffect tagger model
-                )
-    in
     case key of
         "ArrowDown" ->
-            moveHighlight (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 1))
+            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 1)) model
 
         "ArrowUp" ->
-            moveHighlight (Basics.max 0 (Model.toHighlighted model - 1))
+            moveHighlight tagger (Basics.max 0 (Model.toHighlighted model - 1)) model
 
         "PageDown" ->
-            moveHighlight (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 10))
+            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 10)) model
 
         "PageUp" ->
-            moveHighlight (Basics.max 0 (Model.toHighlighted model - 10))
+            moveHighlight tagger (Basics.max 0 (Model.toHighlighted model - 10)) model
 
         "Enter" ->
             case getAt (Model.toHighlighted model) filteredOptions of
                 Just opt ->
-                    ( Model.selectOption opt model
-                    , Effect.none
-                    )
+                    ( Model.selectOption opt model, Effect.none )
 
                 Nothing ->
-                    ( Model.closeMenu model
-                    , Effect.none
-                    )
+                    ( Model.closeMenu model, Effect.none )
 
         "Escape" ->
-            ( Model.closeMenu model
-            , Effect.none
-            )
+            ( Model.closeMenu model, Effect.none )
 
         _ ->
             ( model, Effect.none )
+
+
+moveHighlight : (Msg a -> msg) -> Int -> Model a -> ( Model a, Effect effect msg )
+moveHighlight tagger newHighlighted model =
+    if Model.isOpen model then
+        ( Model.highlightIndex newHighlighted model
+        , Effect.batch
+            [ getContainerAndMenuElementsEffect tagger model
+            , Effect.GetElementsAndScrollMenu (\_ -> tagger NoOp)
+                { menuId = Model.toMenuElementId model
+                , optionId = Model.toOptionElementId model newHighlighted
+                }
+            ]
+        )
+
+    else
+        ( model
+        , getContainerAndMenuElementsEffect tagger model
+        )
 
 
 getContainerAndMenuElementsEffect : (Msg a -> msg) -> Model a -> Effect effect msg

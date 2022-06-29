@@ -1,21 +1,8 @@
 module Internal.View exposing
-    ( ClearButton
-    , OptionState(..)
-    , ViewConfig
-    , ViewConfigInternal
-    , clearButton
+    ( ViewConfigInternal
     , clearButtonElement
     , toElement
     , view
-    , withClearButton
-    , withFilter
-    , withMenuAlwaysAbove
-    , withMenuAlwaysBelow
-    , withMenuAttributes
-    , withMenuMaxHeight
-    , withMenuMaxWidth
-    , withNoMatchElement
-    , withOptionElement
     )
 
 import Element exposing (Attribute, Element)
@@ -30,13 +17,10 @@ import Internal.Filter as Filter exposing (Filter)
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
-import Internal.Placement as Placement exposing (Placement(..))
+import Internal.OptionState exposing (OptionState(..))
+import Internal.Placement as Placement exposing (Placement)
 import Internal.RequestState exposing (RequestState(..))
 import Json.Decode as Decode
-
-
-type ViewConfig a msg
-    = ViewConfig (ViewConfigInternal a msg)
 
 
 type alias ViewConfigInternal a msg =
@@ -82,66 +66,6 @@ view attribs v =
     }
 
 
-withFilter : Filter a -> ViewConfig a msg -> ViewConfig a msg
-withFilter filter (ViewConfig config) =
-    ViewConfig { config | filter = Just filter }
-
-
-withMenuAlwaysAbove : ViewConfig a msg -> ViewConfig a msg
-withMenuAlwaysAbove (ViewConfig config) =
-    ViewConfig { config | menuPlacement = Just Above }
-
-
-withMenuAlwaysBelow : ViewConfig a msg -> ViewConfig a msg
-withMenuAlwaysBelow (ViewConfig config) =
-    ViewConfig { config | menuPlacement = Just Below }
-
-
-withMenuMaxHeight : Int -> ViewConfig a msg -> ViewConfig a msg
-withMenuMaxHeight height (ViewConfig config) =
-    ViewConfig { config | menuMaxHeight = Just height }
-
-
-withMenuMaxWidth : Int -> ViewConfig a msg -> ViewConfig a msg
-withMenuMaxWidth height (ViewConfig config) =
-    ViewConfig { config | menuMaxWidth = Just height }
-
-
-withMenuAttributes : List (Attribute msg) -> ViewConfig a msg -> ViewConfig a msg
-withMenuAttributes attribs (ViewConfig config) =
-    ViewConfig { config | menuAttributes = config.menuAttributes ++ attribs }
-
-
-type OptionState
-    = Idle
-    | Highlighted
-    | Selected
-
-
-withOptionElement : (OptionState -> a -> Element msg) -> ViewConfig a msg -> ViewConfig a msg
-withOptionElement toEl (ViewConfig config) =
-    ViewConfig { config | optionElement = toEl }
-
-
-withNoMatchElement : Element msg -> ViewConfig a msg -> ViewConfig a msg
-withNoMatchElement element (ViewConfig config) =
-    ViewConfig { config | noMatchElement = element }
-
-
-type ClearButton msg
-    = ClearButton (List (Attribute msg)) (Element msg)
-
-
-withClearButton : Maybe (ClearButton msg) -> ViewConfig a msg -> ViewConfig a msg
-withClearButton cb (ViewConfig config) =
-    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attribs label) -> clearButtonElement config.onChange attribs label) cb }
-
-
-clearButton : List (Attribute msg) -> Element msg -> ClearButton msg
-clearButton attribs label =
-    ClearButton attribs label
-
-
 toElement : Model a -> ViewConfigInternal a msg -> Element msg
 toElement model config =
     Element.el
@@ -167,6 +91,33 @@ inputView placement filteredOptions model config =
                , Events.onLoseFocus (config.onChange InputLostFocus)
                , onKeyDown (KeyDown filteredOptions >> config.onChange)
                , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
+
+               -- ACCESSIBILITY
+               , htmlAttribute "role" "combobox"
+               , htmlAttribute "aria-owns" (Model.toMenuElementId model)
+               , htmlAttribute "aria-autocomplete" "list"
+               , htmlAttribute "aria-activedescendant" <|
+                    if Model.isOpen model then
+                        Model.toOptionElementId model (Model.toHighlighted model)
+
+                    else
+                        ""
+               , htmlAttribute "aria-expanded"
+                    (if Model.isOpen model then
+                        "true"
+
+                     else
+                        "false"
+                    )
+               , htmlAttribute "aria-haspopup" "listbox"
+               , Element.below <|
+                    if Model.isOpen model then
+                        ariaLive (List.length filteredOptions)
+
+                    else
+                        Element.none
+
+               --
                , Element.inFront <|
                     if Model.toValue model /= Nothing || Model.toInputValue model /= "" then
                         Maybe.withDefault Element.none config.clearButton
@@ -191,17 +142,10 @@ inputView placement filteredOptions model config =
                         )
                         { menuId = Model.toMenuElementId model
                         , toOptionId = Model.toOptionElementId model
+                        , toOptionState = Model.toOptionState model
                         , onChange = config.onChange
                         , menuOpen = Model.isOpen model
                         , options = filteredOptions
-                        , highlighted = Model.toHighlighted model
-                        , selected = Model.toValue model
-                        , noMatchElement =
-                            if Model.toInputValue model /= "" && (Model.toRequestState model /= Just NotRequested && Model.toRequestState model /= Just Loading) then
-                                Element.el config.menuAttributes config.noMatchElement
-
-                            else
-                                Element.none
                         , optionElement = config.optionElement
                         }
                ]
@@ -224,13 +168,11 @@ dropdownMenu :
     ->
         { menuId : String
         , toOptionId : Int -> String
+        , toOptionState : ( Int, a ) -> OptionState
         , onChange : Msg a -> msg
         , menuOpen : Bool
         , options : List (Option a)
         , optionElement : OptionState -> a -> Element msg
-        , highlighted : Int
-        , selected : Maybe a
-        , noMatchElement : Element msg
         }
     -> Element msg
 dropdownMenu attribs v =
@@ -243,6 +185,13 @@ dropdownMenu attribs v =
 
                     else
                         [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden")
+                        , htmlAttribute "aria-visible"
+                            (if v.menuOpen then
+                                "false"
+
+                             else
+                                "true"
+                            )
                         , Element.height (Element.px 0)
                         , Element.clipY
                         ]
@@ -252,35 +201,24 @@ dropdownMenu attribs v =
 
 optionElement :
     { b
-        | highlighted : Int
-        , selected : Maybe a
-        , onChange : Msg a -> msg
+        | toOptionState : ( Int, a ) -> OptionState
         , toOptionId : Int -> String
+        , onChange : Msg a -> msg
         , optionElement : OptionState -> a -> Element msg
     }
     -> Int
     -> Option a
     -> Element msg
 optionElement v i (( a, _ ) as opt) =
-    let
-        optionState =
-            if v.highlighted == i then
-                Highlighted
-
-            else if v.selected == Just a then
-                Selected
-
-            else
-                Idle
-    in
     Element.row
         [ Element.htmlAttribute (Html.Attributes.id (v.toOptionId i))
+        , htmlAttribute "role" "option"
         , Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
         , Events.onMouseEnter (v.onChange <| MouseEnteredOption i)
         , Element.width Element.fill
         ]
-        [ v.optionElement optionState a ]
+        [ v.optionElement (v.toOptionState ( i, a )) a ]
 
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
@@ -330,25 +268,19 @@ defaultDropdownAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
             Nothing ->
                 Element.fill
     , Element.paddingXY 0 5
+    , htmlAttribute "role" "listbox"
     ]
 
 
 defaultOptionElement : (a -> String) -> OptionState -> a -> Element msg
 defaultOptionElement toString optionState a =
-    let
-        optionAttrs =
-            [ Element.width Element.fill
-            , Element.pointer
-            , Element.paddingXY 14 10
-            ]
-    in
     case optionState of
         Highlighted ->
             Element.el
                 ([ Background.color (Element.rgb 0.9 0.9 0.9)
                  , Font.color (Element.rgb 0 0 0)
                  ]
-                    ++ optionAttrs
+                    ++ defaultOptionAttrs
                 )
                 (Element.text (toString a))
 
@@ -357,12 +289,20 @@ defaultOptionElement toString optionState a =
                 ([ Background.color (Element.rgb 0.65 0.84 0.98)
                  , Font.color (Element.rgb 0 0 0)
                  ]
-                    ++ optionAttrs
+                    ++ defaultOptionAttrs
                 )
                 (Element.text (toString a))
 
         Idle ->
-            Element.el optionAttrs (Element.text (toString a))
+            Element.el defaultOptionAttrs (Element.text (toString a))
+
+
+defaultOptionAttrs : List (Attribute msg)
+defaultOptionAttrs =
+    [ Element.width Element.fill
+    , Element.pointer
+    , Element.paddingXY 14 10
+    ]
 
 
 defaultNoMatchElement : Element msg
@@ -377,10 +317,6 @@ defaultNoMatchElement =
         , Element.width Element.fill
         ]
         (Element.text "No matches")
-
-
-
--- PRIVATE HELPERS
 
 
 onKeyDown : (String -> msg) -> Attribute msg
@@ -409,3 +345,37 @@ findOptionString list a =
 
             else
                 findOptionString xs a
+
+
+ariaLive : Int -> Element msg
+ariaLive optionCount =
+    Element.el
+        [ htmlAttribute "aria-live" "assertive"
+        , style "position" "absolute"
+        , style "width" "1px"
+        , style "height" "1px"
+        , style "padding" "0"
+        , style "margin" "-1px"
+        , style "overflow" "hidden"
+        , style "clip" "rect(0, 0, 0, 0)"
+        , style "white-space" "nowrap"
+        , style "border" "0"
+        , style "display" "hidden"
+        ]
+        (Element.text <|
+            if optionCount > 0 then
+                String.fromInt optionCount ++ " suggestions found. Use up and down arrows to review"
+
+            else
+                "No suggestions found."
+        )
+
+
+htmlAttribute : String -> String -> Attribute msg
+htmlAttribute prop val =
+    Element.htmlAttribute (Html.Attributes.attribute prop val)
+
+
+style : String -> String -> Attribute msg
+style prop val =
+    Element.htmlAttribute (Html.Attributes.style prop val)

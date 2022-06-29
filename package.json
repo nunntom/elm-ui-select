@@ -1,0 +1,26 @@
+{
+  "name": "elm-ui-select",
+  "description": "A select widget for elm-ui.",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "review": "elm-review"
+  },
+  "pre-commit": [
+    "review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nunntom/elm-ui-select.git"
+  },
+  "author": "Tom Nunn",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/nunntom/elm-ui-select/issues"
+  },
+  "homepage": "https://github.com/nunntom/elm-ui-select#readme",
+  "devDependencies": {
+    "elm-review": "^2.7.2",
+    "pre-commit": "^1.2.2"
+  }
+}
