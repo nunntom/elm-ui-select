@@ -194,7 +194,7 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
     fetchThings query =
         Http.get
             { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson Select.gotRequestResponse (Decode.list thingDecoder)
+            , expect = Http.expectJson (Select.gotRequestResponse query) (Decode.list thingDecoder)
             }
 
 -}
@@ -219,11 +219,12 @@ request =
     Request.request
 
 
-{-| Hook the request Cmd result back into update with this Msg
+{-| Hook the request Cmd result back into update with this Msg. You need to pass in the string query (input value)
+that was used for the request. This is used to match up the correct response to most recent request in case of race conditions.
 -}
-gotRequestResponse : Result err (List a) -> Msg a
-gotRequestResponse =
-    Result.mapError (\_ -> ()) >> Msg.GotRequestResponse
+gotRequestResponse : String -> Result err (List a) -> Msg a
+gotRequestResponse inputValue =
+    Result.mapError (\_ -> ()) >> Msg.GotRequestResponse inputValue
 
 
 
@@ -307,6 +308,7 @@ type OptionState
     = Idle
     | Highlighted
     | Selected
+    | SelectedAndHighlighted
 
 
 {-| Provide your own element to show when there are no matches based on the filter and input value. This appears below the input.
@@ -379,3 +381,6 @@ mapOptionState state =
 
         OptionState.Selected ->
             Selected
+
+        OptionState.SelectedAndHighlighted ->
+            SelectedAndHighlighted

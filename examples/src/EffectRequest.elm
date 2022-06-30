@@ -100,7 +100,7 @@ performEffect effect =
             Select.Effect.performWithRequest performEffect selectEffect
 
         FetchCocktails query ->
-            fetchCocktails (Select.gotRequestResponse >> SelectMsg) query
+            fetchCocktails (Select.gotRequestResponse query >> SelectMsg) query
 
 
 

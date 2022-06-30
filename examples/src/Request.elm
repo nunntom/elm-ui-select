@@ -71,7 +71,7 @@ fetchCocktails query =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            Http.expectJson Select.gotRequestResponse
+            Http.expectJson (Select.gotRequestResponse query)
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list cocktailDecoder

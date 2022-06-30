@@ -5,3 +5,4 @@ type OptionState
     = Idle
     | Highlighted
     | Selected
+    | SelectedAndHighlighted

@@ -15,5 +15,5 @@ type Msg a
     | GotContainerAndMenuElements (Result Dom.Error { menu : Element, container : Element })
     | ClearButtonPressed
     | InputDebounceReturned String
-    | GotRequestResponse (Result () (List a))
+    | GotRequestResponse String (Result () (List a))
     | NoOp

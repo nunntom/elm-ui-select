@@ -10,7 +10,6 @@ import Element exposing (Attribute, Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
-import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
 import Html.Events
@@ -140,7 +139,7 @@ inputView placement filteredOptions model config =
         )
         { onChange = InputChanged >> config.onChange
         , text =
-            if Model.isOpen model then
+            if Model.isFocused model then
                 Model.toInputValue model
 
             else
@@ -307,35 +306,25 @@ positionFixedAttributes placement container =
 
 defaultOptionElement : (a -> String) -> OptionState -> a -> Element msg
 defaultOptionElement toString optionState a =
-    case optionState of
-        Highlighted ->
-            Element.el
-                ([ Background.color (Element.rgb 0.9 0.9 0.9)
-                 , Font.color (Element.rgb 0 0 0)
-                 ]
-                    ++ defaultOptionAttrs
-                )
-                (Element.text (toString a))
+    Element.el
+        [ Element.width Element.fill
+        , Element.pointer
+        , Element.paddingXY 14 10
+        , Background.color <|
+            case optionState of
+                Highlighted ->
+                    Element.rgb 0.95 0.95 0.95
 
-        Selected ->
-            Element.el
-                ([ Background.color (Element.rgb 0.65 0.84 0.98)
-                 , Font.color (Element.rgb 0 0 0)
-                 ]
-                    ++ defaultOptionAttrs
-                )
-                (Element.text (toString a))
+                Selected ->
+                    Element.rgba 0.64 0.83 0.97 0.8
 
-        Idle ->
-            Element.el defaultOptionAttrs (Element.text (toString a))
+                SelectedAndHighlighted ->
+                    Element.rgba 0.64 0.83 0.97 1
 
-
-defaultOptionAttrs : List (Attribute msg)
-defaultOptionAttrs =
-    [ Element.width Element.fill
-    , Element.pointer
-    , Element.paddingXY 14 10
-    ]
+                Idle ->
+                    Element.rgb 1 1 1
+        ]
+        (Element.text (toString a))
 
 
 defaultNoMatchElement : Element msg

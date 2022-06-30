@@ -54,7 +54,8 @@ update tagger maybeRequest msg model =
             onFocusMenu tagger maybeRequest model
 
         InputLostFocus ->
-            ( Model.closeMenu model
+            ( Model.setFocused False model
+                |> Model.closeMenu
             , Effect.none
             )
 
@@ -99,17 +100,23 @@ update tagger maybeRequest msg model =
             else
                 ( model, Effect.none )
 
-        GotRequestResponse (Ok items) ->
-            ( model
-                |> Model.setItems items
-                |> Model.setRequestState (Just Success)
-            , getContainerAndMenuElementsEffect tagger model
-            )
+        GotRequestResponse inputVal response ->
+            if inputVal == Model.toInputValue model then
+                case response of
+                    Ok items ->
+                        ( model
+                            |> Model.setItems items
+                            |> Model.setRequestState (Just Success)
+                        , getContainerAndMenuElementsEffect tagger model
+                        )
 
-        GotRequestResponse (Err _) ->
-            ( Model.setRequestState (Just Failed) model
-            , Effect.none
-            )
+                    Err _ ->
+                        ( Model.setRequestState (Just Failed) model
+                        , Effect.none
+                        )
+
+            else
+                ( model, Effect.none )
 
         NoOp ->
             ( model, Effect.none )
@@ -117,7 +124,8 @@ update tagger maybeRequest msg model =
 
 onFocusMenu : (Msg a -> msg) -> Maybe (Request effect) -> Model a -> ( Model a, Effect effect msg )
 onFocusMenu tagger maybeRequest model =
-    ( Model.highlightIndex 0 model
+    ( Model.setFocused True model
+        |> Model.highlightIndex 0
     , if maybeRequest == Nothing || Model.toRequestState model == Just Success then
         getContainerAndMenuElementsEffect tagger model
 

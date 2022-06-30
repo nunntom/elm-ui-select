@@ -86,7 +86,7 @@ update tagger =
                 Select.Effect.performWithRequest performEffect selectEffect
 
             FetchThings query ->
-                fetchThings (Select.gotRequestResponse >> SelectMsg) query
+                fetchThings (Select.gotRequestResponse query >> SelectMsg) query
 
     fetchThings : (Result Http.Error (List thing) -> msg) -> String -> Cmd msg
     fetchThings tagger query =

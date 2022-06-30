@@ -5,12 +5,14 @@ module Internal.Model exposing
     , closeMenu
     , highlightIndex
     , init
+    , isFocused
     , isLoading
     , isOpen
     , isRequestFailed
     , openMenu
     , selectOption
     , setElements
+    , setFocused
     , setInputValue
     , setItems
     , setRequestState
@@ -59,6 +61,7 @@ type alias InternalState a =
     , menuElement : Maybe Dom.Element
     , requestState : Maybe RequestState
     , applyFilter : Bool
+    , focused : Bool
     }
 
 
@@ -79,6 +82,7 @@ init id =
         , menuElement = Nothing
         , requestState = Nothing
         , applyFilter = False
+        , focused = False
         }
 
 
@@ -144,7 +148,10 @@ toOptionElementId (Model { id }) idx =
 
 toOptionState : Model a -> ( Int, a ) -> OptionState
 toOptionState (Model { highlighted, selected }) ( idx, a ) =
-    if highlighted == idx then
+    if highlighted == idx && selected == Just a then
+        SelectedAndHighlighted
+
+    else if highlighted == idx then
         Highlighted
 
     else if selected == Just a then
@@ -161,6 +168,11 @@ toOptionState (Model { highlighted, selected }) ( idx, a ) =
 isOpen : Model a -> Bool
 isOpen (Model { menuOpen }) =
     menuOpen
+
+
+isFocused : Model a -> Bool
+isFocused (Model { focused }) =
+    focused
 
 
 isLoading : Model a -> Bool
@@ -275,6 +287,11 @@ setElements { container, menu } (Model model) =
 applyFilter : Bool -> Model a -> Model a
 applyFilter v (Model model) =
     Model { model | applyFilter = v }
+
+
+setFocused : Bool -> Model a -> Model a
+setFocused v (Model model) =
+    Model { model | focused = v }
 
 
 
