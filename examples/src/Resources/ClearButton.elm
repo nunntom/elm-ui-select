@@ -1,4 +1,4 @@
-module ClearButton exposing (clearButton)
+module Resources.ClearButton exposing (clearButton)
 
 import Element
 import Element.Font as Font

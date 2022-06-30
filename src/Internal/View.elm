@@ -5,6 +5,7 @@ module Internal.View exposing
     , view
     )
 
+import Browser.Dom as Dom
 import Element exposing (Attribute, Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -37,6 +38,7 @@ type alias ViewConfigInternal a msg =
     , noMatchElement : Element msg
     , optionElement : OptionState -> a -> Element msg
     , clearButton : Maybe (Element msg)
+    , positionFixed : Bool
     }
 
 
@@ -63,6 +65,7 @@ view attribs v =
     , menuAttributes = []
     , noMatchElement = defaultNoMatchElement
     , clearButton = Nothing
+    , positionFixed = False
     }
 
 
@@ -109,13 +112,19 @@ inputView placement filteredOptions model config =
                     else
                         Element.none
                , Placement.toAttribute placement <|
-                    dropdownMenu
-                        (defaultDropdownAttrs
+                    menuView
+                        (defaultMenuAttrs
                             { menuWidth = Model.toMenuMinWidth model
                             , maxWidth = config.menuMaxWidth
                             , menuHeight = Model.toMenuMaxHeight config.menuPlacement model
                             , maxHeight = config.menuMaxHeight
                             }
+                            ++ (if config.positionFixed then
+                                    positionFixedAttributes (Model.toMenuPlacement config.menuPlacement model) (Model.toContainerElement model)
+
+                                else
+                                    []
+                               )
                             ++ config.menuAttributes
                         )
                         { menuId = Model.toMenuElementId model
@@ -170,7 +179,7 @@ inputAccessibilityAttributes filteredOptions model =
     ]
 
 
-dropdownMenu :
+menuView :
     List (Attribute msg)
     ->
         { menuId : String
@@ -182,7 +191,7 @@ dropdownMenu :
         , optionElement : OptionState -> a -> Element msg
         }
     -> Element msg
-dropdownMenu attribs v =
+menuView attribs v =
     List.indexedMap (optionElement v) v.options
         |> Element.column (attribs ++ [ Element.htmlAttribute <| Html.Attributes.id v.menuId ])
         |> Element.el
@@ -241,14 +250,14 @@ clearButtonElement tagger attribs element =
         }
 
 
-defaultDropdownAttrs :
+defaultMenuAttrs :
     { menuWidth : Maybe Int
     , maxWidth : Maybe Int
     , menuHeight : Maybe Int
     , maxHeight : Maybe Int
     }
     -> List (Attribute msg)
-defaultDropdownAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
+defaultMenuAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
     [ Element.height <|
         case [ maxHeight, menuHeight ] |> List.filterMap identity of
             [ h1, h2 ] ->
@@ -259,12 +268,6 @@ defaultDropdownAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
 
             _ ->
                 Element.shrink
-    , Element.scrollbarY
-    , Border.solid
-    , Border.color (Element.rgb 0.8 0.8 0.8)
-    , Border.width 1
-    , Border.rounded 5
-    , Background.color (Element.rgb 1 1 1)
     , Element.width <|
         case menuWidth of
             Just w ->
@@ -274,9 +277,32 @@ defaultDropdownAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
 
             Nothing ->
                 Element.fill
+    , Element.scrollbarY
+    , Border.solid
+    , Border.color (Element.rgb 0.8 0.8 0.8)
+    , Border.width 1
+    , Border.rounded 5
+    , Background.color (Element.rgb 1 1 1)
     , Element.paddingXY 0 5
     , htmlAttribute "role" "listbox"
     ]
+
+
+positionFixedAttributes : Placement -> Maybe Dom.Element -> List (Attribute msg)
+positionFixedAttributes placement container =
+    style "position" "fixed"
+        :: (Maybe.map
+                (\{ element, viewport } ->
+                    case placement of
+                        Placement.Above ->
+                            [ style "bottom" (element.y - viewport.y |> String.fromFloat) ]
+
+                        Placement.Below ->
+                            [ style "top" (element.y - viewport.y + element.height |> String.fromFloat) ]
+                )
+                container
+                |> Maybe.withDefault []
+           )
 
 
 defaultOptionElement : (a -> String) -> OptionState -> a -> Element msg

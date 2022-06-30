@@ -15,6 +15,7 @@ module Internal.Model exposing
     , setItems
     , setRequestState
     , setSelected
+    , toContainerElement
     , toContainerElementId
     , toFilteredOptions
     , toHighlighted
@@ -189,6 +190,11 @@ toMenuMaxHeight : Maybe Placement -> Model a -> Maybe Int
 toMenuMaxHeight forcedPlacement (Model model) =
     Maybe.map2 (calculateMenuDimensionsAndPlacement forcedPlacement) model.containerElement model.menuElement
         |> Maybe.map .maxHeight
+
+
+toContainerElement : Model a -> Maybe Dom.Element
+toContainerElement (Model { containerElement }) =
+    containerElement
 
 
 

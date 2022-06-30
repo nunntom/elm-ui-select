@@ -1,11 +1,11 @@
 module Example exposing (main)
 
 import Browser
-import ClearButton
 import Countries exposing (Country)
 import Element
 import Element.Input as Input
 import Html exposing (Html)
+import Resources.ClearButton
 import Select exposing (OptionState(..), Select)
 
 
@@ -48,7 +48,7 @@ view model =
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
                 , itemToString = \c -> c.flag ++ " " ++ c.name
                 }
-                |> Select.withClearButton (Just ClearButton.clearButton)
+                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
                 |> Select.toElement model.countrySelect
             , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
                 |> Maybe.withDefault Element.none

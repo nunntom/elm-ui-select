@@ -1,17 +1,17 @@
-module Request exposing (main)
+module EffectRequest exposing (main)
 
 import Browser
-import ClearButton
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import Resources.ClearButton
 import Select exposing (OptionState(..), Select)
+import Select.Effect
 
 
 main : Program () Model Msg
@@ -19,7 +19,7 @@ main =
     Browser.element
         { init = init
         , view = view
-        , update = update
+        , update = \msg model -> update msg model |> Tuple.mapSecond performEffect
         , subscriptions = \_ -> Sub.none
         }
 
@@ -56,23 +56,24 @@ init _ =
 
 
 type Msg
-    = DropdownMsg (Select.Msg Cocktail)
+    = SelectMsg (Select.Msg Cocktail)
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, MyEffect )
 update msg model =
     case msg of
-        DropdownMsg subMsg ->
-            Select.updateWithRequest DropdownMsg (Select.request fetchCocktails) subMsg model.select
+        SelectMsg subMsg ->
+            Select.Effect.updateWithRequest SelectMsg (Select.Effect.request FetchCocktails) subMsg model.select
                 |> Tuple.mapFirst (\select -> { model | select = select })
+                |> Tuple.mapSecond SelectEffect
 
 
-fetchCocktails : String -> Cmd (Select.Msg Cocktail)
-fetchCocktails query =
+fetchCocktails : (Result Http.Error (List Cocktail) -> msg) -> String -> Cmd msg
+fetchCocktails tagger query =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            Http.expectJson Select.gotRequestResponse
+            Http.expectJson tagger
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list cocktailDecoder
@@ -81,6 +82,25 @@ fetchCocktails query =
                     )
                 )
         }
+
+
+
+-- EFFECT
+
+
+type MyEffect
+    = SelectEffect (Select.Effect MyEffect Msg)
+    | FetchCocktails String
+
+
+performEffect : MyEffect -> Cmd Msg
+performEffect effect =
+    case effect of
+        SelectEffect selectEffect ->
+            Select.Effect.performWithRequest performEffect selectEffect
+
+        FetchCocktails query ->
+            fetchCocktails (Select.gotRequestResponse >> SelectMsg) query
 
 
 
@@ -97,14 +117,12 @@ view model =
             , Element.width (Element.maximum 500 Element.shrink)
             ]
             [ Select.view []
-                { onChange = DropdownMsg
+                { onChange = SelectMsg
                 , label = Input.labelHidden "Find a cocktail"
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
                 , itemToString = .name
                 }
-                |> Select.withMenuAttributes [ Border.color (Element.rgb 1 0 0) ]
-                |> Select.withMenuAlwaysAbove
-                |> Select.withClearButton (Just ClearButton.clearButton)
+                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
                 |> Select.toElement model.select
             , Maybe.map drinkView (Select.toValue model.select)
                 |> Maybe.withDefault Element.none

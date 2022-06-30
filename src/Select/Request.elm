@@ -2,8 +2,21 @@ module Select.Request exposing (withDelay, withMinLength)
 
 {-| You don't need to use this module unless you want to customise the request debounce delay and minimum character count to perform a request.
 
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            SelectMsg subMsg ->
+                Select.updateWithRequest SelectMsg
+                    (Select.request fetchThings
+                        |> Select.Request.withDelay 200
+                        |> Select.Request.withMinLength 4
+                    )
+                    subMsg
+                    model.select
+                    |> Tuple.mapFirst (\select -> { model | select = select })
 
-# Type
+
+# Request
 
 @docs withDelay, withMinLength
 

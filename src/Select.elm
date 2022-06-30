@@ -1,10 +1,10 @@
 module Select exposing
     ( Select, init
-    , setItems, setSelected, setInputValue
+    , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue
     , isMenuOpen, isLoading, isRequestFailed
     , Msg, update, updateWithRequest, Request, request, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
+    , ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
     , toElement
     , Effect
     )
@@ -19,7 +19,7 @@ module Select exposing
 
 # Set
 
-@docs setItems, setSelected, setInputValue
+@docs setItems, setSelected, setInputValue, closeMenu
 
 
 # Get
@@ -39,7 +39,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow
+@docs ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
 
 
 # Element
@@ -104,6 +104,13 @@ setInputValue =
     Model.setInputValue
 
 
+{-| Close the menu
+-}
+closeMenu : Select a -> Select a
+closeMenu =
+    Model.closeMenu
+
+
 
 -- GET
 
@@ -158,6 +165,14 @@ type alias Msg a =
 
 
 {-| Update the Select
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+        update msg model =
+            case msg of
+                SelectMsg subMsg ->
+                    Select.update SelectMsg subMsg model.select
+                        |> Tuple.mapFirst (\select -> { model | select = select })
+
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
@@ -167,11 +182,26 @@ update tagger msg select =
 
 {-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Cmd yourself.
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            Request SelectMsg subMsg ->
+                Select.updateWithRequest SelectMsg (Select.request fetchThings) subMsg model.select
+                    |> Tuple.mapFirst (\select -> { model | select = select })
+
+    fetchThings : String -> Cmd (Select.Msg Thing)
+    fetchThings query =
+        Http.get
+            { url = "https://awesome-thing.api/things?search=" ++ query
+            , expect = Http.expectJson Select.gotRequestResponse (Decode.list thingDecoder)
+            }
+
 -}
 updateWithRequest : (Msg a -> msg) -> Request a -> Msg a -> Select a -> ( Select a, Cmd msg )
-updateWithRequest tagger requestCmd msg select =
-    Update.update identity (Just (Request.request identity)) msg select
-        |> Tuple.mapSecond (Effect.perform (Request.toEffect requestCmd) >> Cmd.map tagger)
+updateWithRequest tagger req msg select =
+    Update.update identity (Just req) msg select
+        |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
 
 
 {-| A Request. See [Select.Request](Select-Request) for configuration options.
@@ -228,7 +258,7 @@ withFilter filter (ViewConfig config) =
     ViewConfig { config | filter = filter }
 
 
-{-| Force the menu to always appear below the input. You may use this for examply if you have issues with an input inside a scrollable transformed container.
+{-| Force the menu to always appear below the input. You may use this for example if you have issues with an input inside a scrollable transformed container.
 By default the menu will try to detect whether there is more space above or below and appear there, preferring below.
 -}
 withMenuAlwaysBelow : ViewConfig a msg -> ViewConfig a msg
@@ -236,7 +266,7 @@ withMenuAlwaysBelow (ViewConfig config) =
     ViewConfig { config | menuPlacement = Just Below }
 
 
-{-| Force the menu to always appear above the input. You may use this for examply if you have issues with an input inside a scrollable transformed container.
+{-| Force the menu to always appear above the input. You may use this for example if you have issues with an input inside a scrollable transformed container.
 -}
 withMenuAlwaysAbove : ViewConfig a msg -> ViewConfig a msg
 withMenuAlwaysAbove (ViewConfig config) =
@@ -257,7 +287,7 @@ withMenuMaxWidth width (ViewConfig config) =
     ViewConfig { config | menuMaxWidth = width }
 
 
-{-| Set arbitrary attributes for the menu dropdown element. You can call this multiple times and it will accumulate attributes.
+{-| Set arbitrary attributes for the menu element. You can call this multiple times and it will accumulate attributes.
 -}
 withMenuAttributes : List (Attribute msg) -> ViewConfig a msg -> ViewConfig a msg
 withMenuAttributes attribs (ViewConfig config) =
@@ -304,6 +334,17 @@ type ClearButton msg
 clearButton : List (Attribute msg) -> Element msg -> ClearButton msg
 clearButton attribs label =
     ClearButton attribs label
+
+
+{-| Use style: position fixed for the menu. This can be used if the select is inside a scrollable container to allow the menu to overflow the parent.
+Note that if any transforms (e.g. Element.moveUp/Element.moveLeft) are applied to the parent, this no longer works and the menu will be clipped.
+This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
+Also if the container or window is scrolled or resized without the input losing focus, the menu will appear detached from the input!
+To overcome this you may want to listen to scroll and resize events on the parent and window and use [closeMenu](#closeMenu) to hide the menu.
+-}
+withMenuPositionFixed : Bool -> ViewConfig a msg -> ViewConfig a msg
+withMenuPositionFixed v (ViewConfig config) =
+    ViewConfig { config | positionFixed = v }
 
 
 {-| Turn the ViewConfig into an Element.
