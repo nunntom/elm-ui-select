@@ -118,29 +118,30 @@ inputView placement filteredOptions model config =
                         placement
                     )
                  <|
-                    menuView
-                        (defaultMenuAttrs
-                            { menuWidth = Model.toMenuMinWidth model
-                            , maxWidth = config.menuMaxWidth
-                            , menuHeight = Model.toMenuMaxHeight config.menuPlacement model
-                            , maxHeight = config.menuMaxHeight
-                            }
-                            ++ (if config.positionFixed then
-                                    positionFixedAttributes (Model.toMenuPlacement config.menuPlacement model) (Model.toContainerElement model)
+                    (if config.positionFixed then
+                        positionFixedEl placement (Model.toContainerElement model)
 
-                                else
-                                    []
-                               )
-                            ++ config.menuAttributes
-                        )
-                        { menuId = Model.toMenuElementId model
-                        , toOptionId = Model.toOptionElementId model
-                        , toOptionState = Model.toOptionState model
-                        , onChange = config.onChange
-                        , menuOpen = Model.isOpen model
-                        , options = filteredOptions
-                        , optionElement = config.optionElement
-                        }
+                     else
+                        identity
+                    )
+                    <|
+                        menuView
+                            (defaultMenuAttrs
+                                { menuWidth = Model.toMenuMinWidth model
+                                , maxWidth = config.menuMaxWidth
+                                , menuHeight = Model.toMenuMaxHeight config.menuPlacement model
+                                , maxHeight = config.menuMaxHeight
+                                }
+                                ++ config.menuAttributes
+                            )
+                            { menuId = Model.toMenuElementId model
+                            , toOptionId = Model.toOptionElementId model
+                            , toOptionState = Model.toOptionState model
+                            , onChange = config.onChange
+                            , menuOpen = Model.isOpen model
+                            , options = filteredOptions
+                            , optionElement = config.optionElement
+                            }
                ]
             ++ inputAccessibilityAttributes filteredOptions model
         )
@@ -294,20 +295,24 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
     ]
 
 
-positionFixedAttributes : Placement -> Maybe Dom.Element -> List (Attribute msg)
-positionFixedAttributes placement container =
-    style "position" "fixed"
-        :: (if placement == Placement.Above then
-                [ style "transform"
-                    ("translateY(calc(-100% - 5px - "
-                        ++ (Maybe.map (.element >> .height >> String.fromFloat) container |> Maybe.withDefault "0")
-                        ++ "px))"
-                    )
-                ]
+positionFixedEl : Placement -> Maybe Dom.Element -> Element msg -> Element msg
+positionFixedEl placement container =
+    Element.el
+        ([ style "position" "fixed"
+         , Element.width Element.fill
+         ]
+            ++ (if placement == Placement.Above then
+                    [ style "transform"
+                        ("translateY(calc(-100% - 5px - "
+                            ++ (Maybe.map (.element >> .height >> String.fromFloat) container |> Maybe.withDefault "0")
+                            ++ "px))"
+                        )
+                    ]
 
-            else
-                []
-           )
+                else
+                    []
+               )
+        )
 
 
 defaultOptionElement : (a -> String) -> OptionState -> a -> Element msg
