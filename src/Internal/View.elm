@@ -110,7 +110,14 @@ inputView placement filteredOptions model config =
 
                     else
                         Element.none
-               , Placement.toAttribute placement <|
+               , Placement.toAttribute
+                    (if config.positionFixed then
+                        Placement.Below
+
+                     else
+                        placement
+                    )
+                 <|
                     menuView
                         (defaultMenuAttrs
                             { menuWidth = Model.toMenuMinWidth model
@@ -290,17 +297,16 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
 positionFixedAttributes : Placement -> Maybe Dom.Element -> List (Attribute msg)
 positionFixedAttributes placement container =
     style "position" "fixed"
-        :: (Maybe.map
-                (\{ element, viewport } ->
-                    case placement of
-                        Placement.Above ->
-                            [ style "bottom" (String.fromFloat (viewport.height - element.y - viewport.y) ++ "px") ]
+        :: (if placement == Placement.Above then
+                [ style "transform"
+                    ("translateY(calc(-100% - 5px - "
+                        ++ (Maybe.map (.element >> .height >> String.fromFloat) container |> Maybe.withDefault "0")
+                        ++ "px))"
+                    )
+                ]
 
-                        Placement.Below ->
-                            [ style "top" (String.fromFloat (element.y - viewport.y + element.height) ++ "px") ]
-                )
-                container
-                |> Maybe.withDefault []
+            else
+                []
            )
 
 
