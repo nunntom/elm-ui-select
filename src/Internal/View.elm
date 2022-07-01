@@ -294,10 +294,10 @@ positionFixedAttributes placement container =
                 (\{ element, viewport } ->
                     case placement of
                         Placement.Above ->
-                            [ style "bottom" (element.y - viewport.y |> String.fromFloat) ]
+                            [ style "bottom" (String.fromFloat (viewport.height - element.y - viewport.y) ++ "px") ]
 
                         Placement.Below ->
-                            [ style "top" (element.y - viewport.y + element.height |> String.fromFloat) ]
+                            [ style "top" (String.fromFloat (element.y - viewport.y + element.height) ++ "px") ]
                 )
                 container
                 |> Maybe.withDefault []
