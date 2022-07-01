@@ -161,30 +161,6 @@ toOptionState (Model { highlighted, selected }) ( idx, a ) =
         Idle
 
 
-
--- CHECKS
-
-
-isOpen : Model a -> Bool
-isOpen (Model { menuOpen }) =
-    menuOpen
-
-
-isFocused : Model a -> Bool
-isFocused (Model { focused }) =
-    focused
-
-
-isLoading : Model a -> Bool
-isLoading (Model { requestState }) =
-    requestState == Just Loading
-
-
-isRequestFailed : Model a -> Bool
-isRequestFailed (Model { requestState }) =
-    requestState == Just Failed
-
-
 toMenuPlacement : Maybe Placement -> Model a -> Placement
 toMenuPlacement forcedPlacement (Model model) =
     Maybe.map2 (calculateMenuDimensionsAndPlacement forcedPlacement) model.containerElement model.menuElement
@@ -207,6 +183,30 @@ toMenuMaxHeight forcedPlacement (Model model) =
 toContainerElement : Model a -> Maybe Dom.Element
 toContainerElement (Model { containerElement }) =
     containerElement
+
+
+
+-- CHECKS
+
+
+isOpen : Model a -> Bool
+isOpen (Model { menuOpen }) =
+    menuOpen
+
+
+isFocused : Model a -> Bool
+isFocused (Model { focused }) =
+    focused
+
+
+isLoading : Model a -> Bool
+isLoading (Model { requestState }) =
+    requestState == Just Loading
+
+
+isRequestFailed : Model a -> Bool
+isRequestFailed (Model { requestState }) =
+    requestState == Just Failed
 
 
 

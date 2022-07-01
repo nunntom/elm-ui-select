@@ -2,7 +2,7 @@ module Select exposing
     ( Select, init
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue
-    , isMenuOpen, isLoading, isRequestFailed
+    , isMenuOpen, isLoading, isRequestFailed, isMenuPlacementAbove
     , Msg, update, updateWithRequest, Request, request, gotRequestResponse
     , ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
     , toElement
@@ -29,7 +29,7 @@ module Select exposing
 
 # Check
 
-@docs isMenuOpen, isLoading, isRequestFailed
+@docs isMenuOpen, isLoading, isRequestFailed, isMenuPlacementAbove
 
 
 # Update and Requests
@@ -152,6 +152,15 @@ isLoading =
 isRequestFailed : Select a -> Bool
 isRequestFailed =
     Model.isRequestFailed
+
+
+{-| Will the menu appear above the input as opposed to below?
+Note: This does not take into account overriding placement with
+[Select.withMenuAlwaysAbove](#withMenuAlwaysAbove) or [Select.withMenuAlwaysBelow](#withMenuAlwaysAbove).
+-}
+isMenuPlacementAbove : Select a -> Bool
+isMenuPlacementAbove =
+    Model.toMenuPlacement Nothing >> (==) Above
 
 
 
