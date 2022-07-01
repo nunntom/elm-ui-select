@@ -16,6 +16,7 @@ update tagger maybeRequest msg model =
                 |> Model.setInputValue val
                 |> Model.highlightIndex 0
                 |> Model.applyFilter True
+                |> Model.setSelected Nothing
                 |> Model.setItems
                     (if maybeRequest /= Nothing && val == "" then
                         []
