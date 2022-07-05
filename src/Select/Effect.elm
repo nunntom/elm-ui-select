@@ -32,8 +32,8 @@ import Internal.Update as Update
 
 {-| The Effect type
 -}
-type alias Effect effect msg =
-    Effect.Effect effect msg
+type alias Effect effect =
+    Effect.Effect effect
 
 
 
@@ -60,9 +60,9 @@ type alias Effect effect msg =
                 Select.Effect.perform selectEffect
 
 -}
-update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect Never msg )
-update tagger =
-    Update.update tagger Nothing
+update : Msg a -> Select a -> ( Select a, Effect Never )
+update =
+    Update.update Nothing
 
 
 {-| Update with an HTTP request. Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
@@ -96,9 +96,9 @@ update tagger =
             }
 
 -}
-updateWithRequest : (Msg a -> msg) -> Request effect -> Msg a -> Select a -> ( Select a, Effect effect msg )
-updateWithRequest tagger req =
-    Update.update tagger (Just req)
+updateWithRequest : Request effect -> Msg a -> Select a -> ( Select a, Effect effect )
+updateWithRequest req =
+    Update.update (Just req)
 
 
 {-| A request that uses your Effect type
@@ -129,9 +129,9 @@ request =
                 Select.Effect.perform selectEffect
 
 -}
-perform : Effect Never msg -> Cmd msg
-perform =
-    Effect.perform (\_ -> Cmd.none)
+perform : (Msg a -> msg) -> Effect Never -> Cmd msg
+perform tagger =
+    Effect.perform tagger (\_ -> Cmd.none)
 
 
 {-| Perform the Effect with a request. You need to provide your own perform function to perform the provided request effect.
@@ -146,7 +146,7 @@ perform =
                 fetchThings (Select.gotRequestResponse >> SelectMsg) query
 
 -}
-performWithRequest : (effect -> Cmd msg) -> Effect effect msg -> Cmd msg
+performWithRequest : (Msg a -> msg) -> (effect -> Cmd msg) -> Effect effect -> Cmd msg
 performWithRequest =
     Effect.perform
 

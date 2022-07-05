@@ -185,8 +185,8 @@ type alias Msg a =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
-    Update.update tagger Nothing msg select
-        |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
+    Update.update Nothing msg select
+        |> Tuple.mapSecond (Effect.perform tagger (\_ -> Cmd.none))
 
 
 {-| Update with an HTTP request to retrieve matching remote results.
@@ -209,8 +209,8 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
 -}
 updateWithRequest : (Msg a -> msg) -> Request a -> Msg a -> Select a -> ( Select a, Cmd msg )
 updateWithRequest tagger req msg select =
-    Update.update identity (Just req) msg select
-        |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
+    Update.update (Just req) msg select
+        |> Tuple.mapSecond (Effect.perform identity identity >> Cmd.map tagger)
 
 
 {-| A Request. See [Select.Request](Select-Request) for configuration options.
@@ -371,8 +371,8 @@ toElement model (ViewConfig config) =
 
 {-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html)
 -}
-type alias Effect effect msg =
-    Effect.Effect effect msg
+type alias Effect effect =
+    Effect.Effect effect
 
 
 

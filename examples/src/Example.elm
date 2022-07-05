@@ -50,8 +50,6 @@ view model =
                 , itemToString = \c -> c.flag ++ " " ++ c.name
                 }
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
-                |> Select.withMenuPositionFixed True
-                --|> Select.withMenuAlwaysAbove
                 |> Select.toElement model.countrySelect
             , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
                 |> Maybe.withDefault Element.none

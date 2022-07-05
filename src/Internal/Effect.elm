@@ -1,48 +1,49 @@
 module Internal.Effect exposing (Effect(..), batch, none, perform)
 
 import Browser.Dom as Dom exposing (Element)
+import Internal.Msg exposing (Msg(..))
 import Process
 import Task exposing (Task)
 
 
-type Effect effect msg
-    = GetContainerAndMenuElements (Result Dom.Error { menu : Element, container : Element } -> msg) { containerId : String, menuId : String }
-    | GetElementsAndScrollMenu (Result Dom.Error () -> msg) { menuId : String, optionId : String }
-    | Batch (List (Effect effect msg))
+type Effect effect
+    = GetContainerAndMenuElements { containerId : String, menuId : String }
+    | GetElementsAndScrollMenu { menuId : String, optionId : String }
+    | Batch (List (Effect effect))
     | Request effect
-    | Debounce Float msg
+    | Debounce Float String
     | None
 
 
-none : Effect effect msg
+none : Effect effect
 none =
     None
 
 
-batch : List (Effect effect msg) -> Effect effect msg
+batch : List (Effect effect) -> Effect effect
 batch effects =
     Batch effects
 
 
-perform : (effect -> Cmd msg) -> Effect effect msg -> Cmd msg
-perform requestCmd effect =
+perform : (Msg a -> msg) -> (effect -> Cmd msg) -> Effect effect -> Cmd msg
+perform tagger requestCmd effect =
     case effect of
-        GetContainerAndMenuElements msg ids ->
-            getContainerAndMenuElements msg ids
+        GetContainerAndMenuElements ids ->
+            getContainerAndMenuElements (GotContainerAndMenuElements >> tagger) ids
 
-        GetElementsAndScrollMenu msg ids ->
-            getElementsAndScrollMenu msg ids
+        GetElementsAndScrollMenu ids ->
+            getElementsAndScrollMenu (tagger NoOp) ids
 
         Batch effects ->
-            List.foldl (\eff cmds -> perform requestCmd eff :: cmds) [] effects
+            List.foldl (\eff cmds -> perform tagger requestCmd eff :: cmds) [] effects
                 |> Cmd.batch
 
         Request eff ->
             requestCmd eff
 
-        Debounce delay msg ->
+        Debounce delay val ->
             Process.sleep delay
-                |> Task.perform (\_ -> msg)
+                |> Task.perform (\_ -> tagger (InputDebounceReturned val))
 
         None ->
             Cmd.none
@@ -61,7 +62,7 @@ getContainerAndMenuElements msg { containerId, menuId } =
         |> Task.attempt msg
 
 
-getElementsAndScrollMenu : (Result Dom.Error () -> msg) -> { menuId : String, optionId : String } -> Cmd msg
+getElementsAndScrollMenu : msg -> { menuId : String, optionId : String } -> Cmd msg
 getElementsAndScrollMenu msg { menuId, optionId } =
     Task.map3
         (\option menu menuViewport ->
@@ -74,7 +75,7 @@ getElementsAndScrollMenu msg { menuId, optionId } =
         (Dom.getElement menuId)
         (Dom.getViewportOf menuId)
         |> Task.andThen (scrollMenuTask menuId)
-        |> Task.attempt msg
+        |> Task.attempt (\_ -> msg)
 
 
 scrollMenuTask : String -> { option : Dom.Element, menu : Dom.Element, menuViewport : Dom.Viewport } -> Task Dom.Error ()
@@ -100,28 +101,3 @@ calculateScrollTop { optionTop, optionBottom, menuViewPortY, menuHeight } =
 
     else
         menuViewPortY
-
-
-
-{- map : (msg1 -> msg2) -> Effect effect msg1 -> Effect effect msg2
-   map toMsg effect =
-       case effect of
-           GetContainerAndMenuElements msg id ->
-               GetContainerAndMenuElements (msg >> toMsg) id
-
-           GetElementsAndScrollMenu msg ids ->
-               GetElementsAndScrollMenu (msg >> toMsg) ids
-
-           Batch effects ->
-               List.map (map toMsg) effects
-                   |> Batch
-
-           Request eff ->
-               Request eff
-
-           Debounce delay msg ->
-               Debounce delay (toMsg msg)
-
-           None ->
-               None
--}

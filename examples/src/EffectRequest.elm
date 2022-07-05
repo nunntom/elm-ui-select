@@ -63,9 +63,8 @@ update : Msg -> Model -> ( Model, MyEffect )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.Effect.updateWithRequest SelectMsg (Select.Effect.request FetchCocktails) subMsg model.select
+            Select.Effect.updateWithRequest (Select.Effect.request FetchCocktails) subMsg model.select
                 |> Tuple.mapFirst (\select -> { model | select = select })
-                |> Tuple.mapSecond SelectEffect
 
 
 fetchCocktails : (Result Http.Error (List Cocktail) -> msg) -> String -> Cmd msg
@@ -89,7 +88,7 @@ fetchCocktails tagger query =
 
 
 type MyEffect
-    = SelectEffect (Select.Effect MyEffect Msg)
+    = SelectEffect (Select.Effect MyEffect)
     | FetchCocktails String
 
 
@@ -97,7 +96,7 @@ performEffect : MyEffect -> Cmd Msg
 performEffect effect =
     case effect of
         SelectEffect selectEffect ->
-            Select.Effect.performWithRequest performEffect selectEffect
+            Select.Effect.performWithRequest SelectMsg performEffect selectEffect
 
         FetchCocktails query ->
             fetchCocktails (Select.gotRequestResponse query >> SelectMsg) query

@@ -61,14 +61,14 @@ type Msg
 
 
 type MyEffect
-    = SelectEffect (Select.Effect Never Msg)
+    = SelectEffect (Select.Effect Never)
 
 
 update : Msg -> Model -> ( Model, MyEffect )
 update msg model =
     case msg of
         CountrySelectMsg subMsg ->
-            Select.Effect.update CountrySelectMsg subMsg model.countrySelect
+            Select.Effect.update subMsg model.countrySelect
                 |> Tuple.mapFirst (\select -> { model | countrySelect = select })
                 |> Tuple.mapSecond SelectEffect
 
@@ -77,4 +77,4 @@ performEffect : MyEffect -> Cmd Msg
 performEffect effect =
     case effect of
         SelectEffect selectEffect ->
-            Select.Effect.perform selectEffect
+            Select.Effect.perform CountrySelectMsg selectEffect
