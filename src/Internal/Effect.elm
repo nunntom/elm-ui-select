@@ -1,6 +1,6 @@
 module Internal.Effect exposing (Effect(..), batch, none, perform)
 
-import Browser.Dom as Dom exposing (Element)
+import Browser.Dom as Dom
 import Internal.Msg exposing (Msg(..))
 import Process
 import Task exposing (Task)
@@ -49,7 +49,7 @@ perform tagger requestCmd effect =
             Cmd.none
 
 
-getContainerAndMenuElements : (Result Dom.Error { menu : Element, container : Element } -> msg) -> { containerId : String, menuId : String } -> Cmd msg
+getContainerAndMenuElements : (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element } -> msg) -> { containerId : String, menuId : String } -> Cmd msg
 getContainerAndMenuElements msg { containerId, menuId } =
     Task.map2
         (\container menu ->
@@ -58,7 +58,7 @@ getContainerAndMenuElements msg { containerId, menuId } =
             }
         )
         (Dom.getElement containerId)
-        (Dom.getElement menuId)
+        (Dom.getViewportOf menuId)
         |> Task.attempt msg
 
 

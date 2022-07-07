@@ -72,7 +72,7 @@ update maybeRequest msg model =
             ( model
                 |> Model.setElements
                     { container = Maybe.map .container (Result.toMaybe result)
-                    , menu = Maybe.map .container (Result.toMaybe result)
+                    , menu = Maybe.map .menu (Result.toMaybe result)
                     }
                 |> Model.openMenu
             , Effect.none

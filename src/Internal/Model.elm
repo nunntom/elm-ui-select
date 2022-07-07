@@ -58,7 +58,7 @@ type alias InternalState a =
     , highlighted : Int
     , menuOpen : Bool
     , containerElement : Maybe Dom.Element
-    , menuElement : Maybe Dom.Element
+    , menuViewPort : Maybe Dom.Viewport
     , requestState : Maybe RequestState
     , applyFilter : Bool
     , focused : Bool
@@ -79,7 +79,7 @@ init id =
         , highlighted = 0
         , menuOpen = False
         , containerElement = Nothing
-        , menuElement = Nothing
+        , menuViewPort = Nothing
         , requestState = Nothing
         , applyFilter = False
         , focused = False
@@ -163,20 +163,20 @@ toOptionState (Model { highlighted, selected }) ( idx, a ) =
 
 toMenuPlacement : Maybe Int -> Maybe Placement -> Model a -> Placement
 toMenuPlacement maxHeight forcedPlacement (Model model) =
-    Maybe.map2 (calculateMenuDimensionsAndPlacement maxHeight forcedPlacement) model.containerElement model.menuElement
+    Maybe.map2 (calculateMenuDimensionsAndPlacement maxHeight forcedPlacement) model.containerElement model.menuViewPort
         |> Maybe.map .placement
         |> Maybe.withDefault Below
 
 
 toMenuMinWidth : Model a -> Maybe Int
 toMenuMinWidth (Model model) =
-    Maybe.map2 (calculateMenuDimensionsAndPlacement Nothing Nothing) model.containerElement model.menuElement
+    Maybe.map2 (calculateMenuDimensionsAndPlacement Nothing Nothing) model.containerElement model.menuViewPort
         |> Maybe.map .minWidth
 
 
 toMenuMaxHeight : Maybe Int -> Maybe Placement -> Model a -> Maybe Int
 toMenuMaxHeight maxHeight forcedPlacement (Model model) =
-    Maybe.map2 (calculateMenuDimensionsAndPlacement maxHeight forcedPlacement) model.containerElement model.menuElement
+    Maybe.map2 (calculateMenuDimensionsAndPlacement maxHeight forcedPlacement) model.containerElement model.menuViewPort
         |> Maybe.map .maxHeight
 
 
@@ -275,11 +275,11 @@ clear (Model model) =
         }
 
 
-setElements : { container : Maybe Dom.Element, menu : Maybe Dom.Element } -> Model a -> Model a
+setElements : { container : Maybe Dom.Element, menu : Maybe Dom.Viewport } -> Model a -> Model a
 setElements { container, menu } (Model model) =
     Model
         { model
-            | menuElement = menu
+            | menuViewPort = menu
             , containerElement = container
         }
 
@@ -298,7 +298,7 @@ setFocused v (Model model) =
 -- INTERNAL
 
 
-calculateMenuDimensionsAndPlacement : Maybe Int -> Maybe Placement -> Dom.Element -> Dom.Element -> { minWidth : Int, maxHeight : Int, placement : Placement }
+calculateMenuDimensionsAndPlacement : Maybe Int -> Maybe Placement -> Dom.Element -> Dom.Viewport -> { minWidth : Int, maxHeight : Int, placement : Placement }
 calculateMenuDimensionsAndPlacement maxHeight forcedPlacement container menu =
     calculateMenuDimensionsAndPlacementHelper
         forcedPlacement
