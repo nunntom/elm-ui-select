@@ -2,9 +2,9 @@ module Select exposing
     ( Select, init
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue
-    , isMenuOpen, isLoading, isRequestFailed, isMenuPlacementAbove
+    , isMenuOpen, isLoading, isRequestFailed
     , Msg, update, updateWithRequest, Request, request, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
     , toElement
     , Effect
     )
@@ -29,7 +29,7 @@ module Select exposing
 
 # Check
 
-@docs isMenuOpen, isLoading, isRequestFailed, isMenuPlacementAbove
+@docs isMenuOpen, isLoading, isRequestFailed
 
 
 # Update and Requests
@@ -39,7 +39,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
 
 
 # Element
@@ -59,7 +59,7 @@ import Internal.Effect as Effect
 import Internal.Model as Model exposing (Model)
 import Internal.Msg as Msg
 import Internal.OptionState as OptionState
-import Internal.Placement exposing (Placement(..))
+import Internal.Placement as Placement
 import Internal.Request as Request
 import Internal.Update as Update
 import Internal.View as View exposing (ViewConfigInternal)
@@ -152,15 +152,6 @@ isLoading =
 isRequestFailed : Select a -> Bool
 isRequestFailed =
     Model.isRequestFailed
-
-
-{-| Will the menu appear above the input as opposed to below?
-Note: This does not take into account overriding placement with
-[Select.withMenuAlwaysAbove](#withMenuAlwaysAbove) or [Select.withMenuAlwaysBelow](#withMenuAlwaysAbove).
--}
-isMenuPlacementAbove : Select a -> Bool
-isMenuPlacementAbove =
-    Model.toMenuPlacement Nothing >> (==) Above
 
 
 
@@ -273,14 +264,14 @@ By default the menu will try to detect whether there is more space above or belo
 -}
 withMenuAlwaysBelow : ViewConfig a msg -> ViewConfig a msg
 withMenuAlwaysBelow (ViewConfig config) =
-    ViewConfig { config | menuPlacement = Just Below }
+    ViewConfig { config | menuPlacement = Just Placement.Below }
 
 
 {-| Force the menu to always appear above the input. You may use this for example if you have issues with an input inside a scrollable transformed container.
 -}
 withMenuAlwaysAbove : ViewConfig a msg -> ViewConfig a msg
 withMenuAlwaysAbove (ViewConfig config) =
-    ViewConfig { config | menuPlacement = Just Above }
+    ViewConfig { config | menuPlacement = Just Placement.Above }
 
 
 {-| Set a maximum height for the menu
@@ -298,10 +289,18 @@ withMenuMaxWidth width (ViewConfig config) =
 
 
 {-| Set arbitrary attributes for the menu element. You can call this multiple times and it will accumulate attributes.
+You can define different attributes based on whether the menu appears above or below the input.
 -}
-withMenuAttributes : List (Attribute msg) -> ViewConfig a msg -> ViewConfig a msg
+withMenuAttributes : (MenuPlacement -> List (Attribute msg)) -> ViewConfig a msg -> ViewConfig a msg
 withMenuAttributes attribs (ViewConfig config) =
-    ViewConfig { config | menuAttributes = config.menuAttributes ++ attribs }
+    ViewConfig { config | menuAttributes = config.menuAttributes ++ [ mapPlacement >> attribs ] }
+
+
+{-| Will the menu appear above or below the input?
+-}
+type MenuPlacement
+    = MenuAbove
+    | MenuBelow
 
 
 {-| Provide your own element for the options in the menu, based on the current [state](#OptionState) of the option.
@@ -393,3 +392,13 @@ mapOptionState state =
 
         OptionState.SelectedAndHighlighted ->
             SelectedAndHighlighted
+
+
+mapPlacement : Placement.Placement -> MenuPlacement
+mapPlacement placement =
+    case placement of
+        Placement.Above ->
+            MenuAbove
+
+        Placement.Below ->
+            MenuBelow

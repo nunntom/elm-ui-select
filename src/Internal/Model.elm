@@ -161,22 +161,22 @@ toOptionState (Model { highlighted, selected }) ( idx, a ) =
         Idle
 
 
-toMenuPlacement : Maybe Placement -> Model a -> Placement
-toMenuPlacement forcedPlacement (Model model) =
-    Maybe.map2 (calculateMenuDimensionsAndPlacement forcedPlacement) model.containerElement model.menuElement
+toMenuPlacement : Maybe Int -> Maybe Placement -> Model a -> Placement
+toMenuPlacement maxHeight forcedPlacement (Model model) =
+    Maybe.map2 (calculateMenuDimensionsAndPlacement maxHeight forcedPlacement) model.containerElement model.menuElement
         |> Maybe.map .placement
         |> Maybe.withDefault Below
 
 
 toMenuMinWidth : Model a -> Maybe Int
 toMenuMinWidth (Model model) =
-    Maybe.map2 (calculateMenuDimensionsAndPlacement Nothing) model.containerElement model.menuElement
+    Maybe.map2 (calculateMenuDimensionsAndPlacement Nothing Nothing) model.containerElement model.menuElement
         |> Maybe.map .minWidth
 
 
-toMenuMaxHeight : Maybe Placement -> Model a -> Maybe Int
-toMenuMaxHeight forcedPlacement (Model model) =
-    Maybe.map2 (calculateMenuDimensionsAndPlacement forcedPlacement) model.containerElement model.menuElement
+toMenuMaxHeight : Maybe Int -> Maybe Placement -> Model a -> Maybe Int
+toMenuMaxHeight maxHeight forcedPlacement (Model model) =
+    Maybe.map2 (calculateMenuDimensionsAndPlacement maxHeight forcedPlacement) model.containerElement model.menuElement
         |> Maybe.map .maxHeight
 
 
@@ -298,27 +298,30 @@ setFocused v (Model model) =
 -- INTERNAL
 
 
-calculateMenuDimensionsAndPlacement : Maybe Placement -> Dom.Element -> Dom.Element -> { minWidth : Int, maxHeight : Int, placement : Placement }
-calculateMenuDimensionsAndPlacement forcedPlacement container menu =
+calculateMenuDimensionsAndPlacement : Maybe Int -> Maybe Placement -> Dom.Element -> Dom.Element -> { minWidth : Int, maxHeight : Int, placement : Placement }
+calculateMenuDimensionsAndPlacement maxHeight forcedPlacement container menu =
     calculateMenuDimensionsAndPlacementHelper
         forcedPlacement
-        { menuSceneHeight = menu.scene.height
-        , containerWidth = container.element.width
+        { menuHeight =
+            Maybe.map (Basics.min (Basics.round menu.scene.height)) maxHeight
+                |> Maybe.withDefault (Basics.round menu.scene.height)
+        , containerWidth = Basics.round container.element.width
         }
         (calculateSpace container)
 
 
-calculateMenuDimensionsAndPlacementHelper : Maybe Placement -> { menuSceneHeight : Float, containerWidth : Float } -> { above : Float, below : Float } -> { minWidth : Int, maxHeight : Int, placement : Placement }
-calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuSceneHeight, containerWidth } { above, below } =
-    if forcedPlacement == Just Above || (below < menuSceneHeight && above > below && forcedPlacement /= Just Below) then
-        { minWidth = Basics.round containerWidth
-        , maxHeight = Basics.min (Basics.round menuSceneHeight) (Basics.round (above - 20))
+calculateMenuDimensionsAndPlacementHelper : Maybe Placement -> { menuHeight : Int, containerWidth : Int } -> { above : Float, below : Float } -> { minWidth : Int, maxHeight : Int, placement : Placement }
+calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuHeight, containerWidth } { above, below } =
+    if forcedPlacement == Just Above || (Basics.round below < menuHeight && above > below && forcedPlacement /= Just Below) then
+        { minWidth = containerWidth
+        , maxHeight =
+            Basics.min menuHeight (Basics.round (above - 20))
         , placement = Above
         }
 
     else
-        { minWidth = Basics.round containerWidth
-        , maxHeight = Basics.min (Basics.round menuSceneHeight) (Basics.round (below - 20))
+        { minWidth = containerWidth
+        , maxHeight = Basics.min menuHeight (Basics.round (below - 20))
         , placement = Below
         }
 

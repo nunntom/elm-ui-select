@@ -64,7 +64,7 @@ update msg model =
     case msg of
         SelectMsg subMsg ->
             Select.Effect.updateWithRequest (Select.Effect.request FetchCocktails) subMsg model.select
-                |> Tuple.mapFirst (\select -> { model | select = select })
+                |> Tuple.mapBoth (\select -> { model | select = select }) SelectEffect
 
 
 fetchCocktails : (Result Http.Error (List Cocktail) -> msg) -> String -> Cmd msg

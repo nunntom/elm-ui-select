@@ -33,7 +33,7 @@ type alias ViewConfigInternal a msg =
     , menuPlacement : Maybe Placement
     , menuMaxHeight : Maybe Int
     , menuMaxWidth : Maybe Int
-    , menuAttributes : List (Attribute msg)
+    , menuAttributes : List (Placement -> List (Attribute msg))
     , noMatchElement : Element msg
     , optionElement : OptionState -> a -> Element msg
     , clearButton : Maybe (Element msg)
@@ -82,7 +82,7 @@ toElement model config =
                )
         )
         (inputView
-            (Model.toMenuPlacement config.menuPlacement model)
+            (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)
             (Model.toFilteredOptions config.itemToString config.filter model)
             model
             config
@@ -129,10 +129,9 @@ inputView placement filteredOptions model config =
                             (defaultMenuAttrs
                                 { menuWidth = Model.toMenuMinWidth model
                                 , maxWidth = config.menuMaxWidth
-                                , menuHeight = Model.toMenuMaxHeight config.menuPlacement model
-                                , maxHeight = config.menuMaxHeight
+                                , menuHeight = Model.toMenuMaxHeight config.menuMaxHeight config.menuPlacement model
                                 }
-                                ++ config.menuAttributes
+                                ++ List.concatMap (\toAttrs -> toAttrs (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)) config.menuAttributes
                             )
                             { menuId = Model.toMenuElementId model
                             , toOptionId = Model.toOptionElementId model
@@ -261,20 +260,12 @@ defaultMenuAttrs :
     { menuWidth : Maybe Int
     , maxWidth : Maybe Int
     , menuHeight : Maybe Int
-    , maxHeight : Maybe Int
     }
     -> List (Attribute msg)
-defaultMenuAttrs { menuWidth, maxWidth, menuHeight, maxHeight } =
-    [ Element.height <|
-        case [ maxHeight, menuHeight ] |> List.filterMap identity of
-            [ h1, h2 ] ->
-                Element.maximum (Basics.min h1 h2) Element.shrink
-
-            [ h ] ->
-                Element.maximum h Element.shrink
-
-            _ ->
-                Element.shrink
+defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
+    [ Element.shrink
+        |> (Maybe.map Element.maximum menuHeight |> Maybe.withDefault identity)
+        |> Element.height
     , Element.width <|
         case menuWidth of
             Just w ->
