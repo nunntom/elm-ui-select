@@ -70,9 +70,51 @@ view attribs v =
 
 toElement : Model a -> ViewConfigInternal a msg -> Element msg
 toElement model config =
+    toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model) (Model.toFilteredOptions config.itemToString config.filter model) model config
+
+
+toElement_ : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
+toElement_ placement filteredOptions model config =
     Element.el
         ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId model)
          , Element.width Element.fill
+         , Element.below <|
+            if List.length filteredOptions == 0 && Model.isOpen model && not (String.isEmpty (Model.toInputValue model)) && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success) then
+                config.noMatchElement
+
+            else
+                Element.none
+         , Placement.toAttribute
+            (if config.positionFixed then
+                Placement.Below
+
+             else
+                placement
+            )
+           <|
+            (if config.positionFixed then
+                positionFixedEl placement (Model.toContainerElement model)
+
+             else
+                identity
+            )
+            <|
+                menuView
+                    (defaultMenuAttrs
+                        { menuWidth = Model.toMenuMinWidth model
+                        , maxWidth = config.menuMaxWidth
+                        , menuHeight = Model.toMenuMaxHeight config.menuMaxHeight config.menuPlacement model
+                        }
+                        ++ List.concatMap (\toAttrs -> toAttrs (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)) config.menuAttributes
+                    )
+                    { menuId = Model.toMenuElementId model
+                    , toOptionId = Model.toOptionElementId model
+                    , toOptionState = Model.toOptionState model
+                    , onChange = config.onChange
+                    , menuOpen = Model.isOpen model
+                    , options = filteredOptions
+                    , optionElement = config.optionElement
+                    }
          ]
             ++ (if Model.isOpen model then
                     [ Element.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
@@ -81,16 +123,11 @@ toElement model config =
                     []
                )
         )
-        (inputView
-            (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)
-            (Model.toFilteredOptions config.itemToString config.filter model)
-            model
-            config
-        )
+        (inputView filteredOptions model config)
 
 
-inputView : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
-inputView placement filteredOptions model config =
+inputView : List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
+inputView filteredOptions model config =
     Input.text
         (config.inputAttribs
             ++ [ Events.onFocus (config.onChange InputFocused)
@@ -104,43 +141,6 @@ inputView placement filteredOptions model config =
 
                     else
                         Element.none
-               , Element.below <|
-                    if List.length filteredOptions == 0 && Model.isOpen model && not (String.isEmpty (Model.toInputValue model)) && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success) then
-                        config.noMatchElement
-
-                    else
-                        Element.none
-               , Placement.toAttribute
-                    (if config.positionFixed then
-                        Placement.Below
-
-                     else
-                        placement
-                    )
-                 <|
-                    (if config.positionFixed then
-                        positionFixedEl placement (Model.toContainerElement model)
-
-                     else
-                        identity
-                    )
-                    <|
-                        menuView
-                            (defaultMenuAttrs
-                                { menuWidth = Model.toMenuMinWidth model
-                                , maxWidth = config.menuMaxWidth
-                                , menuHeight = Model.toMenuMaxHeight config.menuMaxHeight config.menuPlacement model
-                                }
-                                ++ List.concatMap (\toAttrs -> toAttrs (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)) config.menuAttributes
-                            )
-                            { menuId = Model.toMenuElementId model
-                            , toOptionId = Model.toOptionElementId model
-                            , toOptionState = Model.toOptionState model
-                            , onChange = config.onChange
-                            , menuOpen = Model.isOpen model
-                            , options = filteredOptions
-                            , optionElement = config.optionElement
-                            }
                ]
             ++ inputAccessibilityAttributes filteredOptions model
         )
