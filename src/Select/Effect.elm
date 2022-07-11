@@ -1,6 +1,6 @@
 module Select.Effect exposing
     ( Effect
-    , update, updateWithRequest, Request, request
+    , update, updateWith, Request, request
     , perform, performWithRequest
     )
 
@@ -14,7 +14,7 @@ module Select.Effect exposing
 
 # Update Effect
 
-@docs update, updateWithRequest, Request, request
+@docs update, updateWith, Request, request
 
 
 # Perform Effect
@@ -28,6 +28,7 @@ import Internal.Model exposing (Model)
 import Internal.Msg exposing (Msg)
 import Internal.Request as Request
 import Internal.Update as Update
+import Select.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 
 {-| The Effect type
@@ -62,7 +63,7 @@ type alias Effect effect =
 -}
 update : Msg a -> Select a -> ( Select a, Effect Never )
 update =
-    Update.update Nothing
+    Update.update UpdateConfig.default
 
 
 {-| Update with an HTTP request. Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
@@ -96,9 +97,9 @@ update =
             }
 
 -}
-updateWithRequest : Request effect -> Msg a -> Select a -> ( Select a, Effect effect )
-updateWithRequest req =
-    Update.update (Just req)
+updateWith : UpdateConfig effect -> Msg a -> Select a -> ( Select a, Effect effect )
+updateWith =
+    Update.update
 
 
 {-| A request that uses your Effect type

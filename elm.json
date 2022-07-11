@@ -8,7 +8,8 @@
         "Select",
         "Select.Filter",
         "Select.Effect",
-        "Select.Request"
+        "Select.Request",
+        "Select.UpdateConfig"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {

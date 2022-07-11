@@ -3,8 +3,8 @@ module Select exposing
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue
     , isMenuOpen, isLoading, isRequestFailed
-    , Msg, update, updateWithRequest, Request, request, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
+    , Msg, update, updateWith, Request, request, gotRequestResponse
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
     , toElement
     , Effect
     )
@@ -34,12 +34,12 @@ module Select exposing
 
 # Update and Requests
 
-@docs Msg, update, updateWithRequest, Request, request, gotRequestResponse
+@docs Msg, update, updateWith, Request, request, gotRequestResponse
 
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, ClearButton, withClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
 
 
 # Element
@@ -64,6 +64,7 @@ import Internal.Request as Request
 import Internal.Update as Update
 import Internal.View as View exposing (ViewConfigInternal)
 import Select.Filter exposing (Filter)
+import Select.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 
 
@@ -176,18 +177,25 @@ type alias Msg a =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
-    Update.update Nothing msg select
+    Update.update UpdateConfig.default msg select
         |> Tuple.mapSecond (Effect.perform tagger (\_ -> Cmd.none))
 
 
-{-| Update with an HTTP request to retrieve matching remote results.
+{-| Update with configuration options, including using an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Cmd yourself.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
         case msg of
             Request SelectMsg subMsg ->
-                Select.updateWithRequest SelectMsg (Select.request fetchThings) subMsg model.select
+                Select.updateWith
+                    { request = Select.request fetchThings
+                    , clearInputValueOnBlur = False
+                    , selectExactMatchOnBlur = True
+                    }
+                    SelectMsg
+                    subMsg
+                    model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
 
     fetchThings : String -> Cmd (Select.Msg Thing)
@@ -197,10 +205,21 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
             , expect = Http.expectJson (Select.gotRequestResponse query) (Decode.list thingDecoder)
             }
 
+You can also use [Select.UpdateConfig](Select-UpdateConfig) to build up a config:
+
+    Select.updateWith
+        (Select.UpdateConfig.default
+            |> Select.UpdateConfig.withRequest (Select.request fetchThings)
+        )
+        SelectMsg
+        subMsg
+        model.select
+        |> Tuple.mapFirst (\select -> { model | select = select })
+
 -}
-updateWithRequest : (Msg a -> msg) -> Request a -> Msg a -> Select a -> ( Select a, Cmd msg )
-updateWithRequest tagger req msg select =
-    Update.update (Just req) msg select
+updateWith : UpdateConfig (Cmd (Msg a)) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
+updateWith config tagger msg select =
+    Update.update config msg select
         |> Tuple.mapSecond (Effect.perform identity identity >> Cmd.map tagger)
 
 

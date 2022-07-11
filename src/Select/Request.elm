@@ -6,11 +6,15 @@ module Select.Request exposing (withDelay, withMinLength)
     update msg model =
         case msg of
             SelectMsg subMsg ->
-                Select.updateWithRequest SelectMsg
-                    (Select.request fetchThings
-                        |> Select.Request.withDelay 200
-                        |> Select.Request.withMinLength 4
+                Select.updateWith
+                    (Select.UpdateConfig.default
+                        |> Select.UpdateConfig.withRequest
+                            (Select.request fetchThings
+                                |> Select.Request.withDelay 200
+                                |> Select.Request.withMinLength 4
+                            )
                     )
+                    SelectMsg
                     subMsg
                     model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })

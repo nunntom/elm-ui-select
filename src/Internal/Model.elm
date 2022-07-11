@@ -1,6 +1,7 @@
 module Internal.Model exposing
     ( Model
     , applyFilter
+    , blur
     , clear
     , closeMenu
     , highlightIndex
@@ -36,10 +37,11 @@ module Internal.Model exposing
 
 import Browser.Dom as Dom
 import Internal.Filter as Filter exposing (Filter)
-import Internal.Option exposing (Option)
+import Internal.Option as Option exposing (Option)
 import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement exposing (Placement(..))
 import Internal.RequestState exposing (RequestState(..))
+import Select.UpdateConfig exposing (UpdateConfig)
 
 
 
@@ -292,6 +294,36 @@ applyFilter v (Model model) =
 setFocused : Bool -> Model a -> Model a
 setFocused v (Model model) =
     Model { model | focused = v }
+
+
+blur : UpdateConfig effect -> List (Option a) -> Model a -> Model a
+blur { clearInputValueOnBlur, selectExactMatchOnBlur, request } filteredOptions (Model model) =
+    (if model.selected == Nothing then
+        case ( selectExactMatchOnBlur, Option.findByString filteredOptions model.inputValue ) of
+            ( True, Just option ) ->
+                selectOption option (Model model)
+
+            _ ->
+                if clearInputValueOnBlur then
+                    Model
+                        { model
+                            | inputValue = ""
+                            , items =
+                                if request == Nothing then
+                                    model.items
+
+                                else
+                                    []
+                        }
+
+                else
+                    Model model
+
+     else
+        Model model
+    )
+        |> setFocused False
+        |> closeMenu
 
 
 

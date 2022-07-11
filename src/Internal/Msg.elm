@@ -9,7 +9,7 @@ type Msg a
     | OptionClicked (Option a)
     | InputFocused
     | InputClicked
-    | InputLostFocus
+    | InputLostFocus (List (Option a))
     | MouseEnteredOption Int
     | KeyDown (List (Option a)) String
     | GotContainerAndMenuElements (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })

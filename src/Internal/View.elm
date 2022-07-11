@@ -16,7 +16,7 @@ import Html.Events
 import Internal.Filter as Filter exposing (Filter)
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
-import Internal.Option exposing (Option)
+import Internal.Option as Option exposing (Option)
 import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement as Placement exposing (Placement)
 import Internal.RequestState exposing (RequestState(..))
@@ -132,7 +132,7 @@ inputView filteredOptions model config =
         (config.inputAttribs
             ++ [ Events.onFocus (config.onChange InputFocused)
                , Events.onClick (config.onChange InputClicked)
-               , Events.onLoseFocus (config.onChange InputLostFocus)
+               , Events.onLoseFocus (config.onChange (InputLostFocus filteredOptions))
                , onKeyDown (KeyDown filteredOptions >> config.onChange)
                , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
                , Element.inFront <|
@@ -359,16 +359,8 @@ hijackKey tagger key =
 
 findOptionString : List (Option a) -> a -> Maybe String
 findOptionString list a =
-    case list of
-        [] ->
-            Nothing
-
-        x :: xs ->
-            if a == Tuple.first x then
-                Just (Tuple.second x)
-
-            else
-                findOptionString xs a
+    Option.findByValue list a
+        |> Maybe.map Tuple.second
 
 
 ariaLive : Int -> Element msg

@@ -6,10 +6,11 @@ import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
 import Internal.Request as Request exposing (Request)
 import Internal.RequestState exposing (RequestState(..))
+import Select.UpdateConfig exposing (UpdateConfig)
 
 
-update : Maybe (Request effect) -> Msg a -> Model a -> ( Model a, Effect effect )
-update maybeRequest msg model =
+update : UpdateConfig effect -> Msg a -> Model a -> ( Model a, Effect effect )
+update ({ request } as config) msg model =
     case msg of
         InputChanged val ->
             ( model
@@ -18,20 +19,20 @@ update maybeRequest msg model =
                 |> Model.applyFilter True
                 |> Model.setSelected Nothing
                 |> Model.setItems
-                    (if maybeRequest /= Nothing && val == "" then
+                    (if request /= Nothing && val == "" then
                         []
 
                      else
                         Model.toItems model
                     )
                 |> Model.setRequestState
-                    (if maybeRequest /= Nothing then
+                    (if request /= Nothing then
                         Just NotRequested
 
                      else
                         Nothing
                     )
-            , case maybeRequest of
+            , case request of
                 Just req ->
                     if String.length val >= Request.toMinLength req then
                         Effect.Debounce (Request.toDelay req) val
@@ -49,14 +50,13 @@ update maybeRequest msg model =
             )
 
         InputFocused ->
-            onFocusMenu maybeRequest model
+            onFocusMenu request model
 
         InputClicked ->
-            onFocusMenu maybeRequest model
+            onFocusMenu request model
 
-        InputLostFocus ->
-            ( Model.setFocused False model
-                |> Model.closeMenu
+        InputLostFocus filteredOptions ->
+            ( Model.blur config filteredOptions model
             , Effect.none
             )
 
@@ -82,7 +82,7 @@ update maybeRequest msg model =
             ( model
                 |> Model.clear
                 |> Model.setItems
-                    (if maybeRequest == Nothing then
+                    (if request == Nothing then
                         Model.toItems model
 
                      else
@@ -94,7 +94,7 @@ update maybeRequest msg model =
         InputDebounceReturned val ->
             if val == Model.toInputValue model then
                 ( Model.setRequestState (Just Loading) model
-                , Maybe.map (Request.toEffect >> (\effect -> Effect.Request (effect val))) maybeRequest
+                , Maybe.map (Request.toEffect >> (\effect -> Effect.Request (effect val))) request
                     |> Maybe.withDefault Effect.none
                 )
 
@@ -108,7 +108,11 @@ update maybeRequest msg model =
                         ( model
                             |> Model.setItems items
                             |> Model.setRequestState (Just Success)
-                        , getContainerAndMenuElementsEffect model
+                        , if Model.toValue model == Nothing then
+                            getContainerAndMenuElementsEffect model
+
+                          else
+                            Effect.none
                         )
 
                     Err _ ->
