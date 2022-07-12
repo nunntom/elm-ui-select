@@ -9,8 +9,8 @@ import Internal.RequestState exposing (RequestState(..))
 import Select.UpdateConfig exposing (UpdateConfig)
 
 
-update : UpdateConfig effect -> Msg a -> Model a -> ( Model a, Effect effect )
-update ({ request } as config) msg model =
+update : UpdateConfig effect -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
+update ({ request } as config) tagger msg model =
     case msg of
         InputChanged val ->
             ( model
@@ -35,13 +35,13 @@ update ({ request } as config) msg model =
             , case request of
                 Just req ->
                     if String.length val >= Request.toMinLength req then
-                        Effect.Debounce (Request.toDelay req) val
+                        Effect.Debounce (InputDebounceReturned >> tagger) (Request.toDelay req) val
 
                     else
                         Effect.none
 
                 Nothing ->
-                    getContainerAndMenuElementsEffect model
+                    getContainerAndMenuElementsEffect tagger model
             )
 
         OptionClicked opt ->
@@ -50,10 +50,10 @@ update ({ request } as config) msg model =
             )
 
         InputFocused ->
-            onFocusMenu request model
+            onFocusMenu tagger request model
 
         InputClicked ->
-            onFocusMenu request model
+            onFocusMenu tagger request model
 
         InputLostFocus filteredOptions ->
             ( Model.blur config filteredOptions model
@@ -66,7 +66,7 @@ update ({ request } as config) msg model =
             )
 
         KeyDown filteredOptions key ->
-            handleKey model key filteredOptions
+            handleKey tagger model key filteredOptions
 
         GotContainerAndMenuElements result ->
             ( model
@@ -109,7 +109,7 @@ update ({ request } as config) msg model =
                             |> Model.setItems items
                             |> Model.setRequestState (Just Success)
                         , if Model.toValue model == Nothing then
-                            getContainerAndMenuElementsEffect model
+                            getContainerAndMenuElementsEffect tagger model
 
                           else
                             Effect.none
@@ -127,32 +127,32 @@ update ({ request } as config) msg model =
             ( model, Effect.none )
 
 
-onFocusMenu : Maybe (Request effect) -> Model a -> ( Model a, Effect effect )
-onFocusMenu maybeRequest model =
+onFocusMenu : (Msg a -> msg) -> Maybe (Request effect) -> Model a -> ( Model a, Effect effect msg )
+onFocusMenu tagger maybeRequest model =
     ( Model.setFocused True model
         |> Model.highlightIndex 0
     , if maybeRequest == Nothing || Model.toRequestState model == Just Success then
-        getContainerAndMenuElementsEffect model
+        getContainerAndMenuElementsEffect tagger model
 
       else
         Effect.none
     )
 
 
-handleKey : Model a -> String -> List (Option a) -> ( Model a, Effect effect )
-handleKey model key filteredOptions =
+handleKey : (Msg a -> msg) -> Model a -> String -> List (Option a) -> ( Model a, Effect effect msg )
+handleKey tagger model key filteredOptions =
     case key of
         "ArrowDown" ->
-            moveHighlight (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 1)) model
+            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 1)) model
 
         "ArrowUp" ->
-            moveHighlight (Basics.max 0 (Model.toHighlighted model - 1)) model
+            moveHighlight tagger (Basics.max 0 (Model.toHighlighted model - 1)) model
 
         "PageDown" ->
-            moveHighlight (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 10)) model
+            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 10)) model
 
         "PageUp" ->
-            moveHighlight (Basics.max 0 (Model.toHighlighted model - 10)) model
+            moveHighlight tagger (Basics.max 0 (Model.toHighlighted model - 10)) model
 
         "Enter" ->
             case getAt (Model.toHighlighted model) filteredOptions of
@@ -169,13 +169,14 @@ handleKey model key filteredOptions =
             ( model, Effect.none )
 
 
-moveHighlight : Int -> Model a -> ( Model a, Effect effect )
-moveHighlight newHighlighted model =
+moveHighlight : (Msg a -> msg) -> Int -> Model a -> ( Model a, Effect effect msg )
+moveHighlight tagger newHighlighted model =
     if Model.isOpen model then
         ( Model.highlightIndex newHighlighted model
         , Effect.batch
-            [ getContainerAndMenuElementsEffect model
+            [ getContainerAndMenuElementsEffect tagger model
             , Effect.GetElementsAndScrollMenu
+                (tagger NoOp)
                 { menuId = Model.toMenuElementId model
                 , optionId = Model.toOptionElementId model newHighlighted
                 }
@@ -184,13 +185,14 @@ moveHighlight newHighlighted model =
 
     else
         ( model
-        , getContainerAndMenuElementsEffect model
+        , getContainerAndMenuElementsEffect tagger model
         )
 
 
-getContainerAndMenuElementsEffect : Model a -> Effect effect
-getContainerAndMenuElementsEffect model =
+getContainerAndMenuElementsEffect : (Msg a -> msg) -> Model a -> Effect effect msg
+getContainerAndMenuElementsEffect tagger model =
     Effect.GetContainerAndMenuElements
+        (GotContainerAndMenuElements >> tagger)
         { menuId = Model.toMenuElementId model
         , containerId = Model.toContainerElementId model
         }

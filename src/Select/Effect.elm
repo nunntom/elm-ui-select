@@ -51,8 +51,8 @@ import Select.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 {-| The Effect type
 -}
-type alias Effect effect =
-    Effect.Effect effect
+type alias Effect effect msg =
+    Effect.Effect effect msg
 
 
 
@@ -79,7 +79,7 @@ type alias Effect effect =
                 Select.Effect.perform selectEffect
 
 -}
-update : Msg a -> Select a -> ( Select a, Effect Never )
+update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect Never msg )
 update =
     Update.update UpdateConfig.default
 
@@ -101,6 +101,7 @@ See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
                     , clearInputValueOnBlur = False
                     , selectExactMatchOnBlur = True
                     }
+                    SelectMsg
                     subMsg
                     model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
@@ -133,7 +134,7 @@ You can also use [Select.UpdateConfig](Select-UpdateConfig) to build up a config
         |> Tuple.mapFirst (\select -> { model | select = select })
 
 -}
-updateWith : UpdateConfig effect -> Msg a -> Select a -> ( Select a, Effect effect )
+updateWith : UpdateConfig effect -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
 updateWith =
     Update.update
 
@@ -166,9 +167,9 @@ request =
                 Select.Effect.perform selectEffect
 
 -}
-perform : (Msg a -> msg) -> Effect Never -> Cmd msg
-perform tagger =
-    Effect.perform tagger (\_ -> Cmd.none)
+perform : Effect Never msg -> Cmd msg
+perform =
+    Effect.perform (\_ -> Cmd.none)
 
 
 {-| Perform the Effect with a request. You need to provide your own perform function to perform the provided request effect.
@@ -183,7 +184,7 @@ perform tagger =
                 fetchThings (Select.gotRequestResponse >> SelectMsg) query
 
 -}
-performWithRequest : (Msg a -> msg) -> (effect -> Cmd msg) -> Effect effect -> Cmd msg
+performWithRequest : (effect -> Cmd msg) -> Effect effect msg -> Cmd msg
 performWithRequest =
     Effect.perform
 
@@ -205,16 +206,14 @@ you need to provide some of the functions to help with the simulation.
 
 -}
 simulate :
-    (Msg a -> msg)
-    ->
-        { perform : (() -> msg) -> simulatedTask -> simulatedEffect
-        , batch : List simulatedEffect -> simulatedEffect
-        , sleep : Float -> simulatedTask
-        }
-    -> Effect Never
+    { perform : (() -> msg) -> simulatedTask -> simulatedEffect
+    , batch : List simulatedEffect -> simulatedEffect
+    , sleep : Float -> simulatedTask
+    }
+    -> Effect Never msg
     -> simulatedEffect
-simulate tagger conf =
-    Effect.simulate tagger conf (\_ -> conf.batch [])
+simulate conf =
+    Effect.simulate conf (\_ -> conf.batch [])
 
 
 {-| Simulate the select effects with a request. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
@@ -241,14 +240,12 @@ you need to provide some of the functions to help with the simulation.
 
 -}
 simulateWithRequest :
-    (Msg a -> msg)
-    ->
-        { perform : (() -> msg) -> simulatedTask -> simulatedEffect
-        , batch : List simulatedEffect -> simulatedEffect
-        , sleep : Float -> simulatedTask
-        }
+    { perform : (() -> msg) -> simulatedTask -> simulatedEffect
+    , batch : List simulatedEffect -> simulatedEffect
+    , sleep : Float -> simulatedTask
+    }
     -> (effect -> simulatedEffect)
-    -> Effect effect
+    -> Effect effect msg
     -> simulatedEffect
 simulateWithRequest =
     Effect.simulate

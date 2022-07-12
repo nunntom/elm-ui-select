@@ -191,8 +191,8 @@ type alias Msg a =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
-    Update.update UpdateConfig.default msg select
-        |> Tuple.mapSecond (Effect.perform tagger (\_ -> Cmd.none))
+    Update.update UpdateConfig.default tagger msg select
+        |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
 {-| Update with configuration options, including using an HTTP request to retrieve matching remote results.
@@ -234,8 +234,8 @@ You can also use [Select.UpdateConfig](Select-UpdateConfig) to build up a config
 -}
 updateWith : UpdateConfig (Cmd (Msg a)) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 updateWith config tagger msg select =
-    Update.update config msg select
-        |> Tuple.mapSecond (Effect.perform identity identity >> Cmd.map tagger)
+    Update.update config identity msg select
+        |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
 
 
 {-| A Request. See [Select.Request](Select-Request) for configuration options.
@@ -404,8 +404,8 @@ toElement model (ViewConfig config) =
 
 {-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html)
 -}
-type alias Effect effect =
-    Effect.Effect effect
+type alias Effect effect msg =
+    Effect.Effect effect msg
 
 
 

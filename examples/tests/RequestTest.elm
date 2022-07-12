@@ -68,7 +68,6 @@ simulateEffect effect =
 
         App.SelectEffect selectEffect ->
             Select.Effect.simulateWithRequest
-                App.SelectMsg
                 { perform = SimulatedTask.perform
                 , batch = SimulatedCmd.batch
                 , sleep = SimulatedProcess.sleep

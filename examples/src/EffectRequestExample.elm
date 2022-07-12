@@ -68,6 +68,7 @@ update msg model =
                 , clearInputValueOnBlur = True
                 , selectExactMatchOnBlur = False
                 }
+                SelectMsg
                 subMsg
                 model.select
                 |> Tuple.mapBoth (\select -> { model | select = select }) SelectEffect
@@ -95,7 +96,7 @@ fetchCocktails tagger query =
 
 type MyEffect
     = NoEffect
-    | SelectEffect (Select.Effect MyEffect)
+    | SelectEffect (Select.Effect MyEffect Msg)
     | FetchCocktails String
 
 
@@ -106,7 +107,7 @@ performEffect effect =
             Cmd.none
 
         SelectEffect selectEffect ->
-            Select.Effect.performWithRequest SelectMsg performEffect selectEffect
+            Select.Effect.performWithRequest performEffect selectEffect
 
         FetchCocktails query ->
             fetchCocktails (Select.gotRequestResponse query >> SelectMsg) query

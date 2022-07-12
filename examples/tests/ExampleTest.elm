@@ -81,7 +81,6 @@ simulateEffect effect =
 
         App.SelectEffect selectEffect ->
             Select.Effect.simulate
-                App.CountrySelectMsg
                 { perform = SimulatedTask.perform
                 , batch = SimulatedCmd.batch
                 , sleep = SimulatedProcess.sleep

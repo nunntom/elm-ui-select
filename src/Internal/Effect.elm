@@ -1,71 +1,68 @@
 module Internal.Effect exposing (Effect(..), batch, none, perform, simulate)
 
 import Browser.Dom as Dom
-import Internal.Msg exposing (Msg(..))
 import Process
 import Task exposing (Task)
 
 
-type Effect effect
-    = GetContainerAndMenuElements { containerId : String, menuId : String }
-    | GetElementsAndScrollMenu { menuId : String, optionId : String }
-    | Batch (List (Effect effect))
+type Effect effect msg
+    = GetContainerAndMenuElements (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element } -> msg) { containerId : String, menuId : String }
+    | GetElementsAndScrollMenu msg { menuId : String, optionId : String }
+    | Batch (List (Effect effect msg))
     | Request effect
-    | Debounce Float String
+    | Debounce (String -> msg) Float String
     | None
 
 
-none : Effect effect
+none : Effect effect msg
 none =
     None
 
 
-batch : List (Effect effect) -> Effect effect
+batch : List (Effect effect msg) -> Effect effect msg
 batch effects =
     Batch effects
 
 
-perform : (Msg a -> msg) -> (effect -> Cmd msg) -> Effect effect -> Cmd msg
-perform tagger requestCmd effect =
+perform : (effect -> Cmd msg) -> Effect effect msg -> Cmd msg
+perform requestCmd effect =
     case effect of
-        GetContainerAndMenuElements ids ->
-            getContainerAndMenuElements (GotContainerAndMenuElements >> tagger) ids
+        GetContainerAndMenuElements msg ids ->
+            getContainerAndMenuElements msg ids
 
-        GetElementsAndScrollMenu ids ->
-            getElementsAndScrollMenu (tagger NoOp) ids
+        GetElementsAndScrollMenu msg ids ->
+            getElementsAndScrollMenu msg ids
 
         Batch effects ->
-            List.foldl (\eff cmds -> perform tagger requestCmd eff :: cmds) [] effects
+            List.foldl (\eff cmds -> perform requestCmd eff :: cmds) [] effects
                 |> Cmd.batch
 
         Request eff ->
             requestCmd eff
 
-        Debounce delay val ->
+        Debounce msg delay val ->
             Process.sleep delay
-                |> Task.perform (\_ -> tagger (InputDebounceReturned val))
+                |> Task.perform (\_ -> msg val)
 
         None ->
             Cmd.none
 
 
 simulate :
-    (Msg a -> msg)
-    ->
-        { perform : (() -> msg) -> simulatedTask -> simulatedEffect
-        , batch : List simulatedEffect -> simulatedEffect
-        , sleep : Float -> simulatedTask
-        }
+    { perform : (() -> msg) -> simulatedTask -> simulatedEffect
+    , batch : List simulatedEffect -> simulatedEffect
+    , sleep : Float -> simulatedTask
+    }
     -> (effect -> simulatedEffect)
-    -> Effect effect
+    -> Effect effect msg
     -> simulatedEffect
-simulate tagger conf simulateRequest effect =
+simulate conf simulateRequest effect =
     case effect of
-        GetContainerAndMenuElements _ ->
+        GetContainerAndMenuElements msg _ ->
             conf.sleep 0
                 |> conf.perform
                     (\_ ->
-                        GotContainerAndMenuElements
+                        msg
                             (Ok
                                 { container = { scene = { width = 1163, height = 975 }, viewport = { x = 0, y = 0, width = 1163, height = 975 }, element = { x = 436, y = 452, width = 291, height = 71 } }
                                 , menu =
@@ -74,23 +71,22 @@ simulate tagger conf simulateRequest effect =
                                     }
                                 }
                             )
-                            |> tagger
                     )
 
-        GetElementsAndScrollMenu _ ->
+        GetElementsAndScrollMenu msg _ ->
             conf.sleep 0
-                |> conf.perform (\_ -> tagger NoOp)
+                |> conf.perform (\_ -> msg)
 
         Batch effects ->
-            List.foldl (\eff cmds -> simulate tagger conf simulateRequest eff :: cmds) [] effects
+            List.foldl (\eff cmds -> simulate conf simulateRequest eff :: cmds) [] effects
                 |> conf.batch
 
         Request eff ->
             simulateRequest eff
 
-        Debounce delay val ->
+        Debounce msg delay val ->
             conf.sleep delay
-                |> conf.perform (\_ -> tagger (InputDebounceReturned val))
+                |> conf.perform (\_ -> msg val)
 
         None ->
             conf.batch []
