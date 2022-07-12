@@ -1,8 +1,23 @@
-module Internal.Option exposing (Option, findByString, findByValue)
+module Internal.Option exposing (Option, findByString, findByValue, init, toItem, toString)
 
 
 type alias Option a =
-    ( a, String )
+    ( a, String, Int )
+
+
+init : (a -> String) -> Int -> a -> Option a
+init itemToString idx item =
+    ( item, itemToString item, idx )
+
+
+toItem : Option a -> a
+toItem ( a, _, _ ) =
+    a
+
+
+toString : Option a -> String
+toString ( _, s, _ ) =
+    s
 
 
 findByValue : List (Option a) -> a -> Maybe (Option a)
@@ -12,7 +27,7 @@ findByValue list a =
             Nothing
 
         x :: xs ->
-            if a == Tuple.first x then
+            if a == toItem x then
                 Just x
 
             else
@@ -26,7 +41,7 @@ findByString list s =
             Nothing
 
         x :: xs ->
-            if String.toLower s == String.toLower (Tuple.second x) then
+            if String.toLower s == String.toLower (toString x) then
                 Just x
 
             else

@@ -1,10 +1,11 @@
-module Example exposing (main)
+module Example exposing (Model, init, main, update, view)
 
 import Browser
 import Countries exposing (Country)
 import Element
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Resources.ClearButton
 import Select exposing (OptionState(..), Select)
 
@@ -45,7 +46,7 @@ view model =
             ]
             [ Select.view []
                 { onChange = CountrySelectMsg
-                , label = Input.labelAbove [] (Element.text "Choose a country")
+                , label = Input.labelAbove [ Element.htmlAttribute <| Html.Attributes.for (Select.toInputElementId model.countrySelect) ] (Element.text "Choose a country")
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
                 , itemToString = \c -> c.flag ++ " " ++ c.name
                 }

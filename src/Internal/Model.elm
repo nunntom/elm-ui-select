@@ -119,7 +119,7 @@ toHighlighted (Model { highlighted }) =
 
 toFilteredOptions : (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
 toFilteredOptions itemToString filter (Model model) =
-    List.map (\i -> ( i, itemToString i )) model.items
+    List.indexedMap (Option.init itemToString) model.items
         |> (if model.applyFilter then
                 Filter.filterOptions model.inputValue filter
 
@@ -231,12 +231,12 @@ setInputValue v (Model d) =
 
 
 selectOption : Option a -> Model a -> Model a
-selectOption ( a, s ) (Model model) =
+selectOption opt (Model model) =
     Model
         { model
             | menuOpen = False
-            , selected = Just a
-            , inputValue = s
+            , selected = Just (Option.toItem opt)
+            , inputValue = Option.toString opt
             , applyFilter = False
         }
 

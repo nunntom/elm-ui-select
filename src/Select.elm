@@ -1,7 +1,7 @@
 module Select exposing
     ( Select, init
     , setItems, setSelected, setInputValue, closeMenu
-    , toValue, toInputValue
+    , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed
     , Msg, update, updateWith, Request, request, gotRequestResponse
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
@@ -24,7 +24,7 @@ module Select exposing
 
 # Get
 
-@docs toValue, toInputValue
+@docs toValue, toInputValue, toInputElementId, toMenuElementId
 
 
 # Check
@@ -130,6 +130,20 @@ toInputValue =
     Model.toInputValue
 
 
+{-| Get the id of the DOM input element. Useful in tests or to associate the provided label with the input
+-}
+toInputElementId : Select a -> String
+toInputElementId =
+    Model.toInputElementId
+
+
+{-| Get the id of the DOM menu container. Useful for testing
+-}
+toMenuElementId : Select a -> String
+toMenuElementId =
+    Model.toMenuElementId
+
+
 
 -- CHECK
 
@@ -183,6 +197,7 @@ update tagger msg select =
 
 {-| Update with configuration options, including using an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Cmd yourself.
+See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =

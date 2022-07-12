@@ -1,10 +1,11 @@
-module Effect exposing (main)
+module EffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
 
 import Browser
 import Countries exposing (Country)
 import Element
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Resources.ClearButton
 import Select exposing (OptionState(..), Select)
 import Select.Effect
@@ -13,7 +14,7 @@ import Select.Effect
 main : Program () Model Msg
 main =
     Browser.element
-        { init = init
+        { init = \_ -> init () |> Tuple.mapSecond performEffect
         , view = view
         , update = \msg model -> update msg model |> Tuple.mapSecond performEffect
         , subscriptions = \_ -> Sub.none
@@ -25,13 +26,13 @@ type alias Model =
     }
 
 
-init : () -> ( Model, Cmd Msg )
+init : () -> ( Model, MyEffect )
 init _ =
     ( { countrySelect =
             Select.init "country-select"
                 |> Select.setItems Countries.all
       }
-    , Cmd.none
+    , NoEffect
     )
 
 
@@ -45,7 +46,7 @@ view model =
             ]
             [ Select.view []
                 { onChange = CountrySelectMsg
-                , label = Input.labelAbove [] (Element.text "Choose a country")
+                , label = Input.labelAbove [ Element.htmlAttribute <| Html.Attributes.for (Select.toInputElementId model.countrySelect) ] (Element.text "Choose a country")
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
                 , itemToString = \c -> c.flag ++ " " ++ c.name
                 }
@@ -62,6 +63,7 @@ type Msg
 
 type MyEffect
     = SelectEffect (Select.Effect Never)
+    | NoEffect
 
 
 update : Msg -> Model -> ( Model, MyEffect )
@@ -76,5 +78,8 @@ update msg model =
 performEffect : MyEffect -> Cmd Msg
 performEffect effect =
     case effect of
+        NoEffect ->
+            Cmd.none
+
         SelectEffect selectEffect ->
             Select.Effect.perform CountrySelectMsg selectEffect

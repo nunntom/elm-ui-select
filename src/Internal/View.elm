@@ -150,7 +150,7 @@ inputView filteredOptions model config =
                 Model.toInputValue model
 
             else
-                Maybe.andThen (findOptionString filteredOptions) (Model.toValue model)
+                Maybe.andThen (Option.findByValue filteredOptions >> Maybe.map Option.toString) (Model.toValue model)
                     |> Maybe.withDefault (Model.toInputValue model)
         , placeholder = config.placeholder
         , label = config.label
@@ -231,7 +231,7 @@ optionElement :
     -> Int
     -> Option a
     -> Element msg
-optionElement v i (( a, _ ) as opt) =
+optionElement v i opt =
     Element.row
         [ Element.htmlAttribute (Html.Attributes.id (v.toOptionId i))
         , htmlAttribute "role" "option"
@@ -240,7 +240,7 @@ optionElement v i (( a, _ ) as opt) =
         , Events.onMouseEnter (v.onChange <| MouseEnteredOption i)
         , Element.width Element.fill
         ]
-        [ v.optionElement (v.toOptionState ( i, a )) a ]
+        [ v.optionElement (v.toOptionState ( i, Option.toItem opt )) (Option.toItem opt) ]
 
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
@@ -355,12 +355,6 @@ onKeyDown tagger =
 hijackKey : (String -> msg) -> String -> ( msg, Bool )
 hijackKey tagger key =
     ( tagger key, List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ] )
-
-
-findOptionString : List (Option a) -> a -> Maybe String
-findOptionString list a =
-    Option.findByValue list a
-        |> Maybe.map Tuple.second
 
 
 ariaLive : Int -> Element msg

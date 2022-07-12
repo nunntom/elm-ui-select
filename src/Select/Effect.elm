@@ -2,9 +2,14 @@ module Select.Effect exposing
     ( Effect
     , update, updateWith, Request, request
     , perform, performWithRequest
+    , simulate, simulateWithRequest
+    , SimulateInputConfig, simulateFillIn, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
     )
 
-{-| Update the Select using the [Effects pattern](https://sporto.github.io/elm-patterns/architecture/effects.html)
+{-| Update the Select by returning Effects instead of Cmds.
+This module is designed to help testing with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/),
+allowing you to simulate the effects produced by the select and simulate input. If you are not doing this kind of testing,
+you don't need this module.
 
 
 # Type
@@ -21,13 +26,26 @@ module Select.Effect exposing
 
 @docs perform, performWithRequest
 
+
+# Simulating Effects
+
+@docs simulate, simulateWithRequest
+
+
+# Simulating Input
+
+@docs SimulateInputConfig, simulateFillIn, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
+
 -}
 
+import Html
+import Html.Attributes
 import Internal.Effect as Effect
-import Internal.Model exposing (Model)
+import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg)
 import Internal.Request as Request
 import Internal.Update as Update
+import Json.Encode as Encode
 import Select.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 
@@ -66,7 +84,9 @@ update =
     Update.update UpdateConfig.default
 
 
-{-| Update with an HTTP request. Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
+{-| Update with configuration options, including using an HTTP request to retrieve matching remote results.
+Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
+See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
 
     type MyEffect
         = SelectEffect (Select.Effect MyEffect Msg)
@@ -76,7 +96,13 @@ update =
     update msg model =
         case msg of
             SelectMsg subMsg ->
-                Select.Effect.updateWithRequest SelectMsg (Select.Effect.request FetchThings) subMsg model.select
+                Select.Effect.updateWith
+                    { request = Select.request fetchThings
+                    , clearInputValueOnBlur = False
+                    , selectExactMatchOnBlur = True
+                    }
+                    subMsg
+                    model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
                     |> Tuple.mapSecond SelectEffect
 
@@ -95,6 +121,16 @@ update =
             { url = "https://awesome-thing.api/things?search=" ++ query
             , expect = Http.expectJson tagger (Decode.list thingDecoder)
             }
+
+You can also use [Select.UpdateConfig](Select-UpdateConfig) to build up a config:
+
+    Select.Effect.updateWith
+        (Select.UpdateConfig.default
+            |> Select.UpdateConfig.withRequest (Select.request fetchThings)
+        )
+        subMsg
+        model.select
+        |> Tuple.mapFirst (\select -> { model | select = select })
 
 -}
 updateWith : UpdateConfig effect -> Msg a -> Select a -> ( Select a, Effect effect )
@@ -152,9 +188,168 @@ performWithRequest =
     Effect.perform
 
 
+{-| Simulate the select effects. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
+you need to provide some of the functions to help with the simulation.
+
+    simulateEffect : MyEffect -> SimulatedEffect Msg
+    simulateEffect effect =
+        case effect of
+            SelectEffect selectEffect ->
+                Select.Effect.simulate
+                    Example.SelectMsg
+                    { perform = SimulatedTask.perform
+                    , batch = SimulatedCmd.batch
+                    , sleep = SimulatedProcess.sleep
+                    }
+                    selectEffect
+
+-}
+simulate :
+    (Msg a -> msg)
+    ->
+        { perform : (() -> msg) -> simulatedTask -> simulatedEffect
+        , batch : List simulatedEffect -> simulatedEffect
+        , sleep : Float -> simulatedTask
+        }
+    -> Effect Never
+    -> simulatedEffect
+simulate tagger conf =
+    Effect.simulate tagger conf (\_ -> conf.batch [])
+
+
+{-| Simulate the select effects with a request. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
+you need to provide some of the functions to help with the simulation.
+
+    simulateEffect : MyEffect -> SimulatedEffect Msg
+    simulateEffect effect =
+        case effect of
+            SelectEffect selectEffect ->
+                Select.Effect.simulateWithRequest
+                    Example.SelectMsg
+                    { perform = SimulatedTask.perform
+                    , batch = SimulatedCmd.batch
+                    , sleep = SimulatedProcess.sleep
+                    }
+                    simulateEffect
+                    selectEffect
+
+            FetchThings query ->
+                SimulateHttp.get
+                    { url = "https://awesome-thing.api/things?search=" ++ query
+                    , expect = SimulateHttp.expectJson tagger (Decode.list thingDecoder)
+                    }
+
+-}
+simulateWithRequest :
+    (Msg a -> msg)
+    ->
+        { perform : (() -> msg) -> simulatedTask -> simulatedEffect
+        , batch : List simulatedEffect -> simulatedEffect
+        , sleep : Float -> simulatedTask
+        }
+    -> (effect -> simulatedEffect)
+    -> Effect effect
+    -> simulatedEffect
+simulateWithRequest =
+    Effect.simulate
+
+
+{-| Simulate input. This is designed to help simulate input with elm-program-test.
+Since this package doesn't have elm-test or elm-program-test as dependencies,
+you need to provide some of the functions from those packages here.
+
+    simulateConfig : Select.Effect.SimulateInputConfig (Single msg) Selector (ProgramTest model msg effect)
+    simulateConfig =
+        { simulateDomEvent = ProgramTest.simulateDomEvent
+        , find = Query.find
+        , attribute = Selector.attribute
+        , containing = Selector.containing
+        , text = Selector.text
+        }
+
+    selectTest : Test
+    selectTest =
+        Test.test "Type in United and choose United Kingdom with a mouse click" <|
+            \() ->
+                ProgramTest.createElement
+                    { init = Example.init
+                    , update = Example.update
+                    , view = Example.view
+                    }
+                    |> ProgramTest.withSimulatedEffects simulateEffect
+                    |> ProgramTest.start ()
+                    |> Select.Effect.simulateFillIn simulateConfig model.select "United"
+                    |> Select.Effect.simulateClickOption simulateConfig model.select "United Kingdom"
+                    |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom" ]
+
+-}
+type alias SimulateInputConfig single selector programTest =
+    { simulateDomEvent : (single -> single) -> ( String, Encode.Value ) -> programTest -> programTest
+    , find : List selector -> single -> single
+    , attribute : Html.Attribute Never -> selector
+    , containing : List selector -> selector
+    , text : String -> selector
+    }
+
+
+{-| Simulate filling some text in the input
+-}
+simulateFillIn : SimulateInputConfig single selector programTest -> Select a -> String -> (programTest -> programTest)
+simulateFillIn config model value =
+    config.simulateDomEvent (config.find [ config.attribute (Html.Attributes.id (Model.toInputElementId model)) ])
+        ( "input"
+        , Encode.object
+            [ ( "target"
+              , Encode.object [ ( "value", Encode.string value ) ]
+              )
+            ]
+        )
+
+
+{-| Simulate pressing the arrow down key in the input
+-}
+simulateArrowDown : SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateArrowDown =
+    simulateKey "ArrowDown"
+
+
+{-| Simulate pressing the arrow up key in the input
+-}
+simulateArrowUp : SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateArrowUp =
+    simulateKey "ArrowUp"
+
+
+{-| Simulate pressing the enter key in the input
+-}
+simulateEnterKey : SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateEnterKey =
+    simulateKey "Enter"
+
+
+{-| Simulate clicking an option by the text label of the option.
+-}
+simulateClickOption : SimulateInputConfig single selector programTest -> Select a -> String -> (programTest -> programTest)
+simulateClickOption config model optionLabel =
+    config.simulateDomEvent
+        (config.find [ config.attribute (Html.Attributes.id (Model.toMenuElementId model)) ]
+            >> config.find
+                [ config.attribute (Html.Attributes.attribute "role" "option")
+                , config.containing [ config.text optionLabel ]
+                ]
+        )
+        ( "click", Encode.object [] )
+
+
 
 -- INTERNAL
 
 
 type alias Select a =
     Model a
+
+
+simulateKey : String -> SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateKey key config model =
+    config.simulateDomEvent (config.find [ config.attribute (Html.Attributes.id (Model.toInputElementId model)) ])
+        ( "keydown", Encode.object [ ( "key", Encode.string key ) ] )

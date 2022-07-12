@@ -1,4 +1,4 @@
-module Internal.Effect exposing (Effect(..), batch, none, perform)
+module Internal.Effect exposing (Effect(..), batch, none, perform, simulate)
 
 import Browser.Dom as Dom
 import Internal.Msg exposing (Msg(..))
@@ -47,6 +47,53 @@ perform tagger requestCmd effect =
 
         None ->
             Cmd.none
+
+
+simulate :
+    (Msg a -> msg)
+    ->
+        { perform : (() -> msg) -> simulatedTask -> simulatedEffect
+        , batch : List simulatedEffect -> simulatedEffect
+        , sleep : Float -> simulatedTask
+        }
+    -> (effect -> simulatedEffect)
+    -> Effect effect
+    -> simulatedEffect
+simulate tagger conf simulateRequest effect =
+    case effect of
+        GetContainerAndMenuElements _ ->
+            conf.sleep 0
+                |> conf.perform
+                    (\_ ->
+                        GotContainerAndMenuElements
+                            (Ok
+                                { container = { scene = { width = 1163, height = 975 }, viewport = { x = 0, y = 0, width = 1163, height = 975 }, element = { x = 436, y = 452, width = 291, height = 71 } }
+                                , menu =
+                                    { scene = { width = 530, height = 9970 }
+                                    , viewport = { x = 0, y = 0, width = 274, height = 0 }
+                                    }
+                                }
+                            )
+                            |> tagger
+                    )
+
+        GetElementsAndScrollMenu _ ->
+            conf.sleep 0
+                |> conf.perform (\_ -> tagger NoOp)
+
+        Batch effects ->
+            List.foldl (\eff cmds -> simulate tagger conf simulateRequest eff :: cmds) [] effects
+                |> conf.batch
+
+        Request eff ->
+            simulateRequest eff
+
+        Debounce delay val ->
+            conf.sleep delay
+                |> conf.perform (\_ -> tagger (InputDebounceReturned val))
+
+        None ->
+            conf.batch []
 
 
 getContainerAndMenuElements : (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element } -> msg) -> { containerId : String, menuId : String } -> Cmd msg

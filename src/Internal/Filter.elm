@@ -8,9 +8,11 @@ module Internal.Filter exposing
     , startsWithThenContains
     )
 
+import Internal.Option as Option exposing (Option)
+
 
 type Filter a
-    = Filter (String -> List ( a, String ) -> List ( a, String ))
+    = Filter (String -> List (Option a) -> List (Option a))
 
 
 startsWith : Filter a
@@ -39,7 +41,7 @@ custom : (String -> a -> Bool) -> Filter a
 custom f =
     Filter
         (\inputValue ->
-            List.filter (\( a, _ ) -> f inputValue a)
+            List.filter (Option.toItem >> f inputValue)
         )
 
 
@@ -47,22 +49,22 @@ customWithSort : (String -> a -> Maybe Int) -> Filter a
 customWithSort toScore =
     Filter
         (\inputValue ->
-            List.filterMap (\opt -> Maybe.map (Tuple.pair opt) (toScore inputValue (Tuple.first opt)))
+            List.filterMap (\opt -> Maybe.map (Tuple.pair opt) (toScore inputValue (Option.toItem opt)))
                 >> List.sortBy Tuple.second
                 >> List.map Tuple.first
         )
 
 
-stringFilter : (String -> String -> Bool) -> String -> List ( a, String ) -> List ( a, String )
+stringFilter : (String -> String -> Bool) -> String -> List (Option a) -> List (Option a)
 stringFilter f inputValue options =
     List.filter
-        (\( _, s ) ->
-            f (String.toLower inputValue) (String.toLower s)
+        (\option ->
+            f (String.toLower inputValue) (String.toLower (Option.toString option))
         )
         options
 
 
-filterOptions : String -> Maybe (Filter a) -> List ( a, String ) -> List ( a, String )
+filterOptions : String -> Maybe (Filter a) -> List (Option a) -> List (Option a)
 filterOptions inputValue filter options =
     if inputValue /= "" then
         Maybe.map (\(Filter f) -> f inputValue options) filter

@@ -9,7 +9,7 @@ A select widget for elm-ui.
 - Automatically attempts to size and place the menu based on the position of the input in the viewport.
 - Customisable: Supply your own attributes for the input, menu or your own option Element.
 - Make HTTP requests to retrieve matching options (The package does not make the requests, but you supply the Cmd/Effect - no elm/http dependency)
-- Can be used with the Effect pattern
+- Can be used with the Effect pattern and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/)
 
 ## Example
 

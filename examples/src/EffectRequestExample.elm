@@ -1,4 +1,4 @@
-module EffectRequest exposing (main)
+module EffectRequestExample exposing (Cocktail, Model, Msg(..), MyEffect(..), cocktailDecoder, init, main, update, view)
 
 import Browser
 import Element exposing (Element)
@@ -17,7 +17,7 @@ import Select.Effect
 main : Program () Model Msg
 main =
     Browser.element
-        { init = init
+        { init = \_ -> init () |> Tuple.mapSecond performEffect
         , view = view
         , update = \msg model -> update msg model |> Tuple.mapSecond performEffect
         , subscriptions = \_ -> Sub.none
@@ -41,13 +41,13 @@ type alias Cocktail =
     }
 
 
-init : () -> ( Model, Cmd Msg )
+init : () -> ( Model, MyEffect )
 init _ =
     ( { select =
-            Select.init "title-select"
+            Select.init "cocktail-select"
                 |> Select.setItems []
       }
-    , Cmd.none
+    , NoEffect
     )
 
 
@@ -94,13 +94,17 @@ fetchCocktails tagger query =
 
 
 type MyEffect
-    = SelectEffect (Select.Effect MyEffect)
+    = NoEffect
+    | SelectEffect (Select.Effect MyEffect)
     | FetchCocktails String
 
 
 performEffect : MyEffect -> Cmd Msg
 performEffect effect =
     case effect of
+        NoEffect ->
+            Cmd.none
+
         SelectEffect selectEffect ->
             Select.Effect.performWithRequest SelectMsg performEffect selectEffect
 

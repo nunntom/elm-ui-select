@@ -1,4 +1,4 @@
-module Request exposing (main)
+module RequestExample exposing (main)
 
 import Browser
 import Element exposing (Element)
