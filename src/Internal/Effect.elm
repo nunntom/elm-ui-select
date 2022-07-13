@@ -1,4 +1,4 @@
-module Internal.Effect exposing (Effect(..), batch, map, none, perform, simulate)
+module Internal.Effect exposing (Effect(..), batch, map, mapEffect, none, perform, simulate)
 
 import Browser.Dom as Dom
 import Process
@@ -164,6 +164,29 @@ map toMsg effect =
 
         Debounce msg delay val ->
             Debounce (msg >> toMsg) delay val
+
+        None ->
+            None
+
+
+mapEffect : (effect -> effect2) -> Effect effect msg -> Effect effect2 msg
+mapEffect toEffect effect =
+    case effect of
+        GetContainerAndMenuElements msg ids ->
+            GetContainerAndMenuElements msg ids
+
+        GetElementsAndScrollMenu msg ids ->
+            GetElementsAndScrollMenu msg ids
+
+        Batch effects ->
+            List.map (mapEffect toEffect) effects
+                |> Batch
+
+        Request eff ->
+            Request (toEffect eff)
+
+        Debounce msg delay val ->
+            Debounce msg delay val
 
         None ->
             None

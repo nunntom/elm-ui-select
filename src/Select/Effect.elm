@@ -4,7 +4,7 @@ module Select.Effect exposing
     , perform, performWithRequest
     , simulate, simulateWithRequest
     , SimulateInputConfig, simulateFillIn, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
-    , map
+    , map, mapEffect
     )
 
 {-| Update the Select by returning Effects instead of Cmds.
@@ -40,7 +40,7 @@ you don't need this module.
 
 # Mapping
 
-@docs map
+@docs map, mapEffect
 
 -}
 
@@ -353,6 +353,13 @@ simulateClickOption config model optionLabel =
 map : (msg -> msg2) -> Effect effect msg -> Effect effect msg2
 map =
     Effect.map
+
+
+{-| Map Effect from one effect type to another
+-}
+mapEffect : (effect -> effect2) -> Effect effect msg -> Effect effect2 msg
+mapEffect =
+    Effect.mapEffect
 
 
 
