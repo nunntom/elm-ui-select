@@ -281,8 +281,6 @@ type alias SimulateInputConfig single selector programTest =
     { simulateDomEvent : (single -> single) -> ( String, Encode.Value ) -> programTest -> programTest
     , find : List selector -> single -> single
     , attribute : Html.Attribute Never -> selector
-    , containing : List selector -> selector
-    , text : String -> selector
     }
 
 
@@ -315,7 +313,7 @@ simulateClickOption config id optionLabel =
         (config.find [ config.attribute (Html.Attributes.id (id ++ "-menu")) ]
             >> config.find
                 [ config.attribute (Html.Attributes.attribute "role" "option")
-                , config.containing [ config.text optionLabel ]
+                , config.attribute (Html.Attributes.attribute "value" optionLabel)
                 ]
         )
         ( "click", Encode.object [] )

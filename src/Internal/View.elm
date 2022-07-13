@@ -235,6 +235,7 @@ optionElement v i opt =
     Element.row
         [ Element.htmlAttribute (Html.Attributes.id (v.toOptionId i))
         , htmlAttribute "role" "option"
+        , htmlAttribute "value" (Option.toString opt)
         , Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
         , Events.onMouseEnter (v.onChange <| MouseEnteredOption i)

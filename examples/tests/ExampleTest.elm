@@ -68,8 +68,6 @@ simulateInputConfig =
     { simulateDomEvent = ProgramTest.simulateDomEvent
     , find = Query.find
     , attribute = Selector.attribute
-    , containing = Selector.containing
-    , text = Selector.text
     }
 
 
