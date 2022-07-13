@@ -1,4 +1,4 @@
-module Internal.Effect exposing (Effect(..), batch, none, perform, simulate)
+module Internal.Effect exposing (Effect(..), batch, map, none, perform, simulate)
 
 import Browser.Dom as Dom
 import Process
@@ -144,3 +144,26 @@ calculateScrollTop { optionTop, optionBottom, menuViewPortY, menuHeight } =
 
     else
         menuViewPortY
+
+
+map : (msg -> msg2) -> Effect effect msg -> Effect effect msg2
+map toMsg effect =
+    case effect of
+        GetContainerAndMenuElements msg ids ->
+            GetContainerAndMenuElements (msg >> toMsg) ids
+
+        GetElementsAndScrollMenu msg ids ->
+            GetElementsAndScrollMenu (toMsg msg) ids
+
+        Batch effects ->
+            List.map (map toMsg) effects
+                |> Batch
+
+        Request eff ->
+            Request eff
+
+        Debounce msg delay val ->
+            Debounce (msg >> toMsg) delay val
+
+        None ->
+            None
