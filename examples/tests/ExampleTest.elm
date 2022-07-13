@@ -20,7 +20,7 @@ exampleProgramTest =
         [ Test.test "Filter for United Kingdom produces one result" <|
             \() ->
                 programTest
-                    |> Select.Effect.simulateFillIn simulateInputConfig model.countrySelect "United Kingdom"
+                    |> ProgramTest.fillIn "" "Choose a country" "United Kingdom"
                     |> ProgramTest.ensureView
                         (Query.find [ Selector.id (Select.toMenuElementId model.countrySelect) ]
                             >> Query.contains [ Html.text "🇬🇧 United Kingdom of Great Britain and Northern Ireland" ]
@@ -33,15 +33,15 @@ exampleProgramTest =
         , Test.test "Click United Kingdom selects it" <|
             \() ->
                 programTest
-                    |> Select.Effect.simulateFillIn simulateInputConfig model.countrySelect "United"
-                    |> Select.Effect.simulateClickOption simulateInputConfig model.countrySelect "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         , Test.test "Keyboard select United Kingdom" <|
             \() ->
                 programTest
-                    |> Select.Effect.simulateFillIn simulateInputConfig model.countrySelect "United"
-                    |> Select.Effect.simulateArrowDown simulateInputConfig model.countrySelect
-                    |> Select.Effect.simulateEnterKey simulateInputConfig model.countrySelect
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateArrowDown simulateInputConfig "country-select"
+                    |> Select.Effect.simulateEnterKey simulateInputConfig "country-select"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         ]
 

@@ -20,36 +20,24 @@ exampleProgramTest =
     Test.describe "Select Tests"
         [ Test.test "Type in Chocolate, and choose second option with keyboard navigation" <|
             \() ->
-                ProgramTest.createElement
-                    { init = App.init
-                    , update = App.update
-                    , view = App.view
-                    }
-                    |> ProgramTest.withSimulatedEffects simulateEffect
-                    |> ProgramTest.start ()
-                    |> Select.Effect.simulateFillIn simulateConfig model.select "Chocolate"
+                programTest
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 500
                     |> ProgramTest.simulateHttpOk "GET"
                         "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate"
                         cocktailsResponse
-                    |> Select.Effect.simulateArrowDown simulateConfig model.select
-                    |> Select.Effect.simulateEnterKey simulateConfig model.select
+                    |> Select.Effect.simulateArrowDown simulateConfig "cocktail-select"
+                    |> Select.Effect.simulateEnterKey simulateConfig "cocktail-select"
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         , Test.test "Type in Chocolate, and choose \"Chocolate Drink\" with mouse click" <|
             \() ->
-                ProgramTest.createElement
-                    { init = App.init
-                    , update = App.update
-                    , view = App.view
-                    }
-                    |> ProgramTest.withSimulatedEffects simulateEffect
-                    |> ProgramTest.start ()
-                    |> Select.Effect.simulateFillIn simulateConfig model.select "Chocolate"
+                programTest
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 300
                     |> ProgramTest.simulateHttpOk "GET"
                         "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate"
                         cocktailsResponse
-                    |> Select.Effect.simulateClickOption simulateConfig model.select "Chocolate Drink"
+                    |> Select.Effect.simulateClickOption simulateConfig "cocktail-select" "Chocolate Drink"
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         ]
 
@@ -58,6 +46,17 @@ model : App.Model
 model =
     App.init ()
         |> Tuple.first
+
+
+programTest : ProgramTest App.Model App.Msg App.MyEffect
+programTest =
+    ProgramTest.createElement
+        { init = App.init
+        , update = App.update
+        , view = App.view
+        }
+        |> ProgramTest.withSimulatedEffects simulateEffect
+        |> ProgramTest.start ()
 
 
 simulateEffect : App.MyEffect -> SimulatedEffect App.Msg

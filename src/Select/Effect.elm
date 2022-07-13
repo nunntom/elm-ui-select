@@ -3,7 +3,7 @@ module Select.Effect exposing
     , update, updateWith, Request, request
     , perform, performWithRequest
     , simulate, simulateWithRequest
-    , SimulateInputConfig, simulateFillIn, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
+    , SimulateInputConfig, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
     , map, mapEffect
     )
 
@@ -35,7 +35,7 @@ you don't need this module.
 
 # Simulating Input
 
-@docs SimulateInputConfig, simulateFillIn, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
+@docs SimulateInputConfig, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
 
 
 # Mapping
@@ -47,7 +47,7 @@ you don't need this module.
 import Html
 import Html.Attributes
 import Internal.Effect as Effect
-import Internal.Model as Model exposing (Model)
+import Internal.Model exposing (Model)
 import Internal.Msg exposing (Msg)
 import Internal.Request as Request
 import Internal.Update as Update
@@ -286,47 +286,33 @@ type alias SimulateInputConfig single selector programTest =
     }
 
 
-{-| Simulate filling some text in the input
--}
-simulateFillIn : SimulateInputConfig single selector programTest -> Select a -> String -> (programTest -> programTest)
-simulateFillIn config model value =
-    config.simulateDomEvent (config.find [ config.attribute (Html.Attributes.id (Model.toInputElementId model)) ])
-        ( "input"
-        , Encode.object
-            [ ( "target"
-              , Encode.object [ ( "value", Encode.string value ) ]
-              )
-            ]
-        )
-
-
 {-| Simulate pressing the arrow down key in the input
 -}
-simulateArrowDown : SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateArrowDown : SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
 simulateArrowDown =
     simulateKey "ArrowDown"
 
 
 {-| Simulate pressing the arrow up key in the input
 -}
-simulateArrowUp : SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateArrowUp : SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
 simulateArrowUp =
     simulateKey "ArrowUp"
 
 
 {-| Simulate pressing the enter key in the input
 -}
-simulateEnterKey : SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
+simulateEnterKey : SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
 simulateEnterKey =
     simulateKey "Enter"
 
 
 {-| Simulate clicking an option by the text label of the option.
 -}
-simulateClickOption : SimulateInputConfig single selector programTest -> Select a -> String -> (programTest -> programTest)
-simulateClickOption config model optionLabel =
+simulateClickOption : SimulateInputConfig single selector programTest -> String -> String -> (programTest -> programTest)
+simulateClickOption config id optionLabel =
     config.simulateDomEvent
-        (config.find [ config.attribute (Html.Attributes.id (Model.toMenuElementId model)) ]
+        (config.find [ config.attribute (Html.Attributes.id (id ++ "-menu")) ]
             >> config.find
                 [ config.attribute (Html.Attributes.attribute "role" "option")
                 , config.containing [ config.text optionLabel ]
@@ -361,7 +347,7 @@ type alias Select a =
     Model a
 
 
-simulateKey : String -> SimulateInputConfig single selector programTest -> Select a -> (programTest -> programTest)
-simulateKey key config model =
-    config.simulateDomEvent (config.find [ config.attribute (Html.Attributes.id (Model.toInputElementId model)) ])
+simulateKey : String -> SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
+simulateKey key config id =
+    config.simulateDomEvent (config.find [ config.attribute (Html.Attributes.id (id ++ "-input")) ])
         ( "keydown", Encode.object [ ( "key", Encode.string key ) ] )
