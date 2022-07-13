@@ -2,21 +2,21 @@ module Internal.Option exposing (Option, findByString, findByValue, init, toItem
 
 
 type alias Option a =
-    ( a, String, Int )
+    ( a, String )
 
 
-init : (a -> String) -> Int -> a -> Option a
-init itemToString idx item =
-    ( item, itemToString item, idx )
+init : (a -> String) -> a -> Option a
+init itemToString item =
+    ( item, itemToString item )
 
 
 toItem : Option a -> a
-toItem ( a, _, _ ) =
+toItem ( a, _ ) =
     a
 
 
 toString : Option a -> String
-toString ( _, s, _ ) =
+toString ( _, s ) =
     s
 
 

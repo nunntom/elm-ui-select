@@ -6,11 +6,11 @@ import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
 import Internal.Request as Request exposing (Request)
 import Internal.RequestState exposing (RequestState(..))
-import Select.UpdateConfig exposing (UpdateConfig)
+import Internal.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 
-update : UpdateConfig effect -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
-update ({ request } as config) tagger msg model =
+update : Maybe UpdateConfig -> Maybe (Request effect) -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
+update config request tagger msg model =
     case msg of
         InputChanged val ->
             ( model
@@ -56,7 +56,7 @@ update ({ request } as config) tagger msg model =
             onFocusMenu tagger request model
 
         InputLostFocus filteredOptions ->
-            ( Model.blur config filteredOptions model
+            ( Model.blur (Maybe.withDefault UpdateConfig.default config) request filteredOptions model
             , Effect.none
             )
 

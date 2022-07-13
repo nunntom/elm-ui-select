@@ -51,8 +51,8 @@ import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg)
 import Internal.Request as Request
 import Internal.Update as Update
+import Internal.UpdateConfig exposing (UpdateConfig)
 import Json.Encode as Encode
-import Select.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 
 {-| The Effect type
@@ -87,12 +87,11 @@ type alias Effect effect msg =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect Never msg )
 update =
-    Update.update UpdateConfig.default
+    Update.update Nothing Nothing
 
 
-{-| Update with configuration options, including using an HTTP request to retrieve matching remote results.
+{-| Update with configuration options, and optionally use an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
-See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
 
     type MyEffect
         = SelectEffect (Select.Effect MyEffect Msg)
@@ -103,10 +102,12 @@ See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
         case msg of
             SelectMsg subMsg ->
                 Select.Effect.updateWith
-                    { request = Select.request fetchThings
-                    , clearInputValueOnBlur = False
-                    , selectExactMatchOnBlur = True
-                    }
+                    (Just
+                        { clearInputValueOnBlur = False
+                        , selectExactMatchOnBlur = True
+                        }
+                    )
+                    (Just (Select.request fetchThings))
                     SelectMsg
                     subMsg
                     model.select
@@ -129,18 +130,8 @@ See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
             , expect = Http.expectJson tagger (Decode.list thingDecoder)
             }
 
-You can also use [Select.UpdateConfig](Select-UpdateConfig) to build up a config:
-
-    Select.Effect.updateWith
-        (Select.UpdateConfig.default
-            |> Select.UpdateConfig.withRequest (Select.request fetchThings)
-        )
-        subMsg
-        model.select
-        |> Tuple.mapFirst (\select -> { model | select = select })
-
 -}
-updateWith : UpdateConfig effect -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
+updateWith : Maybe UpdateConfig -> Maybe (Request effect) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
 updateWith =
     Update.update
 

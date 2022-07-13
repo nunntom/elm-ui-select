@@ -64,10 +64,12 @@ update msg model =
     case msg of
         SelectMsg subMsg ->
             Select.Effect.updateWith
-                { request = Just (Select.Effect.request FetchCocktails)
-                , clearInputValueOnBlur = True
-                , selectExactMatchOnBlur = False
-                }
+                (Just
+                    { clearInputValueOnBlur = True
+                    , selectExactMatchOnBlur = False
+                    }
+                )
+                (Just (Select.Effect.request FetchCocktails))
                 SelectMsg
                 subMsg
                 model.select

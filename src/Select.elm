@@ -3,7 +3,7 @@ module Select exposing
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed
-    , Msg, update, updateWith, Request, request, gotRequestResponse
+    , Msg, update, updateWith, UpdateConfig, Request, request, gotRequestResponse
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
     , toElement
     , Effect
@@ -34,7 +34,7 @@ module Select exposing
 
 # Update and Requests
 
-@docs Msg, update, updateWith, Request, request, gotRequestResponse
+@docs Msg, update, updateWith, UpdateConfig, Request, request, gotRequestResponse
 
 
 # Configure View
@@ -64,7 +64,6 @@ import Internal.Request as Request
 import Internal.Update as Update
 import Internal.View as View exposing (ViewConfigInternal)
 import Select.Filter exposing (Filter)
-import Select.UpdateConfig as UpdateConfig exposing (UpdateConfig)
 
 
 
@@ -191,23 +190,24 @@ type alias Msg a =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
-    Update.update UpdateConfig.default tagger msg select
+    Update.update Nothing Nothing tagger msg select
         |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
-{-| Update with configuration options, including using an HTTP request to retrieve matching remote results.
+{-| Update with optional configuration options, and optionally use an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Cmd yourself.
-See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
         case msg of
             Request SelectMsg subMsg ->
                 Select.updateWith
-                    { request = Select.request fetchThings
-                    , clearInputValueOnBlur = False
-                    , selectExactMatchOnBlur = True
-                    }
+                    (Just
+                        { clearInputValueOnBlur = False
+                        , selectExactMatchOnBlur = True
+                        }
+                    )
+                    (Just (Select.request fetchThings))
                     SelectMsg
                     subMsg
                     model.select
@@ -220,22 +220,25 @@ See [Select.UpdateConfig](Select-UpdateConfig) for configuration options.
             , expect = Http.expectJson (Select.gotRequestResponse query) (Decode.list thingDecoder)
             }
 
-You can also use [Select.UpdateConfig](Select-UpdateConfig) to build up a config:
+-}
+updateWith : Maybe UpdateConfig -> Maybe (Request a) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
+updateWith config req tagger msg select =
+    Update.update config req identity msg select
+        |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
 
-    Select.updateWith
-        (Select.UpdateConfig.default
-            |> Select.UpdateConfig.withRequest (Select.request fetchThings)
-        )
-        SelectMsg
-        subMsg
-        model.select
-        |> Tuple.mapFirst (\select -> { model | select = select })
+
+{-| Configuration options for updateWith.
+
+  - Should the input be cleared if on blur if nothing is selected?
+  - Should an exact string match (case insensitive) be selected automatically on blur if nothing is already selected?
+
+If you do not provide a config, both default to False.
 
 -}
-updateWith : UpdateConfig (Cmd (Msg a)) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
-updateWith config tagger msg select =
-    Update.update config identity msg select
-        |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
+type alias UpdateConfig =
+    { clearInputValueOnBlur : Bool
+    , selectExactMatchOnBlur : Bool
+    }
 
 
 {-| A Request. See [Select.Request](Select-Request) for configuration options.

@@ -11,7 +11,6 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Resources.ClearButton
 import Select exposing (OptionState(..), Select)
-import Select.UpdateConfig as SelectConfig
 
 
 main : Program () Model Msg
@@ -63,13 +62,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.updateWith
-                (SelectConfig.default
-                    |> SelectConfig.withRequest (Select.request fetchCocktails)
-                )
-                SelectMsg
-                subMsg
-                model.select
+            Select.updateWith Nothing (Just (Select.request fetchCocktails)) SelectMsg subMsg model.select
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 

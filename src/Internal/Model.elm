@@ -40,8 +40,9 @@ import Internal.Filter as Filter exposing (Filter)
 import Internal.Option as Option exposing (Option)
 import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement exposing (Placement(..))
+import Internal.Request exposing (Request)
 import Internal.RequestState exposing (RequestState(..))
-import Select.UpdateConfig exposing (UpdateConfig)
+import Internal.UpdateConfig exposing (UpdateConfig)
 
 
 
@@ -119,7 +120,7 @@ toHighlighted (Model { highlighted }) =
 
 toFilteredOptions : (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
 toFilteredOptions itemToString filter (Model model) =
-    List.indexedMap (Option.init itemToString) model.items
+    List.map (Option.init itemToString) model.items
         |> (if model.applyFilter then
                 Filter.filterOptions model.inputValue filter
 
@@ -296,8 +297,8 @@ setFocused v (Model model) =
     Model { model | focused = v }
 
 
-blur : UpdateConfig effect -> List (Option a) -> Model a -> Model a
-blur { clearInputValueOnBlur, selectExactMatchOnBlur, request } filteredOptions (Model model) =
+blur : UpdateConfig -> Maybe (Request effect) -> List (Option a) -> Model a -> Model a
+blur { clearInputValueOnBlur, selectExactMatchOnBlur } request filteredOptions (Model model) =
     (if model.selected == Nothing then
         case ( selectExactMatchOnBlur, Option.findByString filteredOptions model.inputValue ) of
             ( True, Just option ) ->
