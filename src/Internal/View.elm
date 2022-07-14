@@ -11,6 +11,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
+import Element.Region
 import Html.Attributes
 import Html.Events
 import Internal.Filter as Filter exposing (Filter)
@@ -133,7 +134,7 @@ inputView filteredOptions model config =
             ++ [ Events.onFocus (config.onChange InputFocused)
                , Events.onClick (config.onChange InputClicked)
                , Events.onLoseFocus (config.onChange (InputLostFocus filteredOptions))
-               , onKeyDown (KeyDown filteredOptions >> config.onChange)
+               , onKeyDown (Model.isOpen model) (KeyDown filteredOptions >> config.onChange)
                , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
                , Element.inFront <|
                     if Model.toValue model /= Nothing || Model.toInputValue model /= "" then
@@ -344,24 +345,34 @@ defaultNoMatchElement =
         (Element.text "No matches")
 
 
-onKeyDown : (String -> msg) -> Attribute msg
-onKeyDown tagger =
+onKeyDown : Bool -> (String -> msg) -> Attribute msg
+onKeyDown menuOpen tagger =
     Element.htmlAttribute <|
         Html.Events.preventDefaultOn "keydown"
-            (Decode.map (hijackKey tagger)
+            (Decode.map (hijackKey menuOpen tagger)
                 (Decode.field "key" Decode.string)
             )
 
 
-hijackKey : (String -> msg) -> String -> ( msg, Bool )
-hijackKey tagger key =
-    ( tagger key, List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ] )
+hijackKey : Bool -> (String -> msg) -> String -> ( msg, Bool )
+hijackKey menuOpen tagger key =
+    ( tagger key
+    , List.member key
+        ([ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ]
+            ++ (if menuOpen then
+                    [ "Escape" ]
+
+                else
+                    []
+               )
+        )
+    )
 
 
 ariaLive : Int -> Element msg
 ariaLive optionCount =
     Element.el
-        [ htmlAttribute "aria-live" "assertive"
+        [ Element.Region.announceUrgently
         , style "position" "absolute"
         , style "width" "1px"
         , style "height" "1px"
