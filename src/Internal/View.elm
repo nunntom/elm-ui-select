@@ -115,6 +115,7 @@ toElement_ placement filteredOptions model config =
                     , menuOpen = Model.isOpen model
                     , options = filteredOptions
                     , optionElement = config.optionElement
+                    , positionFixed = config.positionFixed
                     }
          ]
             ++ (if Model.isOpen model then
@@ -196,13 +197,20 @@ menuView :
         , menuOpen : Bool
         , options : List (Option a)
         , optionElement : OptionState -> a -> Element msg
+        , positionFixed : Bool
         }
     -> Element msg
 menuView attribs v =
     List.indexedMap (optionElement v) v.options
         |> Element.column (attribs ++ [ Element.htmlAttribute <| Html.Attributes.id v.menuId ])
         |> Element.el
-            (Element.width Element.fill
+            (Element.width
+                (if v.positionFixed then
+                    Element.fill
+
+                 else
+                    Element.shrink
+                )
                 :: (if v.menuOpen && List.length v.options > 0 then
                         []
 
