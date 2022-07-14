@@ -348,25 +348,26 @@ defaultNoMatchElement =
 onKeyDown : Bool -> (String -> msg) -> Attribute msg
 onKeyDown menuOpen tagger =
     Element.htmlAttribute <|
-        Html.Events.preventDefaultOn "keydown"
+        Html.Events.custom "keydown"
             (Decode.map (hijackKey menuOpen tagger)
                 (Decode.field "key" Decode.string)
             )
 
 
-hijackKey : Bool -> (String -> msg) -> String -> ( msg, Bool )
+hijackKey :
+    Bool
+    -> (String -> msg)
+    -> String
+    ->
+        { message : msg
+        , stopPropagation : Bool
+        , preventDefault : Bool
+        }
 hijackKey menuOpen tagger key =
-    ( tagger key
-    , List.member key
-        ([ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ]
-            ++ (if menuOpen then
-                    [ "Escape" ]
-
-                else
-                    []
-               )
-        )
-    )
+    { message = tagger key
+    , stopPropagation = menuOpen && key == "Escape"
+    , preventDefault = List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ]
+    }
 
 
 ariaLive : Int -> Element msg
