@@ -115,7 +115,6 @@ toElement_ placement filteredOptions model config =
                     , menuOpen = Model.isOpen model
                     , options = filteredOptions
                     , optionElement = config.optionElement
-                    , positionFixed = config.positionFixed
                     }
          ]
             ++ (if Model.isOpen model then
@@ -197,20 +196,13 @@ menuView :
         , menuOpen : Bool
         , options : List (Option a)
         , optionElement : OptionState -> a -> Element msg
-        , positionFixed : Bool
         }
     -> Element msg
 menuView attribs v =
     List.indexedMap (optionElement v) v.options
         |> Element.column (attribs ++ [ Element.htmlAttribute <| Html.Attributes.id v.menuId ])
         |> Element.el
-            (Element.width
-                (if v.positionFixed then
-                    Element.fill
-
-                 else
-                    Element.shrink
-                )
+            (Element.width Element.fill
                 :: (if v.menuOpen && List.length v.options > 0 then
                         []
 
@@ -299,10 +291,8 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
 positionFixedEl : Placement -> Maybe Dom.Element -> Element msg -> Element msg
 positionFixedEl placement container =
     Element.el
-        ([ style "position" "fixed"
-         , Element.width Element.fill
-         ]
-            ++ (if placement == Placement.Above then
+        (style "position" "fixed"
+            :: (if placement == Placement.Above then
                     [ style "transform"
                         ("translateY(calc(-100% - 5px - "
                             ++ (Maybe.map (.element >> .height >> String.fromFloat) container |> Maybe.withDefault "0")
