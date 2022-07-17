@@ -10,8 +10,8 @@ type Msg a
     | InputFocused
     | InputClicked
     | InputLostFocus
-        { clearInputValueOnBlur : Bool
-        , selectExactMatchOnBlur : Bool
+        { clearInputValue : Bool
+        , selectExactMatch : Bool
         }
         (List (Option a))
     | MouseEnteredOption Int

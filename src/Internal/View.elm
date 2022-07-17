@@ -140,8 +140,8 @@ inputView filteredOptions model config =
                , Events.onLoseFocus
                     (config.onChange
                         (InputLostFocus
-                            { clearInputValueOnBlur = config.clearInputValueOnBlur
-                            , selectExactMatchOnBlur = config.selectExactMatchOnBlur
+                            { clearInputValue = config.clearInputValueOnBlur
+                            , selectExactMatch = config.selectExactMatchOnBlur
                             }
                             filteredOptions
                         )

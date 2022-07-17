@@ -297,21 +297,21 @@ setFocused v (Model model) =
 
 
 blur :
-    { clearInputValueOnBlur : Bool
-    , selectExactMatchOnBlur : Bool
+    { clearInputValue : Bool
+    , selectExactMatch : Bool
     }
     -> Maybe (Request effect)
     -> List (Option a)
     -> Model a
     -> Model a
-blur { clearInputValueOnBlur, selectExactMatchOnBlur } request filteredOptions (Model model) =
+blur { clearInputValue, selectExactMatch } request filteredOptions (Model model) =
     (if model.selected == Nothing then
-        case ( selectExactMatchOnBlur, Option.findByString filteredOptions model.inputValue ) of
+        case ( selectExactMatch, Option.findByString filteredOptions model.inputValue ) of
             ( True, Just option ) ->
                 selectOption option (Model model)
 
             _ ->
-                if clearInputValueOnBlur then
+                if clearInputValue then
                     Model
                         { model
                             | inputValue = ""
