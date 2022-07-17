@@ -62,7 +62,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.updateWith Nothing (Just (Select.request fetchCocktails)) SelectMsg subMsg model.select
+            Select.updateWithRequest (Select.request fetchCocktails) SelectMsg subMsg model.select
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 
@@ -102,6 +102,7 @@ view model =
                 , itemToString = .name
                 }
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
+                |> Select.withSelectExactMatchOnBlur True
                 |> Select.toElement model.select
             , Maybe.map drinkView (Select.toValue model.select)
                 |> Maybe.withDefault Element.none

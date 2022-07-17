@@ -9,7 +9,11 @@ type Msg a
     | OptionClicked (Option a)
     | InputFocused
     | InputClicked
-    | InputLostFocus (List (Option a))
+    | InputLostFocus
+        { clearInputValueOnBlur : Bool
+        , selectExactMatchOnBlur : Bool
+        }
+        (List (Option a))
     | MouseEnteredOption Int
     | KeyDown (List (Option a)) String
     | GotContainerAndMenuElements (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })

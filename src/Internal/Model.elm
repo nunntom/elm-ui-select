@@ -42,7 +42,6 @@ import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement exposing (Placement(..))
 import Internal.Request exposing (Request)
 import Internal.RequestState exposing (RequestState(..))
-import Internal.UpdateConfig exposing (UpdateConfig)
 
 
 
@@ -297,7 +296,14 @@ setFocused v (Model model) =
     Model { model | focused = v }
 
 
-blur : UpdateConfig -> Maybe (Request effect) -> List (Option a) -> Model a -> Model a
+blur :
+    { clearInputValueOnBlur : Bool
+    , selectExactMatchOnBlur : Bool
+    }
+    -> Maybe (Request effect)
+    -> List (Option a)
+    -> Model a
+    -> Model a
 blur { clearInputValueOnBlur, selectExactMatchOnBlur } request filteredOptions (Model model) =
     (if model.selected == Nothing then
         case ( selectExactMatchOnBlur, Option.findByString filteredOptions model.inputValue ) of

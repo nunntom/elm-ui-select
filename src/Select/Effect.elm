@@ -1,6 +1,6 @@
 module Select.Effect exposing
     ( Effect
-    , update, updateWith, Request, request
+    , update, updateWithRequest, Request, request
     , perform, performWithRequest
     , simulate, simulateWithRequest
     , SimulateInputConfig, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
@@ -20,7 +20,7 @@ you don't need this module.
 
 # Update Effect
 
-@docs update, updateWith, Request, request
+@docs update, updateWithRequest, Request, request
 
 
 # Perform Effect
@@ -51,7 +51,6 @@ import Internal.Model exposing (Model)
 import Internal.Msg exposing (Msg)
 import Internal.Request as Request
 import Internal.Update as Update
-import Internal.UpdateConfig exposing (UpdateConfig)
 import Json.Encode as Encode
 
 
@@ -87,10 +86,10 @@ type alias Effect effect msg =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect Never msg )
 update =
-    Update.update Nothing Nothing
+    Update.update Nothing
 
 
-{-| Update with configuration options, and optionally use an HTTP request to retrieve matching remote results.
+{-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
 
     type MyEffect
@@ -101,16 +100,7 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
     update msg model =
         case msg of
             SelectMsg subMsg ->
-                Select.Effect.updateWith
-                    (Just
-                        { clearInputValueOnBlur = False
-                        , selectExactMatchOnBlur = True
-                        }
-                    )
-                    (Just (Select.request fetchThings))
-                    SelectMsg
-                    subMsg
-                    model.select
+                Select.Effect.updateWithRequest (Select.request fetchThings) SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
                     |> Tuple.mapSecond SelectEffect
 
@@ -131,9 +121,9 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
             }
 
 -}
-updateWith : Maybe UpdateConfig -> Maybe (Request effect) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
-updateWith =
-    Update.update
+updateWithRequest : Request effect -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
+updateWithRequest req =
+    Update.update (Just req)
 
 
 {-| A request that uses your Effect type

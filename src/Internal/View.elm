@@ -39,6 +39,8 @@ type alias ViewConfigInternal a msg =
     , optionElement : OptionState -> a -> Element msg
     , clearButton : Maybe (Element msg)
     , positionFixed : Bool
+    , clearInputValueOnBlur : Bool
+    , selectExactMatchOnBlur : Bool
     }
 
 
@@ -66,6 +68,8 @@ view attribs v =
     , noMatchElement = defaultNoMatchElement
     , clearButton = Nothing
     , positionFixed = False
+    , clearInputValueOnBlur = False
+    , selectExactMatchOnBlur = False
     }
 
 
@@ -133,7 +137,15 @@ inputView filteredOptions model config =
         (config.inputAttribs
             ++ [ Events.onFocus (config.onChange InputFocused)
                , Events.onClick (config.onChange InputClicked)
-               , Events.onLoseFocus (config.onChange (InputLostFocus filteredOptions))
+               , Events.onLoseFocus
+                    (config.onChange
+                        (InputLostFocus
+                            { clearInputValueOnBlur = config.clearInputValueOnBlur
+                            , selectExactMatchOnBlur = config.selectExactMatchOnBlur
+                            }
+                            filteredOptions
+                        )
+                    )
                , onKeyDown (Model.isOpen model) (KeyDown filteredOptions >> config.onChange)
                , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
                , Element.inFront <|

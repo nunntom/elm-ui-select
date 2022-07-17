@@ -3,8 +3,8 @@ module Select exposing
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed
-    , Msg, update, updateWith, UpdateConfig, Request, request, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
+    , Msg, update, updateWithRequest, UpdateConfig, Request, request, gotRequestResponse
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
     , toElement
     , Effect
     )
@@ -34,12 +34,12 @@ module Select exposing
 
 # Update and Requests
 
-@docs Msg, update, updateWith, UpdateConfig, Request, request, gotRequestResponse
+@docs Msg, update, updateWithRequest, UpdateConfig, Request, request, gotRequestResponse
 
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
 
 
 # Element
@@ -190,27 +190,18 @@ type alias Msg a =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
-    Update.update Nothing Nothing tagger msg select
+    Update.update Nothing tagger msg select
         |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
-{-| Update with optional configuration options, and optionally use an HTTP request to retrieve matching remote results.
+{-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Cmd yourself.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
         case msg of
             Request SelectMsg subMsg ->
-                Select.updateWith
-                    (Just
-                        { clearInputValueOnBlur = False
-                        , selectExactMatchOnBlur = True
-                        }
-                    )
-                    (Just (Select.request fetchThings))
-                    SelectMsg
-                    subMsg
-                    model.select
+                Select.updateWithRequest (Select.request fetchThings) SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
 
     fetchThings : String -> Cmd (Select.Msg Thing)
@@ -221,9 +212,9 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
             }
 
 -}
-updateWith : Maybe UpdateConfig -> Maybe (Request a) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
-updateWith config req tagger msg select =
-    Update.update config req identity msg select
+updateWithRequest : Request a -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
+updateWithRequest req tagger msg select =
+    Update.update (Just req) identity msg select
         |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
 
 
@@ -392,6 +383,21 @@ To overcome this you may want to listen to scroll and resize events on the paren
 withMenuPositionFixed : Bool -> ViewConfig a msg -> ViewConfig a msg
 withMenuPositionFixed v (ViewConfig config) =
     ViewConfig { config | positionFixed = v }
+
+
+{-| Should the input value be cleared when the input loses focus if nothing is selected?
+-}
+withClearInputValueOnBlur : Bool -> ViewConfig a msg -> ViewConfig a msg
+withClearInputValueOnBlur v (ViewConfig config) =
+    ViewConfig { config | clearInputValueOnBlur = v }
+
+
+{-| If nothing is selected, but the input value matches exactly one of the options (case insensitive),
+should we select it automatically when the input loses focus?
+-}
+withSelectExactMatchOnBlur : Bool -> ViewConfig a msg -> ViewConfig a msg
+withSelectExactMatchOnBlur v (ViewConfig config) =
+    ViewConfig { config | selectExactMatchOnBlur = v }
 
 
 {-| Turn the ViewConfig into an Element.

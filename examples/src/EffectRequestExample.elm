@@ -63,16 +63,7 @@ update : Msg -> Model -> ( Model, MyEffect )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.Effect.updateWith
-                (Just
-                    { clearInputValueOnBlur = True
-                    , selectExactMatchOnBlur = False
-                    }
-                )
-                (Just (Select.Effect.request FetchCocktails))
-                SelectMsg
-                subMsg
-                model.select
+            Select.Effect.updateWithRequest (Select.Effect.request FetchCocktails) SelectMsg subMsg model.select
                 |> Tuple.mapBoth (\select -> { model | select = select }) SelectEffect
 
 
