@@ -10,7 +10,7 @@ import Html exposing (Html)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Resources.ClearButton
-import Select exposing (OptionState(..), Select)
+import Select exposing (Select)
 import Select.Effect
 
 

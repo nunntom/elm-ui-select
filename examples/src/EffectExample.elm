@@ -7,7 +7,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Resources.ClearButton
-import Select exposing (OptionState(..), Select)
+import Select exposing (Select)
 import Select.Effect
 
 

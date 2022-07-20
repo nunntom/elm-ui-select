@@ -1,4 +1,4 @@
-module Example exposing (Model, init, main, update, view)
+module Example exposing (Model, main)
 
 import Browser
 import Countries exposing (Country)
@@ -7,7 +7,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Resources.ClearButton
-import Select exposing (OptionState(..), Select)
+import Select exposing (Select)
 
 
 main : Program () Model Msg

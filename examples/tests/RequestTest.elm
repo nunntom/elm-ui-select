@@ -6,6 +6,7 @@ import Json.Decode as Decode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
 import Select
 import Select.Effect
+import SimulateInput
 import SimulatedEffect.Cmd as SimulatedCmd
 import SimulatedEffect.Http as SimulateHttp
 import SimulatedEffect.Process as SimulatedProcess
@@ -26,8 +27,8 @@ exampleProgramTest =
                     |> ProgramTest.simulateHttpOk "GET"
                         "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate"
                         cocktailsResponse
-                    |> Select.Effect.simulateArrowDown simulateConfig "cocktail-select"
-                    |> Select.Effect.simulateEnterKey simulateConfig "cocktail-select"
+                    |> SimulateInput.arrowDown "cocktail-select"
+                    |> SimulateInput.enter "cocktail-select"
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         , Test.test "Type in Chocolate, and choose \"Chocolate Drink\" with mouse click" <|
             \() ->
@@ -40,12 +41,6 @@ exampleProgramTest =
                     |> Select.Effect.simulateClickOption simulateConfig "cocktail-select" "Chocolate Drink"
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         ]
-
-
-model : App.Model
-model =
-    App.init ()
-        |> Tuple.first
 
 
 programTest : ProgramTest App.Model App.Msg App.MyEffect

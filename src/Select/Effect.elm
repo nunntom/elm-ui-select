@@ -3,7 +3,7 @@ module Select.Effect exposing
     , update, updateWithRequest, Request, request
     , perform, performWithRequest
     , simulate, simulateWithRequest
-    , SimulateInputConfig, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
+    , simulateClickOption, SimulateInputConfig
     , map, mapEffect
     )
 
@@ -35,7 +35,7 @@ you don't need this module.
 
 # Simulating Input
 
-@docs SimulateInputConfig, simulateArrowDown, simulateArrowUp, simulateClickOption, simulateEnterKey
+@docs simulateClickOption, SimulateInputConfig
 
 
 # Mapping
@@ -238,7 +238,7 @@ simulateWithRequest =
     Effect.simulate
 
 
-{-| Simulate input. This is designed to help simulate input with elm-program-test.
+{-| Simulate clicking an option by the text label of the option. This is designed to help simulate input with elm-program-test.
 Since this package doesn't have elm-test or elm-program-test as dependencies,
 you need to provide some of the functions from those packages here.
 
@@ -247,8 +247,6 @@ you need to provide some of the functions from those packages here.
         { simulateDomEvent = ProgramTest.simulateDomEvent
         , find = Query.find
         , attribute = Selector.attribute
-        , containing = Selector.containing
-        , text = Selector.text
         }
 
     selectTest : Test
@@ -267,36 +265,6 @@ you need to provide some of the functions from those packages here.
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom" ]
 
 -}
-type alias SimulateInputConfig single selector programTest =
-    { simulateDomEvent : (single -> single) -> ( String, Encode.Value ) -> programTest -> programTest
-    , find : List selector -> single -> single
-    , attribute : Html.Attribute Never -> selector
-    }
-
-
-{-| Simulate pressing the arrow down key in the input
--}
-simulateArrowDown : SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
-simulateArrowDown =
-    simulateKey "ArrowDown"
-
-
-{-| Simulate pressing the arrow up key in the input
--}
-simulateArrowUp : SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
-simulateArrowUp =
-    simulateKey "ArrowUp"
-
-
-{-| Simulate pressing the enter key in the input
--}
-simulateEnterKey : SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
-simulateEnterKey =
-    simulateKey "Enter"
-
-
-{-| Simulate clicking an option by the text label of the option.
--}
 simulateClickOption : SimulateInputConfig single selector programTest -> String -> String -> (programTest -> programTest)
 simulateClickOption config id optionLabel =
     config.simulateDomEvent
@@ -307,6 +275,15 @@ simulateClickOption config id optionLabel =
                 ]
         )
         ( "click", Encode.object [] )
+
+
+{-| Config type alias used by simulateClickOption
+-}
+type alias SimulateInputConfig single selector programTest =
+    { simulateDomEvent : (single -> single) -> ( String, Encode.Value ) -> programTest -> programTest
+    , find : List selector -> single -> single
+    , attribute : Html.Attribute Never -> selector
+    }
 
 
 
@@ -333,9 +310,3 @@ mapEffect =
 
 type alias Select a =
     Model a
-
-
-simulateKey : String -> SimulateInputConfig single selector programTest -> String -> (programTest -> programTest)
-simulateKey key config id =
-    config.simulateDomEvent (config.find [ config.attribute (Html.Attributes.id (id ++ "-input")) ])
-        ( "keydown", Encode.object [ ( "key", Encode.string key ) ] )

@@ -6,6 +6,7 @@ import Html
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
 import Select
 import Select.Effect
+import SimulateInput
 import SimulatedEffect.Cmd as SimulatedCmd
 import SimulatedEffect.Process as SimulatedProcess
 import SimulatedEffect.Task as SimulatedTask
@@ -40,8 +41,8 @@ exampleProgramTest =
             \() ->
                 programTest
                     |> ProgramTest.fillIn "" "Choose a country" "United"
-                    |> Select.Effect.simulateArrowDown simulateInputConfig "country-select"
-                    |> Select.Effect.simulateEnterKey simulateInputConfig "country-select"
+                    |> SimulateInput.arrowDown "country-select"
+                    |> SimulateInput.enter "country-select"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         ]
 
