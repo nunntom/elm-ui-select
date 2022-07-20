@@ -3,8 +3,10 @@
   "description": "A select widget for elm-ui.",
   "version": "1.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "review": "elm-review"
+    "test": "cd examples && elm-test && cd ../",
+    "review": "elm-review",
+    "review-examples": "elm-review --elmjson examples/elm.json --config=review --ignore-dirs=../src",
+    "ci": "npm run review && npm run review-examples && npm run test"
   },
   "pre-commit": [
     "review"
@@ -20,7 +22,7 @@
   },
   "homepage": "https://github.com/nunntom/elm-ui-select#readme",
   "devDependencies": {
-    "elm-review": "^2.7.2",
+    "elm-review": "^2.7.3",
     "pre-commit": "^1.2.2"
   }
 }
