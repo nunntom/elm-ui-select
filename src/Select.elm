@@ -3,8 +3,8 @@ module Select exposing
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed
-    , Msg, update, updateWithRequest, UpdateConfig, Request, request, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
+    , Msg, update, updateWithRequest, Request, request, gotRequestResponse
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
     , toElement
     , Effect
     )
@@ -34,12 +34,12 @@ module Select exposing
 
 # Update and Requests
 
-@docs Msg, update, updateWithRequest, UpdateConfig, Request, request, gotRequestResponse
+@docs Msg, update, updateWithRequest, Request, request, gotRequestResponse
 
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
 
 
 # Element
@@ -84,6 +84,30 @@ init =
 
 
 {-| Set the list of items
+
+You can do this on init:
+
+    init : List String -> ( Model, Cmd Msg )
+    init things =
+        ( { select =
+                Select.init "thing-select"
+                    |> Select.setItems things
+          }
+        , Cmd.none
+        )
+
+Or you can do it in your view if you prefer to keep your items in your own model.
+
+    view : Model -> Element Msg
+    view model =
+        Select.view []
+            { onChange = SelectMsg
+            , label = Input.labelAbove [] (text "Choose a thing")
+            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            , itemToString = identity
+            }
+            |> Select.toElement (Select.setItems model.things model.select)
+
 -}
 setItems : List a -> Select a -> Select a
 setItems =
@@ -218,20 +242,6 @@ updateWithRequest req tagger msg select =
         |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
 
 
-{-| Configuration options for updateWith.
-
-  - Should the input be cleared if on blur if nothing is selected?
-  - Should an exact string match (case insensitive) be selected automatically on blur if nothing is already selected?
-
-If you do not provide a config, both default to False.
-
--}
-type alias UpdateConfig =
-    { clearInputValueOnBlur : Bool
-    , selectExactMatchOnBlur : Bool
-    }
-
-
 {-| A Request. See [Select.Request](Select-Request) for configuration options.
 -}
 type alias Request a =
@@ -260,6 +270,17 @@ gotRequestResponse inputValue =
 
 
 {-| The View Configuration
+
+    view : Model -> Element Msg
+    view model =
+        Select.view []
+            { onChange = SelectMsg
+            , label = Input.labelAbove [] (text "Choose a thing")
+            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            , itemToString = .name
+            }
+            |> Select.toElement model.thingsSelect
+
 -}
 type ViewConfig a msg
     = ViewConfig (ViewConfigInternal a msg)
@@ -302,6 +323,14 @@ withMenuAlwaysAbove (ViewConfig config) =
     ViewConfig { config | menuPlacement = Just Placement.Above }
 
 
+{-| Menu decides whether to appear above or below based on how much space is available. This is the default.
+You'd only use this function if you're passing around a config and need to reset this option.
+-}
+withMenuPlacementAuto : ViewConfig a msg -> ViewConfig a msg
+withMenuPlacementAuto (ViewConfig config) =
+    ViewConfig { config | menuPlacement = Nothing }
+
+
 {-| Set a maximum height for the menu
 -}
 withMenuMaxHeight : Maybe Int -> ViewConfig a msg -> ViewConfig a msg
@@ -318,6 +347,28 @@ withMenuMaxWidth width (ViewConfig config) =
 
 {-| Set arbitrary attributes for the menu element. You can call this multiple times and it will accumulate attributes.
 You can define different attributes based on whether the menu appears above or below the input.
+
+    Select.view []
+        { onChange = SelectMsg
+        , label = Input.labelAbove [] (Element.text "Choose a thing")
+        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+        , itemToString = .name
+        }
+        |> Select.withMenuAttributes
+            (\placement ->
+                [ Element.Font.size 16
+                , Element.Border.width 2
+                ]
+                    ++ (case placement of
+                            Select.MenuAbove ->
+                                [ Element.moveUp 10 ]
+
+                            Select.MenuBelow ->
+                                [ Element.moveDown 10 ]
+                       )
+            )
+        |> Select.toElement model.select
+
 -}
 withMenuAttributes : (MenuPlacement -> List (Attribute msg)) -> ViewConfig a msg -> ViewConfig a msg
 withMenuAttributes attribs (ViewConfig config) =
@@ -332,6 +383,36 @@ type MenuPlacement
 
 
 {-| Provide your own element for the options in the menu, based on the current [state](#OptionState) of the option.
+
+    Select.view []
+        { onChange = SelectMsg
+        , label = Input.labelAbove [] (Element.text "Choose a thing")
+        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+        , itemToString = .name
+        }
+        |> Select.withOptionElement
+            (\state item ->
+                Element.el
+                    [ Element.width Element.fill
+                    , Element.paddingXY 14 10
+                    , Background.color <|
+                        case optionState of
+                            Idle ->
+                                Element.rgb 1 1 1
+
+                            Highlighted ->
+                                Element.rgb 0.95 0.95 0.95
+
+                            Selected ->
+                                Element.rgba 0.64 0.83 0.97 0.8
+
+                            SelectedAndHighlighted ->
+                                Element.rgba 0.64 0.83 0.97 1
+                    ]
+                    (Element.text item.name)
+            )
+        |> Select.toElement model.select
+
 -}
 withOptionElement : (OptionState -> a -> Element msg) -> ViewConfig a msg -> ViewConfig a msg
 withOptionElement toEl (ViewConfig config) =
@@ -355,6 +436,25 @@ withNoMatchElement element (ViewConfig config) =
 
 
 {-| Add a button to clear the input. This element is positioned as Element.inFront.
+
+    Select.view []
+        { onChange = SelectMsg
+        , label = Input.labelAbove [] (Element.text "Choose a thing")
+        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+        , itemToString = .name
+        }
+        |> Select.withClearButton
+            (Just
+                (Select.clearButton
+                    [ Element.alignRight
+                    , Element.centerY
+                    , Element.moveLeft 12
+                    ]
+                    (Element.el [ Element.Region.description "clear selection" ] (Element.text "❌"))
+                )
+            )
+        |> Select.toElement model.select
+
 -}
 withClearButton : Maybe (ClearButton msg) -> ViewConfig a msg -> ViewConfig a msg
 withClearButton cb (ViewConfig config) =
@@ -411,7 +511,8 @@ toElement model (ViewConfig config) =
 -- EFFECT
 
 
-{-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html)
+{-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html) and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/),
+see [Select.Effect](Select-Effect).
 -}
 type alias Effect effect msg =
     Effect.Effect effect msg

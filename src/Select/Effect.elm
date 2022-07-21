@@ -251,7 +251,7 @@ you need to provide some of the functions from those packages here.
 
     selectTest : Test
     selectTest =
-        Test.test "Type in United and choose United Kingdom with a mouse click" <|
+        Test.test "Typing United and clicking United Kingdom option selects United Kingdom" <|
             \() ->
                 ProgramTest.createElement
                     { init = Example.init
@@ -260,7 +260,7 @@ you need to provide some of the functions from those packages here.
                     }
                     |> ProgramTest.withSimulatedEffects simulateEffect
                     |> ProgramTest.start ()
-                    |> Select.Effect.simulateFillIn simulateConfig model.select "United"
+                    |> ProgramTest.fillIn "" "Choose a country" "United Kingdom"
                     |> Select.Effect.simulateClickOption simulateConfig model.select "United Kingdom"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom" ]
 
