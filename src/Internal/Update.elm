@@ -131,7 +131,10 @@ onFocusMenu tagger maybeRequest model =
     ( Model.setFocused True model
         |> Model.highlightIndex 0
     , if maybeRequest == Nothing || Model.toRequestState model == Just Success then
-        getContainerAndMenuElementsEffect tagger model
+        Effect.batch
+            [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
+            , getContainerAndMenuElementsEffect tagger model
+            ]
 
       else
         Effect.none

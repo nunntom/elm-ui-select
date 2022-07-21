@@ -6,7 +6,8 @@ import Task exposing (Task)
 
 
 type Effect effect msg
-    = GetContainerAndMenuElements (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element } -> msg) { containerId : String, menuId : String }
+    = ScrollMenuToTop msg String
+    | GetContainerAndMenuElements (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element } -> msg) { containerId : String, menuId : String }
     | GetElementsAndScrollMenu msg { menuId : String, optionId : String }
     | Batch (List (Effect effect msg))
     | Request effect
@@ -27,6 +28,10 @@ batch effects =
 perform : (effect -> Cmd msg) -> Effect effect msg -> Cmd msg
 perform requestCmd effect =
     case effect of
+        ScrollMenuToTop msg id ->
+            Dom.setViewportOf id 0 0
+                |> Task.attempt (\_ -> msg)
+
         GetContainerAndMenuElements msg ids ->
             getContainerAndMenuElements msg ids
 
@@ -58,6 +63,10 @@ simulate :
     -> simulatedEffect
 simulate conf simulateRequest effect =
     case effect of
+        ScrollMenuToTop msg _ ->
+            conf.sleep 0
+                |> conf.perform (\_ -> msg)
+
         GetContainerAndMenuElements msg _ ->
             conf.sleep 0
                 |> conf.perform
@@ -149,6 +158,9 @@ calculateScrollTop { optionTop, optionBottom, menuViewPortY, menuHeight } =
 map : (msg -> msg2) -> Effect effect msg -> Effect effect msg2
 map toMsg effect =
     case effect of
+        ScrollMenuToTop msg id ->
+            ScrollMenuToTop (toMsg msg) id
+
         GetContainerAndMenuElements msg ids ->
             GetContainerAndMenuElements (msg >> toMsg) ids
 
@@ -172,6 +184,9 @@ map toMsg effect =
 mapEffect : (effect -> effect2) -> Effect effect msg -> Effect effect2 msg
 mapEffect toEffect effect =
     case effect of
+        ScrollMenuToTop msg id ->
+            ScrollMenuToTop msg id
+
         GetContainerAndMenuElements msg ids ->
             GetContainerAndMenuElements msg ids
 
