@@ -10,7 +10,7 @@
     "examples": "cd examples/src && elm reactor"
   },
   "pre-commit": [
-    "review"
+    "ci"
   ],
   "repository": {
     "type": "git",

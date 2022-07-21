@@ -5,9 +5,8 @@ import Countries exposing (Country)
 import Element
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes
+import Resources.ClearButton
 import Select exposing (Select)
-import Element.Region
 
 main : Program () Model Msg
 main =
@@ -44,21 +43,13 @@ view model =
             , Element.padding 30
             ]
             [ Select.view []
-        { onChange = CountrySelectMsg
-        , label = Input.labelAbove [ Element.htmlAttribute <| Html.Attributes.for (Select.toInputElementId model.countrySelect) ] (Element.text "Choose a country")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = \c -> c.flag ++ " " ++ c.name
-        }
-        |> Select.withClearButton
-            (Just
-                (Select.clearButton [
-                    Element.alignRight
-                , Element.centerY
-                , Element.moveLeft 12 ]
-                    (Element.el [ Element.Region.description "clear selection" ] (Element.text "❌"))
-                )
-            )
-        |> Select.toElement model.countrySelect
+                { onChange = CountrySelectMsg
+                , label = Input.labelAbove [] (Element.text "Choose a country")
+                , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+                , itemToString = \c -> c.flag ++ " " ++ c.name
+                }
+                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
+                |> Select.toElement model.countrySelect
             , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
                 |> Maybe.withDefault Element.none
             ]

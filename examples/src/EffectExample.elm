@@ -5,7 +5,6 @@ import Countries exposing (Country)
 import Element
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes
 import Resources.ClearButton
 import Select exposing (Select)
 import Select.Effect
@@ -46,7 +45,7 @@ view model =
             ]
             [ Select.view []
                 { onChange = CountrySelectMsg
-                , label = Input.labelAbove [ Element.htmlAttribute <| Html.Attributes.for (Select.toInputElementId model.countrySelect) ] (Element.text "Choose a country")
+                , label = Input.labelAbove [] (Element.text "Choose a country")
                 , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
                 , itemToString = \c -> c.flag ++ " " ++ c.name
                 }
