@@ -9,7 +9,7 @@
     "ci": "npm run review && npm run review-examples && npm run test"
   },
   "pre-commit": [
-    "review"
+    "ci"
   ],
   "repository": {
     "type": "git",
