@@ -1,4 +1,4 @@
-module Example exposing (Model, main)
+module Example exposing (main)
 
 import Browser
 import Countries exposing (Country)
