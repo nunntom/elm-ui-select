@@ -65,26 +65,26 @@ Note that if you have the list of items in your model already, you can also pass
 ```elm
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : ( PageModel, Cmd Msg )
+init =
     ( { countrySelect = Select.init "country-select" }
     , Cmd.none
     )
 
 
-view : Model -> Element Msg
-view model =
+view : List Country -> PageModel -> Element Msg
+view countries model =
     Select.view []
         { onChange = CountrySelectMsg
         , label = Input.labelAbove [] (text "Choose a country")
         , placeholder = Just (Input.placeholder [] (text "Type to search"))
         , itemToString = \c -> c.flag ++ " " ++ c.name
         }
-        |> Select.toElement (Select.setItems Countries.all model.countrySelect)
+        |> Select.toElement (Select.setItems countries model.countrySelect)
 
 
 ```
 
 ## Limitations
 
-There are issues when the input is placed within a parent element that has overflow scroll or auto: the menu may be clipped by the parent. This can be overcome by using [Select.withMenuPositionFixed](https://package.elm-lang.org/packages/nunntom/elm-ui-select/2.0.2/Select/#withMenuPositionFixed), but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
+There are issues when the input is placed within a parent element that has overflow scroll or auto: the menu may be clipped by the parent. This can be overcome by using [Select.withMenuPositionFixed](https://package.elm-lang.org/packages/nunntom/elm-ui-select/2.0.3/Select/#withMenuPositionFixed), but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
