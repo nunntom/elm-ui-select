@@ -6,7 +6,8 @@
     "test": "cd examples && elm-test && cd ../",
     "review": "elm-review",
     "review-examples": "elm-review --elmjson examples/elm.json --config=review --ignore-dirs=../src",
-    "ci": "npm run review && npm run review-examples && npm run test"
+    "ci": "npm run review && npm run review-examples && npm run test",
+    "examples": "cd examples/src && elm reactor"
   },
   "pre-commit": [
     "review"
@@ -22,7 +23,10 @@
   },
   "homepage": "https://github.com/nunntom/elm-ui-select#readme",
   "devDependencies": {
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.5",
     "elm-review": "^2.7.3",
+    "elm-test": "^0.19.1-revision9",
     "pre-commit": "^1.2.2"
   }
 }

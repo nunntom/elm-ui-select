@@ -6,9 +6,8 @@ import Element
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
-import Resources.ClearButton
 import Select exposing (Select)
-
+import Element.Region
 
 main : Program () Model Msg
 main =
@@ -56,7 +55,7 @@ view model =
                     Element.alignRight
                 , Element.centerY
                 , Element.moveLeft 12 ]
-                    (Element.el [ Element.Region.description "clear selection") ] (Element.text "❌"))
+                    (Element.el [ Element.Region.description "clear selection" ] (Element.text "❌"))
                 )
             )
         |> Select.toElement model.countrySelect

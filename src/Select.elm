@@ -2,7 +2,7 @@ module Select exposing
     ( Select, init
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
-    , isMenuOpen, isLoading, isRequestFailed
+    , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWithRequest, Request, request, gotRequestResponse
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
     , toElement
@@ -29,7 +29,7 @@ module Select exposing
 
 # Check
 
-@docs isMenuOpen, isLoading, isRequestFailed
+@docs isMenuOpen, isLoading, isRequestFailed, isFocused
 
 
 # Update and Requests
@@ -190,6 +190,13 @@ isLoading =
 isRequestFailed : Select a -> Bool
 isRequestFailed =
     Model.isRequestFailed
+
+
+{-| Is the input focused?
+-}
+isFocused : Select a -> Bool
+isFocused =
+    Model.isFocused
 
 
 
