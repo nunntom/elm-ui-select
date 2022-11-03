@@ -327,7 +327,7 @@ defaultOptionElement toString optionState a =
         , Background.color <|
             case optionState of
                 Highlighted ->
-                    Element.rgb 0.95 0.95 0.95
+                    Element.rgb 0.89 0.89 0.89
 
                 Selected ->
                     Element.rgba 0.64 0.83 0.97 0.8
