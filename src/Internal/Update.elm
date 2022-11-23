@@ -65,7 +65,7 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
                         Effect.none
 
                 Nothing ->
-                    getContainerAndMenuElementsEffect tagger model
+                    getContainerAndMenuElementsEffect Nothing tagger model
             )
 
         OptionClicked opt ->
@@ -73,11 +73,11 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
             , Effect.none
             )
 
-        InputFocused ->
-            onFocusMenu tagger (request /= Nothing) model
+        InputFocused maybeIdx ->
+            onFocusMenu tagger maybeIdx (request /= Nothing) model
 
-        InputClicked ->
-            onFocusMenu tagger (request /= Nothing) model
+        InputClicked maybeIdx ->
+            onFocusMenu tagger maybeIdx (request /= Nothing) model
 
         InputLostFocus config filteredOptions ->
             ( Model.blur config (request /= Nothing) filteredOptions model
@@ -92,14 +92,23 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
         KeyDown selectOnTab filteredOptions key ->
             handleKey selectOnTab tagger model key filteredOptions
 
-        GotContainerAndMenuElements result ->
+        GotContainerAndMenuElements maybeIdx result ->
             ( model
                 |> Model.setElements
                     { container = Maybe.map .container (Result.toMaybe result)
                     , menu = Maybe.map .menu (Result.toMaybe result)
                     }
                 |> Model.openMenu
-            , Effect.none
+            , case maybeIdx of
+                Just idx ->
+                    Effect.GetElementsAndScrollMenu
+                        (tagger NoOp)
+                        { menuId = Model.toMenuElementId model
+                        , optionId = Model.toOptionElementId model idx
+                        }
+
+                Nothing ->
+                    Effect.none
             )
 
         ClearButtonPressed ->
@@ -133,7 +142,7 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
                             |> Model.setItems items
                             |> Model.setRequestState (Just Success)
                         , if Model.toValue model == Nothing then
-                            getContainerAndMenuElementsEffect tagger model
+                            getContainerAndMenuElementsEffect Nothing tagger model
 
                           else
                             Effect.none
@@ -151,14 +160,14 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
             ( model, Effect.none )
 
 
-onFocusMenu : (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
-onFocusMenu tagger hasRequest model =
+onFocusMenu : (Msg a -> msg) -> Maybe Int -> Bool -> Model a -> ( Model a, Effect effect msg )
+onFocusMenu tagger maybeOptionIdx hasRequest model =
     ( Model.setFocused True model
-        |> Model.highlightIndex Nothing
+        |> Model.highlightIndex maybeOptionIdx
     , if not hasRequest || Model.toRequestState model == Just Success then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
-            , getContainerAndMenuElementsEffect tagger model
+            , getContainerAndMenuElementsEffect maybeOptionIdx tagger model
             ]
 
       else
@@ -211,26 +220,19 @@ moveHighlight : (Msg a -> msg) -> Int -> Model a -> ( Model a, Effect effect msg
 moveHighlight tagger newHighlighted model =
     if Model.isOpen model then
         ( Model.highlightIndex (Just newHighlighted) model
-        , Effect.batch
-            [ getContainerAndMenuElementsEffect tagger model
-            , Effect.GetElementsAndScrollMenu
-                (tagger NoOp)
-                { menuId = Model.toMenuElementId model
-                , optionId = Model.toOptionElementId model newHighlighted
-                }
-            ]
+        , getContainerAndMenuElementsEffect (Just newHighlighted) tagger model
         )
 
     else
         ( model
-        , getContainerAndMenuElementsEffect tagger model
+        , getContainerAndMenuElementsEffect Nothing tagger model
         )
 
 
-getContainerAndMenuElementsEffect : (Msg a -> msg) -> Model a -> Effect effect msg
-getContainerAndMenuElementsEffect tagger model =
+getContainerAndMenuElementsEffect : Maybe Int -> (Msg a -> msg) -> Model a -> Effect effect msg
+getContainerAndMenuElementsEffect maybeIdx tagger model =
     Effect.GetContainerAndMenuElements
-        (GotContainerAndMenuElements >> tagger)
+        (GotContainerAndMenuElements maybeIdx >> tagger)
         { menuId = Model.toMenuElementId model
         , containerId = Model.toContainerElementId model
         }

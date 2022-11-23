@@ -135,10 +135,15 @@ toElement_ placement filteredOptions model config =
 
 inputView : List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
 inputView filteredOptions model config =
+    let
+        selectedIdx =
+            Model.toValue model
+                |> Maybe.andThen (Option.findIndex filteredOptions)
+    in
     Input.text
         (config.inputAttribs
-            ++ [ Events.onFocus (config.onChange InputFocused)
-               , Events.onClick (config.onChange InputClicked)
+            ++ [ Events.onFocus (InputFocused selectedIdx |> config.onChange)
+               , Events.onClick (InputClicked selectedIdx |> config.onChange)
                , Events.onLoseFocus
                     (config.onChange
                         (InputLostFocus
