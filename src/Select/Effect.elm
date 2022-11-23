@@ -1,6 +1,7 @@
 module Select.Effect exposing
     ( Effect
-    , update, updateWithRequest, Request, request
+    , update, updateWith
+    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange
     , perform, performWithRequest
     , simulate, simulateWithRequest
     , simulateClickOption, SimulateInputConfig
@@ -20,7 +21,12 @@ you don't need this module.
 
 # Update Effect
 
-@docs update, updateWithRequest, Request, request
+@docs update, updateWith
+
+
+# Update Options
+
+@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange
 
 
 # Perform Effect
@@ -49,8 +55,8 @@ import Html.Attributes
 import Internal.Effect as Effect
 import Internal.Model exposing (Model)
 import Internal.Msg exposing (Msg)
-import Internal.Request as Request
 import Internal.Update as Update
+import Internal.UpdateOptions as UpdateOptions
 import Json.Encode as Encode
 
 
@@ -86,11 +92,41 @@ type alias Effect effect msg =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect Never msg )
 update =
-    Update.update Nothing
+    Update.update (UpdateOptions.fromList [])
+
+
+{-| Update with options.
+
+    update : Msg -> Model -> ( Model, MyEffect )
+    update msg model =
+        case msg of
+            SelectMsg subMsg ->
+                Select.Effect.updateWith [ Select.Effect.onSelectedChanged ThingSelected ] SelectMsg subMsg model.select
+                    |> Tuple.mapFirst (\select -> { model | select = select })
+                    |> Tuple.mapSecond SelectEffect
+
+            ThingSelected maybeThing ->
+                Debug.todo "Do something when the thing is selected/deselected"
+
+-}
+updateWith : List (UpdateOption effect a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
+updateWith options =
+    Update.update (UpdateOptions.fromList options)
+
+
+{-| Options for use with updateWith.
+-}
+type alias UpdateOption effect a msg =
+    UpdateOptions.UpdateOption effect a msg
 
 
 {-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
+
+Provide a function that takes the input value and returns an Effect (your app's own Effect type)
+that can be used to perform an HTTP request. Update will use this Effect when the user types into the input.
+
+When the effect is performed you must use Select.Effect.performWithRequest instead of Select.Effect.perform.
 
     type MyEffect
         = SelectEffect (Select.Effect MyEffect Msg)
@@ -100,7 +136,7 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
     update msg model =
         case msg of
             SelectMsg subMsg ->
-                Select.Effect.updateWithRequest (Select.request fetchThings) SelectMsg subMsg model.select
+                Select.Effect.updateWith [ Select.Effect.request fetchThings ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
                     |> Tuple.mapSecond SelectEffect
 
@@ -121,24 +157,31 @@ Note that in order to avoid an elm/http dependency in this package, you will nee
             }
 
 -}
-updateWithRequest : Request effect -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
-updateWithRequest req =
-    Update.update (Just req)
+request : (String -> effect) -> UpdateOption effect a msg
+request effect =
+    UpdateOptions.Request effect
 
 
-{-| A request that uses your Effect type
+{-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
 -}
-type alias Request effect =
-    Request.Request effect
+requestDebounceDelay : Float -> UpdateOption effect a msg
+requestDebounceDelay delay =
+    UpdateOptions.DebounceRequest delay
 
 
-{-| Create a request. Provide a function that takes the input value and returns an Effect (your app's own Effect type)
-that can be used to perform an HTTP request. Update will use this Effect when the user types in the input subject to a debounce delay
-and minimum number of characters which can be configured in the [Request](Select-Request) module.
+{-| How many characters does a user need to type before a request is sent?
+If this is too low you may get an unmanagable number of results! Default is 3 characters.
 -}
-request : (String -> effect) -> Request effect
-request =
-    Request.request
+requestMinInputLength : Int -> UpdateOption effect a msg
+requestMinInputLength len =
+    UpdateOptions.RequestMinInputLength len
+
+
+{-| If provided this msg will be sent whenever the selected item changes.
+-}
+onSelectedChange : (Maybe a -> msg) -> UpdateOption effect a msg
+onSelectedChange msg =
+    UpdateOptions.OnSelect msg
 
 
 

@@ -40,7 +40,6 @@ import Internal.Filter as Filter exposing (Filter)
 import Internal.Option as Option exposing (Option)
 import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement exposing (Placement(..))
-import Internal.Request exposing (Request)
 import Internal.RequestState exposing (RequestState(..))
 
 
@@ -300,11 +299,11 @@ blur :
     { clearInputValue : Bool
     , selectExactMatch : Bool
     }
-    -> Maybe (Request effect)
+    -> Bool
     -> List (Option a)
     -> Model a
     -> Model a
-blur { clearInputValue, selectExactMatch } request filteredOptions (Model model) =
+blur { clearInputValue, selectExactMatch } hasRequest filteredOptions (Model model) =
     (if model.selected == Nothing then
         case ( selectExactMatch, Option.findByString filteredOptions model.inputValue ) of
             ( True, Just option ) ->
@@ -316,7 +315,7 @@ blur { clearInputValue, selectExactMatch } request filteredOptions (Model model)
                         { model
                             | inputValue = ""
                             , items =
-                                if request == Nothing then
+                                if not hasRequest then
                                     model.items
 
                                 else

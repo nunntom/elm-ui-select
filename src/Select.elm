@@ -3,7 +3,8 @@ module Select exposing
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
-    , Msg, update, updateWithRequest, Request, request, gotRequestResponse
+    , Msg, update, updateWith
+    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, gotRequestResponse
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
     , toElement
     , Effect
@@ -32,9 +33,14 @@ module Select exposing
 @docs isMenuOpen, isLoading, isRequestFailed, isFocused
 
 
-# Update and Requests
+# Update the Select
 
-@docs Msg, update, updateWithRequest, Request, request, gotRequestResponse
+@docs Msg, update, updateWith
+
+
+# Update Options
+
+@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, gotRequestResponse
 
 
 # Configure View
@@ -60,8 +66,8 @@ import Internal.Model as Model exposing (Model)
 import Internal.Msg as Msg
 import Internal.OptionState as OptionState
 import Internal.Placement as Placement
-import Internal.Request as Request
 import Internal.Update as Update
+import Internal.UpdateOptions as UpdateOptions exposing (UpdateOption)
 import Internal.View as View exposing (ViewConfigInternal)
 import Select.Filter exposing (Filter)
 
@@ -221,47 +227,79 @@ type alias Msg a =
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
-    Update.update Nothing tagger msg select
+    Update.update (UpdateOptions.fromList []) tagger msg select
         |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
-{-| Update with an HTTP request to retrieve matching remote results.
-Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Cmd yourself.
+{-| Update with options.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
         case msg of
-            Request SelectMsg subMsg ->
-                Select.updateWithRequest (Select.request fetchThings) SelectMsg subMsg model.select
+            SelectMsg subMsg ->
+                Select.updateWith [ Select.onSelectedChanged ThingSelected ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
 
-    fetchThings : String -> Cmd (Select.Msg Thing)
+            ThingSelected maybeThing ->
+                Debug.todo "Do something when the thing is selected/deselected"
+
+-}
+updateWith : List (UpdateOption a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
+updateWith options tagger msg select =
+    Update.update (UpdateOptions.fromList options) tagger msg select
+        |> Tuple.mapSecond (Effect.perform identity)
+
+
+{-| Options for use with updateWith.
+-}
+type alias UpdateOption a msg =
+    UpdateOptions.UpdateOption (Cmd msg) a msg
+
+
+{-| Use an HTTP request to retrieve matching remote results. ote that in order to avoid an elm/http dependency in this package,
+you will need to provide the request Cmd yourself. Provide a function that takes the input value and returns a Cmd.
+Update will return this Cmd when the user types in the input. Note, you need to hook in the response using the Select.gotRequestResponse msg.
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            SelectMsg subMsg ->
+                Select.updateWith [ Select.request fetchThings ] SelectMsg subMsg model.select
+                    |> Tuple.mapFirst (\select -> { model | select = select })
+
+    fetchThings : String -> Cmd Msg
     fetchThings query =
         Http.get
             { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson (Select.gotRequestResponse query) (Decode.list thingDecoder)
+            , expect = Http.expectJson (Select.gotRequestResponse query >> SelectMsg) (Decode.list thingDecoder)
             }
 
 -}
-updateWithRequest : Request a -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
-updateWithRequest req tagger msg select =
-    Update.update (Just req) identity msg select
-        |> Tuple.mapSecond (Effect.perform identity >> Cmd.map tagger)
+request : (String -> Cmd msg) -> UpdateOption a msg
+request effect =
+    UpdateOptions.Request effect
 
 
-{-| A Request. See [Select.Request](Select-Request) for configuration options.
+{-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
 -}
-type alias Request a =
-    Request.Request (Cmd (Msg a))
+requestDebounceDelay : Float -> UpdateOption a msg
+requestDebounceDelay delay =
+    UpdateOptions.DebounceRequest delay
 
 
-{-| Create a request. Provide a function that takes the input value and returns a Cmd.
-Update will return this Cmd when the user types in the input subject to a debounce delay
-and minimum number of characters which can be configured in the [Select.Request](Select-Request) module.
+{-| How many characters does a user need to type before a request is sent?
+If this is too low you may get an unmanagable number of results! Default is 3 characters.
 -}
-request : (String -> Cmd (Msg a)) -> Request a
-request =
-    Request.request
+requestMinInputLength : Int -> UpdateOption a msg
+requestMinInputLength len =
+    UpdateOptions.RequestMinInputLength len
+
+
+{-| If provided this msg will be sent whenever the selected item changes.
+-}
+onSelectedChange : (Maybe a -> msg) -> UpdateOption a msg
+onSelectedChange msg =
+    UpdateOptions.OnSelect msg
 
 
 {-| Hook the request Cmd result back into update with this Msg. You need to pass in the string query (input value)

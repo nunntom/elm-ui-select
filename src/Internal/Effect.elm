@@ -11,6 +11,7 @@ type Effect effect msg
     | GetElementsAndScrollMenu msg { menuId : String, optionId : String }
     | Batch (List (Effect effect msg))
     | Request effect
+    | Emit msg
     | Debounce (String -> msg) Float String
     | None
 
@@ -26,7 +27,7 @@ batch effects =
 
 
 perform : (effect -> Cmd msg) -> Effect effect msg -> Cmd msg
-perform requestCmd effect =
+perform toCmd effect =
     case effect of
         ScrollMenuToTop msg id ->
             Dom.setViewportOf id 0 0
@@ -39,11 +40,15 @@ perform requestCmd effect =
             getElementsAndScrollMenu msg ids
 
         Batch effects ->
-            List.foldl (\eff cmds -> perform requestCmd eff :: cmds) [] effects
+            List.foldl (\eff cmds -> perform toCmd eff :: cmds) [] effects
                 |> Cmd.batch
 
         Request eff ->
-            requestCmd eff
+            toCmd eff
+
+        Emit msg ->
+            Process.sleep 0
+                |> Task.perform (\_ -> msg)
 
         Debounce msg delay val ->
             Process.sleep delay
@@ -92,6 +97,10 @@ simulate conf simulateRequest effect =
 
         Request eff ->
             simulateRequest eff
+
+        Emit msg ->
+            conf.sleep 0
+                |> conf.perform (\_ -> msg)
 
         Debounce msg delay val ->
             conf.sleep delay
@@ -174,6 +183,9 @@ map toMsg effect =
         Request eff ->
             Request eff
 
+        Emit msg ->
+            Emit (toMsg msg)
+
         Debounce msg delay val ->
             Debounce (msg >> toMsg) delay val
 
@@ -199,6 +211,9 @@ mapEffect toEffect effect =
 
         Request eff ->
             Request (toEffect eff)
+
+        Emit msg ->
+            Emit msg
 
         Debounce msg delay val ->
             Debounce msg delay val

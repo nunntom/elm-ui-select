@@ -4,12 +4,31 @@ import Internal.Effect as Effect exposing (Effect)
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
-import Internal.Request as Request exposing (Request)
 import Internal.RequestState exposing (RequestState(..))
+import Internal.UpdateOptions exposing (UpdateOptions)
 
 
-update : Maybe (Request effect) -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
-update request tagger msg model =
+update : UpdateOptions effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
+update ({ onSelect } as options) tagger msg model =
+    let
+        ( model_, effect ) =
+            update_ options tagger msg model
+    in
+    ( model_
+    , Effect.batch
+        [ effect
+        , case ( Model.toValue model /= Model.toValue model_, onSelect ) of
+            ( True, Just onSelect_ ) ->
+                Effect.Emit (onSelect_ <| Model.toValue model_)
+
+            _ ->
+                Effect.none
+        ]
+    )
+
+
+update_ : UpdateOptions effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
+update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
     case msg of
         InputChanged val ->
             ( model
@@ -32,9 +51,9 @@ update request tagger msg model =
                         Nothing
                     )
             , case request of
-                Just req ->
-                    if String.length val >= Request.toMinLength req then
-                        Effect.Debounce (InputDebounceReturned >> tagger) (Request.toDelay req) val
+                Just _ ->
+                    if String.length val >= requestMinInputLength then
+                        Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest val
 
                     else
                         Effect.none
@@ -49,13 +68,13 @@ update request tagger msg model =
             )
 
         InputFocused ->
-            onFocusMenu tagger request model
+            onFocusMenu tagger (request /= Nothing) model
 
         InputClicked ->
-            onFocusMenu tagger request model
+            onFocusMenu tagger (request /= Nothing) model
 
         InputLostFocus config filteredOptions ->
-            ( Model.blur config request filteredOptions model
+            ( Model.blur config (request /= Nothing) filteredOptions model
             , Effect.none
             )
 
@@ -93,7 +112,7 @@ update request tagger msg model =
         InputDebounceReturned val ->
             if val == Model.toInputValue model then
                 ( Model.setRequestState (Just Loading) model
-                , Maybe.map (Request.toEffect >> (\effect -> Effect.Request (effect val))) request
+                , Maybe.map (\effect -> Effect.Request (effect val)) request
                     |> Maybe.withDefault Effect.none
                 )
 
@@ -126,11 +145,11 @@ update request tagger msg model =
             ( model, Effect.none )
 
 
-onFocusMenu : (Msg a -> msg) -> Maybe (Request effect) -> Model a -> ( Model a, Effect effect msg )
-onFocusMenu tagger maybeRequest model =
+onFocusMenu : (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
+onFocusMenu tagger hasRequest model =
     ( Model.setFocused True model
         |> Model.highlightIndex 0
-    , if maybeRequest == Nothing || Model.toRequestState model == Just Success then
+    , if not hasRequest || Model.toRequestState model == Just Success then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
             , getContainerAndMenuElementsEffect tagger model
