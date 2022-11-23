@@ -206,7 +206,7 @@ handleKey selectOnTab tagger model key filteredOptions =
             ( Model.closeMenu model, Effect.none )
 
         "Tab" ->
-            if selectOnTab then
+            if selectOnTab && Model.toValue model == Nothing then
                 selectHighlighted
 
             else
