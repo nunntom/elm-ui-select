@@ -21,7 +21,6 @@ import NoDebug.TodoOrToString
 import NoExposingEverything
 import NoImportingEverything
 import NoMissingTypeAnnotation
-import NoMissingTypeAnnotationInLetIn
 import NoPrematureLetComputation
 import NoSimpleLetBody
 import NoUnused.CustomTypeConstructorArgs
@@ -51,7 +50,6 @@ config =
     , NoExposingEverything.rule
     , NoImportingEverything.rule []
     , NoMissingTypeAnnotation.rule
-    , NoMissingTypeAnnotationInLetIn.rule
     , NoSimpleLetBody.rule
     , NoPrematureLetComputation.rule
     , NoUnused.CustomTypeConstructors.rule []

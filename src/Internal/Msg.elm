@@ -15,7 +15,7 @@ type Msg a
         }
         (List (Option a))
     | MouseEnteredOption Int
-    | KeyDown (List (Option a)) String
+    | KeyDown Bool (List (Option a)) String
     | GotContainerAndMenuElements (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })
     | ClearButtonPressed
     | InputDebounceReturned String

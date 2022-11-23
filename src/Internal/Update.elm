@@ -33,7 +33,13 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
         InputChanged val ->
             ( model
                 |> Model.setInputValue val
-                |> Model.highlightIndex 0
+                |> Model.highlightIndex
+                    (if String.isEmpty val then
+                        Nothing
+
+                     else
+                        Just 0
+                    )
                 |> Model.applyFilter True
                 |> Model.setSelected Nothing
                 |> Model.setItems
@@ -79,12 +85,12 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
             )
 
         MouseEnteredOption i ->
-            ( Model.highlightIndex i model
+            ( Model.highlightIndex (Just i) model
             , Effect.none
             )
 
-        KeyDown filteredOptions key ->
-            handleKey tagger model key filteredOptions
+        KeyDown selectOnTab filteredOptions key ->
+            handleKey selectOnTab tagger model key filteredOptions
 
         GotContainerAndMenuElements result ->
             ( model
@@ -148,7 +154,7 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
 onFocusMenu : (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
 onFocusMenu tagger hasRequest model =
     ( Model.setFocused True model
-        |> Model.highlightIndex 0
+        |> Model.highlightIndex Nothing
     , if not hasRequest || Model.toRequestState model == Just Success then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
@@ -160,31 +166,42 @@ onFocusMenu tagger hasRequest model =
     )
 
 
-handleKey : (Msg a -> msg) -> Model a -> String -> List (Option a) -> ( Model a, Effect effect msg )
-handleKey tagger model key filteredOptions =
-    case key of
-        "ArrowDown" ->
-            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 1)) model
-
-        "ArrowUp" ->
-            moveHighlight tagger (Basics.max 0 (Model.toHighlighted model - 1)) model
-
-        "PageDown" ->
-            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Model.toHighlighted model + 10)) model
-
-        "PageUp" ->
-            moveHighlight tagger (Basics.max 0 (Model.toHighlighted model - 10)) model
-
-        "Enter" ->
-            case getAt (Model.toHighlighted model) filteredOptions of
+handleKey : Bool -> (Msg a -> msg) -> Model a -> String -> List (Option a) -> ( Model a, Effect effect msg )
+handleKey selectOnTab tagger model key filteredOptions =
+    let
+        selectHighlighted =
+            case Model.toHighlighted model |> Maybe.andThen (\idx -> getAt idx filteredOptions) of
                 Just opt ->
                     ( Model.selectOption opt model, Effect.none )
 
                 Nothing ->
                     ( Model.closeMenu model, Effect.none )
+    in
+    case key of
+        "ArrowDown" ->
+            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Maybe.withDefault -1 (Model.toHighlighted model) + 1)) model
+
+        "ArrowUp" ->
+            moveHighlight tagger (Basics.max 0 (Maybe.withDefault 0 (Model.toHighlighted model) - 1)) model
+
+        "PageDown" ->
+            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Maybe.withDefault -1 (Model.toHighlighted model) + 10)) model
+
+        "PageUp" ->
+            moveHighlight tagger (Basics.max 0 (Maybe.withDefault 0 (Model.toHighlighted model) - 10)) model
+
+        "Enter" ->
+            selectHighlighted
 
         "Escape" ->
             ( Model.closeMenu model, Effect.none )
+
+        "Tab" ->
+            if selectOnTab then
+                selectHighlighted
+
+            else
+                ( model, Effect.none )
 
         _ ->
             ( model, Effect.none )
@@ -193,7 +210,7 @@ handleKey tagger model key filteredOptions =
 moveHighlight : (Msg a -> msg) -> Int -> Model a -> ( Model a, Effect effect msg )
 moveHighlight tagger newHighlighted model =
     if Model.isOpen model then
-        ( Model.highlightIndex newHighlighted model
+        ( Model.highlightIndex (Just newHighlighted) model
         , Effect.batch
             [ getContainerAndMenuElementsEffect tagger model
             , Effect.GetElementsAndScrollMenu

@@ -5,7 +5,7 @@ module Select exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
     , toElement
     , Effect
     )
@@ -45,7 +45,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
 
 
 # Element
@@ -543,6 +543,13 @@ should we select it automatically when the input loses focus?
 withSelectExactMatchOnBlur : Bool -> ViewConfig a msg -> ViewConfig a msg
 withSelectExactMatchOnBlur v (ViewConfig config) =
     ViewConfig { config | selectExactMatchOnBlur = v }
+
+
+{-| Should we select the highlighted option when the TAB key is pressed?
+-}
+withSelectOnTab : Bool -> ViewConfig a msg -> ViewConfig a msg
+withSelectOnTab v (ViewConfig config) =
+    ViewConfig { config | selectOnTab = v }
 
 
 {-| Turn the ViewConfig into an Element.

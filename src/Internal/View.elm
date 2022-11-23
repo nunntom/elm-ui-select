@@ -41,6 +41,7 @@ type alias ViewConfigInternal a msg =
     , positionFixed : Bool
     , clearInputValueOnBlur : Bool
     , selectExactMatchOnBlur : Bool
+    , selectOnTab : Bool
     }
 
 
@@ -70,6 +71,7 @@ view attribs v =
     , positionFixed = False
     , clearInputValueOnBlur = False
     , selectExactMatchOnBlur = False
+    , selectOnTab = True
     }
 
 
@@ -146,7 +148,7 @@ inputView filteredOptions model config =
                             filteredOptions
                         )
                     )
-               , onKeyDown (Model.isOpen model) (KeyDown filteredOptions >> config.onChange)
+               , onKeyDown (Model.isOpen model) (KeyDown config.selectOnTab filteredOptions >> config.onChange)
                , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
                , Element.inFront <|
                     if Model.toValue model /= Nothing || Model.toInputValue model /= "" then
@@ -177,7 +179,9 @@ inputAccessibilityAttributes filteredOptions model =
     , htmlAttribute "aria-autocomplete" "list"
     , htmlAttribute "aria-activedescendant" <|
         if Model.isOpen model then
-            Model.toOptionElementId model (Model.toHighlighted model)
+            Model.toHighlighted model
+                |> Maybe.map (Model.toOptionElementId model)
+                |> Maybe.withDefault ""
 
         else
             ""

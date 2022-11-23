@@ -56,7 +56,7 @@ type alias InternalState a =
     , items : List a
     , selected : Maybe a
     , inputValue : String
-    , highlighted : Int
+    , highlighted : Maybe Int
     , menuOpen : Bool
     , containerElement : Maybe Dom.Element
     , menuViewPort : Maybe Dom.Viewport
@@ -77,7 +77,7 @@ init id =
         , items = []
         , selected = Nothing
         , inputValue = ""
-        , highlighted = 0
+        , highlighted = Nothing
         , menuOpen = False
         , containerElement = Nothing
         , menuViewPort = Nothing
@@ -111,7 +111,7 @@ toRequestState (Model { requestState }) =
     requestState
 
 
-toHighlighted : Model a -> Int
+toHighlighted : Model a -> Maybe Int
 toHighlighted (Model { highlighted }) =
     highlighted
 
@@ -149,10 +149,10 @@ toOptionElementId (Model { id }) idx =
 
 toOptionState : Model a -> ( Int, a ) -> OptionState
 toOptionState (Model { highlighted, selected }) ( idx, a ) =
-    if highlighted == idx && selected == Just a then
+    if highlighted == Just idx && selected == Just a then
         SelectedAndHighlighted
 
-    else if highlighted == idx then
+    else if highlighted == Just idx then
         Highlighted
 
     else if selected == Just a then
@@ -240,7 +240,7 @@ selectOption opt (Model model) =
         }
 
 
-highlightIndex : Int -> Model a -> Model a
+highlightIndex : Maybe Int -> Model a -> Model a
 highlightIndex idx (Model model) =
     Model { model | highlighted = idx }
 
@@ -260,7 +260,7 @@ closeMenu (Model model) =
     Model
         { model
             | menuOpen = False
-            , highlighted = 0
+            , highlighted = Nothing
         }
 
 
@@ -270,7 +270,7 @@ clear (Model model) =
         { model
             | inputValue = ""
             , selected = Nothing
-            , highlighted = 0
+            , highlighted = Nothing
             , applyFilter = False
             , menuOpen = False
         }
