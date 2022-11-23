@@ -62,16 +62,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.updateWithRequest (Select.request fetchCocktails) SelectMsg subMsg model.select
+            Select.updateWith [ Select.request fetchCocktails ] SelectMsg subMsg model.select
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 
-fetchCocktails : String -> Cmd (Select.Msg Cocktail)
+fetchCocktails : String -> Cmd Msg
 fetchCocktails query =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            Http.expectJson (Select.gotRequestResponse query)
+            Http.expectJson (Select.gotRequestResponse query >> SelectMsg)
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list cocktailDecoder

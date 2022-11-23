@@ -8,6 +8,7 @@ import Html exposing (Html)
 import Resources.ClearButton
 import Select exposing (Select)
 
+
 main : Program () Model Msg
 main =
     Browser.element
