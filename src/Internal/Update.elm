@@ -40,6 +40,7 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
                      else
                         Just 0
                     )
+                    False
                 |> Model.applyFilter True
                 |> Model.setSelected Nothing
                 |> Model.setItems
@@ -85,7 +86,7 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
             )
 
         MouseEnteredOption i ->
-            ( Model.highlightIndex (Just i) model
+            ( Model.highlightIndex (Just i) True model
             , Effect.none
             )
 
@@ -163,7 +164,7 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
 onFocusMenu : (Msg a -> msg) -> Maybe Int -> Bool -> Model a -> ( Model a, Effect effect msg )
 onFocusMenu tagger maybeOptionIdx hasRequest model =
     ( Model.setFocused True model
-        |> Model.highlightIndex maybeOptionIdx
+        |> Model.highlightIndex maybeOptionIdx False
     , if not hasRequest || Model.toRequestState model == Just Success then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
@@ -206,7 +207,7 @@ handleKey selectOnTab tagger model key filteredOptions =
             ( Model.closeMenu model, Effect.none )
 
         "Tab" ->
-            if selectOnTab && Model.toValue model == Nothing then
+            if selectOnTab && not (Model.wasHighlightedByMouse model) then
                 selectHighlighted
 
             else
@@ -219,7 +220,7 @@ handleKey selectOnTab tagger model key filteredOptions =
 moveHighlight : (Msg a -> msg) -> Int -> Model a -> ( Model a, Effect effect msg )
 moveHighlight tagger newHighlighted model =
     if Model.isOpen model then
-        ( Model.highlightIndex (Just newHighlighted) model
+        ( Model.highlightIndex (Just newHighlighted) False model
         , getContainerAndMenuElementsEffect (Just newHighlighted) tagger model
         )
 

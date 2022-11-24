@@ -1,6 +1,7 @@
 module Internal.View exposing
     ( ViewConfigInternal
     , clearButtonElement
+    , defaultOptionElement
     , toElement
     , view
     )

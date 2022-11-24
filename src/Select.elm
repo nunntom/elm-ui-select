@@ -5,7 +5,7 @@ module Select exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, gotRequestResponse
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
     , toElement
     , Effect
     )
@@ -45,7 +45,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
 
 
 # Element
@@ -464,6 +464,14 @@ withOptionElement toEl (ViewConfig config) =
     ViewConfig { config | optionElement = \state -> toEl (mapOptionState state) }
 
 
+{-| The default option element. Use this with withOptionElement only if you want the
+item text on the options to be different from that used in the input and search filtering.
+-}
+defaultOptionElement : (a -> String) -> (OptionState -> a -> Element msg)
+defaultOptionElement itemToString =
+    \state -> View.defaultOptionElement itemToString (reverseMapOptionState state)
+
+
 {-| Option state for use with custom option element
 -}
 type OptionState
@@ -588,6 +596,22 @@ mapOptionState state =
 
         OptionState.SelectedAndHighlighted ->
             SelectedAndHighlighted
+
+
+reverseMapOptionState : OptionState -> OptionState.OptionState
+reverseMapOptionState state =
+    case state of
+        Idle ->
+            OptionState.Idle
+
+        Highlighted ->
+            OptionState.Highlighted
+
+        Selected ->
+            OptionState.Selected
+
+        SelectedAndHighlighted ->
+            OptionState.SelectedAndHighlighted
 
 
 mapPlacement : Placement.Placement -> MenuPlacement

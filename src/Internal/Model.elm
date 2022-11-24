@@ -33,6 +33,7 @@ module Internal.Model exposing
     , toOptionState
     , toRequestState
     , toValue
+    , wasHighlightedByMouse
     )
 
 import Browser.Dom as Dom
@@ -57,6 +58,7 @@ type alias InternalState a =
     , selected : Maybe a
     , inputValue : String
     , highlighted : Maybe Int
+    , highlightedByMouse : Bool
     , menuOpen : Bool
     , containerElement : Maybe Dom.Element
     , menuViewPort : Maybe Dom.Viewport
@@ -78,6 +80,7 @@ init id =
         , selected = Nothing
         , inputValue = ""
         , highlighted = Nothing
+        , highlightedByMouse = False
         , menuOpen = False
         , containerElement = Nothing
         , menuViewPort = Nothing
@@ -114,6 +117,11 @@ toRequestState (Model { requestState }) =
 toHighlighted : Model a -> Maybe Int
 toHighlighted (Model { highlighted }) =
     highlighted
+
+
+wasHighlightedByMouse : Model a -> Bool
+wasHighlightedByMouse (Model { highlightedByMouse }) =
+    highlightedByMouse
 
 
 toFilteredOptions : (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
@@ -240,9 +248,13 @@ selectOption opt (Model model) =
         }
 
 
-highlightIndex : Maybe Int -> Model a -> Model a
-highlightIndex idx (Model model) =
-    Model { model | highlighted = idx }
+highlightIndex : Maybe Int -> Bool -> Model a -> Model a
+highlightIndex idx byMouse (Model model) =
+    Model
+        { model
+            | highlighted = idx
+            , highlightedByMouse = byMouse
+        }
 
 
 setRequestState : Maybe RequestState -> Model a -> Model a
