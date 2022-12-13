@@ -1,7 +1,7 @@
 {
   "name": "elm-ui-select",
   "description": "A select widget for elm-ui.",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "scripts": {
     "test": "cd examples && elm-test && cd ../",
     "review": "elm-review",
