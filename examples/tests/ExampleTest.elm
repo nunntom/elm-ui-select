@@ -11,6 +11,7 @@ import SimulatedEffect.Cmd as SimulatedCmd
 import SimulatedEffect.Process as SimulatedProcess
 import SimulatedEffect.Task as SimulatedTask
 import Test exposing (Test)
+import Test.Html.Event
 import Test.Html.Query as Query exposing (Single)
 import Test.Html.Selector as Selector exposing (Selector)
 
@@ -44,6 +45,24 @@ exampleProgramTest =
                     |> SimulateInput.arrowDown "country-select"
                     |> SimulateInput.enter "country-select"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
+        , Test.test "Focusing on the input triggers the onFocus msg" <|
+            \() ->
+                programTest
+                    |> ProgramTest.ensureViewHas [ Selector.text "Is the input focused? Don't know yet" ]
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId model.countrySelect) ]) Test.Html.Event.focus
+                    |> ProgramTest.expectViewHas [ Selector.text "Is the input focused? Yes!" ]
+        , Test.test "Input losing focus triggers the onLoseFocus msg" <|
+            \() ->
+                programTest
+                    |> ProgramTest.ensureViewHas [ Selector.text "Is the input focused? Don't know yet" ]
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId model.countrySelect) ]) Test.Html.Event.focus
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId model.countrySelect) ]) Test.Html.Event.blur
+                    |> ProgramTest.expectViewHas [ Selector.text "Is the input focused? Nope" ]
+        , Test.test "Filling in the input triggers the onInput msg" <|
+            \() ->
+                programTest
+                    |> ProgramTest.fillIn "" "Choose a country" "Testing the input"
+                    |> ProgramTest.expectViewHas [ Selector.text "Current input value: Testing the input" ]
         ]
 
 

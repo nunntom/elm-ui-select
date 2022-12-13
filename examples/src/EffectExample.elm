@@ -1,5 +1,9 @@
 module EffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
 
+{- This example shows how the select can be used with effects.
+   And is useful for testing the elm-ui-select package as a whole.
+-}
+
 import Browser
 import Countries exposing (Country)
 import Element
@@ -22,6 +26,12 @@ main =
 
 type alias Model =
     { countrySelect : Select Country
+
+    -- Note it is not necessary to store the following in the model, because you can just use `Select.toValue` etc
+    -- These are just here for the tests
+    , selectedCountry : Maybe Country
+    , inputIsFocused : Maybe Bool
+    , inputValue : String
     }
 
 
@@ -30,6 +40,9 @@ init _ =
     ( { countrySelect =
             Select.init "country-select"
                 |> Select.setItems Countries.all
+      , selectedCountry = Nothing
+      , inputIsFocused = Nothing
+      , inputValue = ""
       }
     , NoEffect
     )
@@ -51,13 +64,30 @@ view model =
                 }
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
                 |> Select.toElement model.countrySelect
-            , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
+            , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) model.selectedCountry
                 |> Maybe.withDefault Element.none
+            , Element.text <|
+                "Is the input focused? "
+                    ++ (case model.inputIsFocused of
+                            Nothing ->
+                                "Don't know yet"
+
+                            Just True ->
+                                "Yes!"
+
+                            Just False ->
+                                "Nope"
+                       )
+            , Element.text <| "Current input value: " ++ model.inputValue
             ]
 
 
 type Msg
     = CountrySelectMsg (Select.Msg Country)
+    | SelectionChanged (Maybe Country)
+    | InputFocused
+    | InputLostFocus
+    | InputChanged String
 
 
 type MyEffect
@@ -69,9 +99,29 @@ update : Msg -> Model -> ( Model, MyEffect )
 update msg model =
     case msg of
         CountrySelectMsg subMsg ->
-            Select.Effect.update CountrySelectMsg subMsg model.countrySelect
+            Select.Effect.updateWith
+                [ Select.Effect.onSelectedChange SelectionChanged
+                , Select.Effect.onFocus InputFocused
+                , Select.Effect.onLoseFocus InputLostFocus
+                , Select.Effect.onInput InputChanged
+                ]
+                CountrySelectMsg
+                subMsg
+                model.countrySelect
                 |> Tuple.mapFirst (\select -> { model | countrySelect = select })
                 |> Tuple.mapSecond SelectEffect
+
+        SelectionChanged selected ->
+            ( { model | selectedCountry = selected }, NoEffect )
+
+        InputFocused ->
+            ( { model | inputIsFocused = Just True }, NoEffect )
+
+        InputLostFocus ->
+            ( { model | inputIsFocused = Just False }, NoEffect )
+
+        InputChanged val ->
+            ( { model | inputValue = val }, NoEffect )
 
 
 performEffect : MyEffect -> Cmd Msg

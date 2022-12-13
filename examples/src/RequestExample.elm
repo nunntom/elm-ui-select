@@ -1,5 +1,7 @@
 module RequestExample exposing (main)
 
+{- This example shows how the select can be used to make requests based on the user input. -}
+
 import Browser
 import Element exposing (Element)
 import Element.Background as Background
