@@ -10,25 +10,20 @@ import Internal.UpdateOptions exposing (UpdateOptions)
 
 update : UpdateOptions effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
 update ({ onSelect } as options) tagger msg model =
-    let
-        ( model_, effect ) =
-            update_ options tagger msg model
-    in
-    ( model_
-    , Effect.batch
-        [ effect
-        , case ( Model.toValue model /= Model.toValue model_, onSelect ) of
-            ( True, Just onSelect_ ) ->
-                Effect.Emit (onSelect_ <| Model.toValue model_)
+    update_ options tagger msg model
+        |> withEffect
+            (\model_ ->
+                if Model.toValue model /= Model.toValue model_ then
+                    Maybe.map (\onSelect_ -> onSelect_ (Model.toValue model_)) onSelect
+                        |> Effect.emitJust
 
-            _ ->
-                Effect.none
-        ]
-    )
+                else
+                    Effect.none
+            )
 
 
 update_ : UpdateOptions effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
-update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
+update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput } tagger msg model =
     case msg of
         InputChanged val ->
             ( model
@@ -57,16 +52,20 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
                      else
                         Nothing
                     )
-            , case request of
-                Just _ ->
-                    if String.length val >= requestMinInputLength then
-                        Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest val
+            , Effect.batch
+                [ case request of
+                    Just _ ->
+                        if String.length val >= requestMinInputLength then
+                            Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest val
 
-                    else
-                        Effect.none
+                        else
+                            Effect.none
 
-                Nothing ->
-                    getContainerAndMenuElementsEffect Nothing tagger model
+                    Nothing ->
+                        getContainerAndMenuElementsEffect Nothing tagger model
+                , Maybe.map (\onInput_ -> onInput_ val) onInput
+                    |> Effect.emitJust
+                ]
             )
 
         OptionClicked opt ->
@@ -76,13 +75,14 @@ update_ { request, requestMinInputLength, debounceRequest } tagger msg model =
 
         InputFocused maybeIdx ->
             onFocusMenu tagger maybeIdx (request /= Nothing) model
+                |> withEffect (\_ -> Effect.emitJust onFocus)
 
         InputClicked maybeIdx ->
             onFocusMenu tagger maybeIdx (request /= Nothing) model
 
         InputLostFocus config filteredOptions ->
             ( Model.blur config (request /= Nothing) filteredOptions model
-            , Effect.none
+            , Effect.emitJust onLoseFocus
             )
 
         MouseEnteredOption i ->
@@ -246,3 +246,8 @@ getAt idx xs =
 
     else
         List.head <| List.drop idx xs
+
+
+withEffect : (Model a -> Effect effect msg) -> ( Model a, Effect effect msg ) -> ( Model a, Effect effect msg )
+withEffect toEffect ( model, eff ) =
+    ( model, Effect.batch [ eff, toEffect model ] )

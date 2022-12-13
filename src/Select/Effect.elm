@@ -1,7 +1,7 @@
 module Select.Effect exposing
     ( Effect
     , update, updateWith
-    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange
+    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
     , perform, performWithRequest
     , simulate, simulateWithRequest
     , simulateClickOption, SimulateInputConfig
@@ -26,7 +26,7 @@ you don't need this module.
 
 # Update Options
 
-@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange
+@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
 
 
 # Perform Effect
@@ -182,6 +182,27 @@ requestMinInputLength len =
 onSelectedChange : (Maybe a -> msg) -> UpdateOption effect a msg
 onSelectedChange msg =
     UpdateOptions.OnSelect msg
+
+
+{-| If provided this msg will be sent whenever the input value changes.
+-}
+onInput : (String -> msg) -> UpdateOption effect a msg
+onInput msg =
+    UpdateOptions.OnInput msg
+
+
+{-| If provided this msg will be sent whenever the input gets focus.
+-}
+onFocus : msg -> UpdateOption effect a msg
+onFocus msg =
+    UpdateOptions.OnFocus msg
+
+
+{-| If provided this msg will be sent whenever the input loses focus.
+-}
+onLoseFocus : msg -> UpdateOption effect a msg
+onLoseFocus msg =
+    UpdateOptions.OnLoseFocus msg
 
 
 

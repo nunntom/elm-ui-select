@@ -1,4 +1,4 @@
-module Internal.Effect exposing (Effect(..), batch, map, mapEffect, none, perform, simulate)
+module Internal.Effect exposing (Effect(..), batch, emitJust, map, mapEffect, none, perform, simulate)
 
 import Browser.Dom as Dom
 import Process
@@ -220,3 +220,13 @@ mapEffect toEffect effect =
 
         None ->
             None
+
+
+emitJust : Maybe msg -> Effect effect msg
+emitJust msg =
+    case msg of
+        Just msg_ ->
+            Emit msg_
+
+        Nothing ->
+            none

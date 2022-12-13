@@ -6,6 +6,9 @@ type UpdateOption effect a msg
     | DebounceRequest Float
     | RequestMinInputLength Int
     | OnSelect (Maybe a -> msg)
+    | OnFocus msg
+    | OnLoseFocus msg
+    | OnInput (String -> msg)
 
 
 type alias UpdateOptions effect a msg =
@@ -13,6 +16,9 @@ type alias UpdateOptions effect a msg =
     , debounceRequest : Float
     , requestMinInputLength : Int
     , onSelect : Maybe (Maybe a -> msg)
+    , onFocus : Maybe msg
+    , onLoseFocus : Maybe msg
+    , onInput : Maybe (String -> msg)
     }
 
 
@@ -22,6 +28,9 @@ init =
     , debounceRequest = 300
     , requestMinInputLength = 3
     , onSelect = Nothing
+    , onFocus = Nothing
+    , onLoseFocus = Nothing
+    , onInput = Nothing
     }
 
 
@@ -41,5 +50,14 @@ fromList =
 
                 OnSelect msg ->
                     { opts | onSelect = Just msg }
+
+                OnFocus msg ->
+                    { opts | onFocus = Just msg }
+
+                OnLoseFocus msg ->
+                    { opts | onLoseFocus = Just msg }
+
+                OnInput msg ->
+                    { opts | onInput = Just msg }
         )
         init
