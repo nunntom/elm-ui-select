@@ -281,6 +281,9 @@ request effect =
 
 
 {-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
+
+    Select.updateWith [ Select.request fetchThings, Select.requestDebounceDelay 500 ] SelectMsg subMsg model.select
+
 -}
 requestDebounceDelay : Float -> UpdateOption a msg
 requestDebounceDelay delay =
@@ -289,6 +292,9 @@ requestDebounceDelay delay =
 
 {-| How many characters does a user need to type before a request is sent?
 If this is too low you may get an unmanagable number of results! Default is 3 characters.
+
+    Select.updateWith [ Select.request fetchThings, Select.requestMinInputLength 4 ] SelectMsg subMsg model.select
+
 -}
 requestMinInputLength : Int -> UpdateOption a msg
 requestMinInputLength len =
@@ -296,6 +302,9 @@ requestMinInputLength len =
 
 
 {-| If provided this msg will be sent whenever the selected item changes.
+
+    Select.updateWith [ Select.onSelectedChange SelectionChanged ] SelectMsg subMsg model.select
+
 -}
 onSelectedChange : (Maybe a -> msg) -> UpdateOption a msg
 onSelectedChange msg =
@@ -304,6 +313,14 @@ onSelectedChange msg =
 
 {-| Hook the request Cmd result back into update with this Msg. You need to pass in the string query (input value)
 that was used for the request. This is used to match up the correct response to most recent request in case of race conditions.
+
+    fetchThings : String -> Cmd Msg
+    fetchThings query =
+        Http.get
+            { url = "https://awesome-thing.api/things?search=" ++ query
+            , expect = Http.expectJson (Select.gotRequestResponse query >> SelectMsg) (Decode.list thingDecoder)
+            }
+
 -}
 gotRequestResponse : String -> Result err (List a) -> Msg a
 gotRequestResponse inputValue =
