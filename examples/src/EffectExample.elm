@@ -66,19 +66,6 @@ view model =
                 |> Select.toElement model.countrySelect
             , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) model.selectedCountry
                 |> Maybe.withDefault Element.none
-            , Element.text <|
-                "Is the input focused? "
-                    ++ (case model.inputIsFocused of
-                            Nothing ->
-                                "Don't know yet"
-
-                            Just True ->
-                                "Yes!"
-
-                            Just False ->
-                                "Nope"
-                       )
-            , Element.text <| "Current input value: " ++ model.inputValue
             ]
 
 
