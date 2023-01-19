@@ -124,15 +124,25 @@ wasHighlightedByMouse (Model { highlightedByMouse }) =
     highlightedByMouse
 
 
-toFilteredOptions : (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
-toFilteredOptions itemToString filter (Model model) =
-    List.map (Option.init itemToString) model.items
-        |> (if model.applyFilter then
-                Filter.filterOptions model.inputValue filter
+toFilteredOptions : Maybe Int -> (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
+toFilteredOptions minInputLength itemToString filter (Model model) =
+    case minInputLength of
+        Just chars ->
+            if String.length model.inputValue >= chars then
+                List.map (Option.init itemToString) model.items
+                    |> Filter.filterOptions model.inputValue filter
 
             else
-                identity
-           )
+                []
+
+        Nothing ->
+            List.map (Option.init itemToString) model.items
+                |> (if model.applyFilter then
+                        Filter.filterOptions model.inputValue filter
+
+                    else
+                        identity
+                   )
 
 
 toInputElementId : Model a -> String

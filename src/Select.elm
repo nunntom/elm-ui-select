@@ -5,7 +5,7 @@ module Select exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith
     , UpdateOption, request, gotRequestResponse, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
     , toElement
     , Effect
     )
@@ -45,7 +45,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
 
 
 # Element
@@ -93,26 +93,42 @@ init =
 
 You can do this on init:
 
-    init : List String -> ( Model, Cmd Msg )
+    import Element exposing (Element)
+    import Element.Input as Input
+
+    type alias Model =
+        { select : Select String
+        , things : List String
+        }
+
+    init : List String -> ( Model, Cmd Never )
     init things =
         ( { select =
                 Select.init "thing-select"
                     |> Select.setItems things
+            , things = [ "Thing 1" ]
           }
         , Cmd.none
         )
 
+    init []    --> init []
+
 Or you can do it in your view if you prefer to keep your items in your own model.
+
+    type Msg
+        = SelectMsg (Select.Msg String)
 
     view : Model -> Element Msg
     view model =
         Select.view []
             { onChange = SelectMsg
-            , label = Input.labelAbove [] (text "Choose a thing")
-            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            , label = Input.labelAbove [] (Element.text "Choose a thing")
+            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
             , itemToString = identity
             }
             |> Select.toElement (Select.setItems model.things model.select)
+
+    view (Tuple.first (init [])) --> <div></div>
 
 -}
 setItems : List a -> Select a -> Select a
@@ -596,6 +612,13 @@ withSelectExactMatchOnBlur v (ViewConfig config) =
 withSelectOnTab : Bool -> ViewConfig a msg -> ViewConfig a msg
 withSelectOnTab v (ViewConfig config) =
     ViewConfig { config | selectOnTab = v }
+
+
+{-| If set, no options will show until the specified number of characters have been typed into the input
+-}
+withMinInputLength : Maybe Int -> ViewConfig a msg -> ViewConfig a msg
+withMinInputLength v (ViewConfig config) =
+    ViewConfig { config | minInputLength = v }
 
 
 {-| Turn the ViewConfig into an Element.

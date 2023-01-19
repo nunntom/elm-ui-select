@@ -43,6 +43,7 @@ type alias ViewConfigInternal a msg =
     , clearInputValueOnBlur : Bool
     , selectExactMatchOnBlur : Bool
     , selectOnTab : Bool
+    , minInputLength : Maybe Int
     }
 
 
@@ -73,12 +74,13 @@ view attribs v =
     , clearInputValueOnBlur = False
     , selectExactMatchOnBlur = False
     , selectOnTab = True
+    , minInputLength = Nothing
     }
 
 
 toElement : Model a -> ViewConfigInternal a msg -> Element msg
 toElement model config =
-    toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model) (Model.toFilteredOptions config.itemToString config.filter model) model config
+    toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model) (Model.toFilteredOptions config.minInputLength config.itemToString config.filter model) model config
 
 
 toElement_ : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
@@ -87,7 +89,13 @@ toElement_ placement filteredOptions model config =
         ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId model)
          , Element.width Element.fill
          , Element.below <|
-            if List.length filteredOptions == 0 && Model.isOpen model && not (String.isEmpty (Model.toInputValue model)) && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success) then
+            if
+                List.length filteredOptions
+                    == 0
+                    && Model.isOpen model
+                    && (String.length (Model.toInputValue model) >= Maybe.withDefault 1 config.minInputLength)
+                    && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success)
+            then
                 config.noMatchElement
 
             else
