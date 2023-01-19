@@ -3,7 +3,7 @@
     "name": "nunntom/elm-ui-select",
     "summary": "A select widget for Elm Ui",
     "license": "BSD-3-Clause",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "exposed-modules": [
         "Select",
         "Select.Filter",
