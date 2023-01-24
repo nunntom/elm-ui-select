@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.0
+
+### New features
+
+- Added withMinInputLength to only show items if a minimum number of characters is typed into the input.
+
 ## 3.0.0
 
 ### Breaking changes
