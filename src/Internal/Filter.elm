@@ -31,9 +31,20 @@ startsWithThenContains : Filter a
 startsWithThenContains =
     Filter
         (\inputValue options ->
-            List.append
-                (stringFilter String.startsWith inputValue options)
-                (stringFilter (\s input -> (not <| String.startsWith s input) && String.contains s input) inputValue options)
+            List.foldr
+                (\option ( l1, l2 ) ->
+                    if String.startsWith (String.toLower inputValue) (String.toLower (Option.toString option)) then
+                        ( option :: l1, l2 )
+
+                    else if String.contains (String.toLower inputValue) (String.toLower (Option.toString option)) then
+                        ( l1, option :: l2 )
+
+                    else
+                        ( l1, l2 )
+                )
+                ( [], [] )
+                options
+                |> (\( l1, l2 ) -> l1 ++ l2)
         )
 
 
