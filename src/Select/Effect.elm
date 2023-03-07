@@ -123,20 +123,21 @@ type alias UpdateOption effect a msg =
 {-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
 
-Provide a function that takes the input value and returns an Effect (your app's own Effect type)
-that can be used to perform an HTTP request. Update will use this Effect when the user types into the input.
+Provide an effect (your app's own Effect type) that uses the input value and a msg tagger that can be used to perform an HTTP request.
+Update will use this Effect when the user types into the input.
 
 When the effect is performed you must use Select.Effect.performWithRequest instead of Select.Effect.perform.
+You need to map the error of the request to string before passing to the msg tagger.
 
     type MyEffect
         = SelectEffect (Select.Effect MyEffect Msg)
-        | FetchThings String
+        | FetchThings String (Result String (List Thing) -> Msg)
 
     update : Msg -> Model -> ( Model, MyEffect )
     update msg model =
         case msg of
             SelectMsg subMsg ->
-                Select.Effect.updateWith [ Select.Effect.request fetchThings ] SelectMsg subMsg model.select
+                Select.Effect.updateWith [ Select.Effect.request FetchThings ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
                     |> Tuple.mapSecond SelectEffect
 
@@ -146,18 +147,16 @@ When the effect is performed you must use Select.Effect.performWithRequest inste
             SelectEffect selectEffect ->
                 Select.Effect.performWithRequest performEffect selectEffect
 
-            FetchThings query ->
-                fetchThings (Select.gotRequestResponse query >> SelectMsg) query
-
-    fetchThings : (Result Http.Error (List thing) -> msg) -> String -> Cmd msg
-    fetchThings tagger query =
-        Http.get
-            { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson tagger (Decode.list thingDecoder)
-            }
+            FetchThings query tagger ->
+                Http.get
+                    { url = "https://awesome-thing.api/things?search=" ++ query
+                    , expect =
+                        Http.expectJson (Result.mapError (\_ -> "Failed fetching things") >> tagger)
+                            (Decode.list thingDecoder)
+                    }
 
 -}
-request : (String -> effect) -> UpdateOption effect a msg
+request : (String -> (Result String (List a) -> msg) -> effect) -> UpdateOption effect a msg
 request effect =
     UpdateOptions.Request effect
 

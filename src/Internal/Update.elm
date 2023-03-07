@@ -128,7 +128,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
         InputDebounceReturned val ->
             if val == Model.toInputValue model then
                 ( Model.setRequestState (Just Loading) model
-                , Maybe.map (\effect -> Effect.Request (effect val)) request
+                , Maybe.map (\effect -> Effect.Request (effect val (GotRequestResponse val >> tagger))) request
                     |> Maybe.withDefault Effect.none
                 )
 

@@ -2,7 +2,7 @@ module Internal.UpdateOptions exposing (UpdateOption(..), UpdateOptions, fromLis
 
 
 type UpdateOption effect a msg
-    = Request (String -> effect)
+    = Request (String -> (Result String (List a) -> msg) -> effect)
     | DebounceRequest Float
     | RequestMinInputLength Int
     | OnSelect (Maybe a -> msg)
@@ -12,7 +12,7 @@ type UpdateOption effect a msg
 
 
 type alias UpdateOptions effect a msg =
-    { request : Maybe (String -> effect)
+    { request : Maybe (String -> (Result String (List a) -> msg) -> effect)
     , debounceRequest : Float
     , requestMinInputLength : Int
     , onSelect : Maybe (Maybe a -> msg)

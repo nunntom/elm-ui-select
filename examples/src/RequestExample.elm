@@ -68,12 +68,12 @@ update msg model =
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 
-fetchCocktails : String -> Cmd Msg
-fetchCocktails query =
+fetchCocktails : String -> (Result String (List Cocktail) -> Msg) -> Cmd Msg
+fetchCocktails query tagger =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            Http.expectJson (Select.gotRequestResponse query >> SelectMsg)
+            Http.expectJson (Result.mapError (\_ -> "Failed loading cocktails") >> tagger)
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list cocktailDecoder

@@ -4,7 +4,7 @@ module Select exposing
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith
-    , UpdateOption, request, gotRequestResponse, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
     , toElement
     , Effect
@@ -40,7 +40,7 @@ module Select exposing
 
 # Update Options
 
-@docs UpdateOption, request, gotRequestResponse, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
 
 
 # Configure View
@@ -273,8 +273,8 @@ type alias UpdateOption a msg =
 
 
 {-| Use an HTTP request to retrieve matching remote results. ote that in order to avoid an elm/http dependency in this package,
-you will need to provide the request Cmd yourself. Provide a function that takes the input value and returns a Cmd.
-Update will return this Cmd when the user types in the input. Note, you need to hook in the response using the Select.gotRequestResponse msg.
+you will need to provide the request Cmd yourself. Provide a function that takes the input value and a msg tagger and returns a Cmd.
+Update will return this Cmd when the user types in the input. Note, you need to map the error of the response to String before passing to the msg tagger.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
@@ -283,15 +283,17 @@ Update will return this Cmd when the user types in the input. Note, you need to 
                 Select.updateWith [ Select.request fetchThings ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
 
-    fetchThings : String -> Cmd Msg
-    fetchThings query =
+    fetchThings : String -> (Result String (List Thing) -> Msg) -> Cmd Msg
+    fetchThings query tagger =
         Http.get
             { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson (Select.gotRequestResponse query >> SelectMsg) (Decode.list thingDecoder)
+            , expect =
+                Http.expectJson (Result.mapError (\_ -> "Failed fetching things") >> tagger)
+                    (Decode.list thingDecoder)
             }
 
 -}
-request : (String -> Cmd msg) -> UpdateOption a msg
+request : (String -> (Result String (List a) -> msg) -> Cmd msg) -> UpdateOption a msg
 request effect =
     UpdateOptions.Request effect
 
@@ -346,22 +348,6 @@ onFocus msg =
 onLoseFocus : msg -> UpdateOption a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
-
-
-{-| Hook the request Cmd result back into update with this Msg. You need to pass in the string query (input value)
-that was used for the request. This is used to match up the correct response to most recent request in case of race conditions.
-
-    fetchThings : String -> Cmd Msg
-    fetchThings query =
-        Http.get
-            { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson (Select.gotRequestResponse query >> SelectMsg) (Decode.list thingDecoder)
-            }
-
--}
-gotRequestResponse : String -> Result err (List a) -> Msg a
-gotRequestResponse inputValue =
-    Result.mapError (\_ -> ()) >> Msg.GotRequestResponse inputValue
 
 
 

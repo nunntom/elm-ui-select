@@ -67,12 +67,12 @@ update msg model =
                 |> Tuple.mapBoth (\select -> { model | select = select }) SelectEffect
 
 
-fetchCocktails : (Result Http.Error (List Cocktail) -> msg) -> String -> Cmd msg
-fetchCocktails tagger query =
+fetchCocktails : String -> (Result String (List Cocktail) -> Msg) -> Cmd Msg
+fetchCocktails query tagger =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            Http.expectJson tagger
+            Http.expectJson (Result.mapError (\_ -> "Failed fetching cocktails") >> tagger)
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list cocktailDecoder
@@ -90,7 +90,7 @@ fetchCocktails tagger query =
 type MyEffect
     = NoEffect
     | SelectEffect (Select.Effect MyEffect Msg)
-    | FetchCocktails String
+    | FetchCocktails String (Result String (List Cocktail) -> Msg)
 
 
 performEffect : MyEffect -> Cmd Msg
@@ -102,8 +102,8 @@ performEffect effect =
         SelectEffect selectEffect ->
             Select.Effect.performWithRequest performEffect selectEffect
 
-        FetchCocktails query ->
-            fetchCocktails (Select.gotRequestResponse query >> SelectMsg) query
+        FetchCocktails query msg ->
+            fetchCocktails query msg
 
 
 

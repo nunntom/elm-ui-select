@@ -1,10 +1,8 @@
 module RequestTest exposing (exampleProgramTest)
 
 import EffectRequestExample as App
-import Http
 import Json.Decode as Decode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
-import Select
 import Select.Effect
 import SimulateInput
 import SimulatedEffect.Cmd as SimulatedCmd
@@ -69,16 +67,16 @@ simulateEffect effect =
                 simulateEffect
                 selectEffect
 
-        App.FetchCocktails query ->
-            fetchCocktails (Select.gotRequestResponse query >> App.SelectMsg) query
+        App.FetchCocktails query msg ->
+            fetchCocktails query msg
 
 
-fetchCocktails : (Result Http.Error (List App.Cocktail) -> msg) -> String -> SimulatedEffect msg
-fetchCocktails tagger query =
+fetchCocktails : String -> (Result String (List App.Cocktail) -> msg) -> SimulatedEffect msg
+fetchCocktails query tagger =
     SimulateHttp.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            SimulateHttp.expectJson tagger
+            SimulateHttp.expectJson (Result.mapError (\_ -> "Failed fetching cocktails") >> tagger)
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list App.cocktailDecoder
