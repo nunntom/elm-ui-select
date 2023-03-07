@@ -109,29 +109,28 @@ update =
                 Debug.todo "Do something when the thing is selected/deselected"
 
 -}
-updateWith : List (UpdateOption effect a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
+updateWith : List (UpdateOption err effect a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
 updateWith options =
     Update.update (UpdateOptions.fromList options)
 
 
 {-| Options for use with updateWith.
 -}
-type alias UpdateOption effect a msg =
-    UpdateOptions.UpdateOption effect a msg
+type alias UpdateOption err effect a msg =
+    UpdateOptions.UpdateOption err effect a msg
 
 
 {-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
 
-Provide an effect (your app's own Effect type) that uses the input value and a msg tagger that can be used to perform an HTTP request.
+Provide an effect (your app's own Effect type) that uses the input value and a msg tagger that can perform an HTTP request.
 Update will use this Effect when the user types into the input.
 
 When the effect is performed you must use Select.Effect.performWithRequest instead of Select.Effect.perform.
-You need to map the error of the request to string before passing to the msg tagger.
 
     type MyEffect
         = SelectEffect (Select.Effect MyEffect Msg)
-        | FetchThings String (Result String (List Thing) -> Msg)
+        | FetchThings String (Result Http.Error (List Thing) -> Msg)
 
     update : Msg -> Model -> ( Model, MyEffect )
     update msg model =
@@ -151,19 +150,19 @@ You need to map the error of the request to string before passing to the msg tag
                 Http.get
                     { url = "https://awesome-thing.api/things?search=" ++ query
                     , expect =
-                        Http.expectJson (Result.mapError (\_ -> "Failed fetching things") >> tagger)
+                        Http.expectJson tagger
                             (Decode.list thingDecoder)
                     }
 
 -}
-request : (String -> (Result String (List a) -> msg) -> effect) -> UpdateOption effect a msg
+request : (String -> (Result err (List a) -> msg) -> effect) -> UpdateOption err effect a msg
 request effect =
     UpdateOptions.Request effect
 
 
 {-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
 -}
-requestDebounceDelay : Float -> UpdateOption effect a msg
+requestDebounceDelay : Float -> UpdateOption err effect a msg
 requestDebounceDelay delay =
     UpdateOptions.DebounceRequest delay
 
@@ -171,35 +170,35 @@ requestDebounceDelay delay =
 {-| How many characters does a user need to type before a request is sent?
 If this is too low you may get an unmanagable number of results! Default is 3 characters.
 -}
-requestMinInputLength : Int -> UpdateOption effect a msg
+requestMinInputLength : Int -> UpdateOption err effect a msg
 requestMinInputLength len =
     UpdateOptions.RequestMinInputLength len
 
 
 {-| If provided this msg will be sent whenever the selected item changes.
 -}
-onSelectedChange : (Maybe a -> msg) -> UpdateOption effect a msg
+onSelectedChange : (Maybe a -> msg) -> UpdateOption err effect a msg
 onSelectedChange msg =
     UpdateOptions.OnSelect msg
 
 
 {-| If provided this msg will be sent whenever the input value changes.
 -}
-onInput : (String -> msg) -> UpdateOption effect a msg
+onInput : (String -> msg) -> UpdateOption err effect a msg
 onInput msg =
     UpdateOptions.OnInput msg
 
 
 {-| If provided this msg will be sent whenever the input gets focus.
 -}
-onFocus : msg -> UpdateOption effect a msg
+onFocus : msg -> UpdateOption err effect a msg
 onFocus msg =
     UpdateOptions.OnFocus msg
 
 
 {-| If provided this msg will be sent whenever the input loses focus.
 -}
-onLoseFocus : msg -> UpdateOption effect a msg
+onLoseFocus : msg -> UpdateOption err effect a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
 

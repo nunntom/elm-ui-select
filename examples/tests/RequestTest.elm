@@ -71,12 +71,12 @@ simulateEffect effect =
             fetchCocktails query msg
 
 
-fetchCocktails : String -> (Result String (List App.Cocktail) -> msg) -> SimulatedEffect msg
+fetchCocktails : String -> (Result SimulateHttp.Error (List App.Cocktail) -> msg) -> SimulatedEffect msg
 fetchCocktails query tagger =
     SimulateHttp.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            SimulateHttp.expectJson (Result.mapError (\_ -> "Failed fetching cocktails") >> tagger)
+            SimulateHttp.expectJson tagger
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list App.cocktailDecoder

@@ -1,8 +1,8 @@
 module Internal.UpdateOptions exposing (UpdateOption(..), UpdateOptions, fromList)
 
 
-type UpdateOption effect a msg
-    = Request (String -> (Result String (List a) -> msg) -> effect)
+type UpdateOption err effect a msg
+    = Request (String -> (Result err (List a) -> msg) -> effect)
     | DebounceRequest Float
     | RequestMinInputLength Int
     | OnSelect (Maybe a -> msg)
@@ -11,8 +11,8 @@ type UpdateOption effect a msg
     | OnInput (String -> msg)
 
 
-type alias UpdateOptions effect a msg =
-    { request : Maybe (String -> (Result String (List a) -> msg) -> effect)
+type alias UpdateOptions err effect a msg =
+    { request : Maybe (String -> (Result err (List a) -> msg) -> effect)
     , debounceRequest : Float
     , requestMinInputLength : Int
     , onSelect : Maybe (Maybe a -> msg)
@@ -22,7 +22,7 @@ type alias UpdateOptions effect a msg =
     }
 
 
-init : UpdateOptions effect a msg
+init : UpdateOptions err effect a msg
 init =
     { request = Nothing
     , debounceRequest = 300
@@ -34,7 +34,7 @@ init =
     }
 
 
-fromList : List (UpdateOption effect a msg) -> UpdateOptions effect a msg
+fromList : List (UpdateOption err effect a msg) -> UpdateOptions err effect a msg
 fromList =
     List.foldl
         (\opt opts ->

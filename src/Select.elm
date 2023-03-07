@@ -260,7 +260,7 @@ update tagger msg select =
                 Debug.todo "Do something when the thing is selected/deselected"
 
 -}
-updateWith : List (UpdateOption a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
+updateWith : List (UpdateOption err a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 updateWith options tagger msg select =
     Update.update (UpdateOptions.fromList options) tagger msg select
         |> Tuple.mapSecond (Effect.perform identity)
@@ -268,13 +268,13 @@ updateWith options tagger msg select =
 
 {-| Options for use with updateWith.
 -}
-type alias UpdateOption a msg =
-    UpdateOptions.UpdateOption (Cmd msg) a msg
+type alias UpdateOption err a msg =
+    UpdateOptions.UpdateOption err (Cmd msg) a msg
 
 
 {-| Use an HTTP request to retrieve matching remote results. ote that in order to avoid an elm/http dependency in this package,
 you will need to provide the request Cmd yourself. Provide a function that takes the input value and a msg tagger and returns a Cmd.
-Update will return this Cmd when the user types in the input. Note, you need to map the error of the response to String before passing to the msg tagger.
+Update will return this Cmd when the user types in the input.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
@@ -283,17 +283,17 @@ Update will return this Cmd when the user types in the input. Note, you need to 
                 Select.updateWith [ Select.request fetchThings ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
 
-    fetchThings : String -> (Result String (List Thing) -> Msg) -> Cmd Msg
+    fetchThings : String -> (Result Http.Error (List Thing) -> Msg) -> Cmd Msg
     fetchThings query tagger =
         Http.get
             { url = "https://awesome-thing.api/things?search=" ++ query
             , expect =
-                Http.expectJson (Result.mapError (\_ -> "Failed fetching things") >> tagger)
+                Http.expectJson tagger
                     (Decode.list thingDecoder)
             }
 
 -}
-request : (String -> (Result String (List a) -> msg) -> Cmd msg) -> UpdateOption a msg
+request : (String -> (Result err (List a) -> msg) -> Cmd msg) -> UpdateOption err a msg
 request effect =
     UpdateOptions.Request effect
 
@@ -303,7 +303,7 @@ request effect =
     Select.updateWith [ Select.request fetchThings, Select.requestDebounceDelay 500 ] SelectMsg subMsg model.select
 
 -}
-requestDebounceDelay : Float -> UpdateOption a msg
+requestDebounceDelay : Float -> UpdateOption err a msg
 requestDebounceDelay delay =
     UpdateOptions.DebounceRequest delay
 
@@ -314,7 +314,7 @@ If this is too low you may get an unmanagable number of results! Default is 3 ch
     Select.updateWith [ Select.request fetchThings, Select.requestMinInputLength 4 ] SelectMsg subMsg model.select
 
 -}
-requestMinInputLength : Int -> UpdateOption a msg
+requestMinInputLength : Int -> UpdateOption err a msg
 requestMinInputLength len =
     UpdateOptions.RequestMinInputLength len
 
@@ -324,28 +324,28 @@ requestMinInputLength len =
     Select.updateWith [ Select.onSelectedChange SelectionChanged ] SelectMsg subMsg model.select
 
 -}
-onSelectedChange : (Maybe a -> msg) -> UpdateOption a msg
+onSelectedChange : (Maybe a -> msg) -> UpdateOption err a msg
 onSelectedChange msg =
     UpdateOptions.OnSelect msg
 
 
 {-| If provided this msg will be sent whenever the input value changes.
 -}
-onInput : (String -> msg) -> UpdateOption a msg
+onInput : (String -> msg) -> UpdateOption err a msg
 onInput msg =
     UpdateOptions.OnInput msg
 
 
 {-| If provided this msg will be sent whenever the input is focused.
 -}
-onFocus : msg -> UpdateOption a msg
+onFocus : msg -> UpdateOption err a msg
 onFocus msg =
     UpdateOptions.OnFocus msg
 
 
 {-| If provided this msg will be sent whenever the input loses focus.
 -}
-onLoseFocus : msg -> UpdateOption a msg
+onLoseFocus : msg -> UpdateOption err a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
 

@@ -8,7 +8,7 @@ import Internal.RequestState exposing (RequestState(..))
 import Internal.UpdateOptions exposing (UpdateOptions)
 
 
-update : UpdateOptions effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
+update : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
 update ({ onSelect } as options) tagger msg model =
     update_ options tagger msg model
         |> withEffect
@@ -22,7 +22,7 @@ update ({ onSelect } as options) tagger msg model =
             )
 
 
-update_ : UpdateOptions effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
+update_ : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
 update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput } tagger msg model =
     case msg of
         InputChanged val ->
@@ -128,7 +128,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
         InputDebounceReturned val ->
             if val == Model.toInputValue model then
                 ( Model.setRequestState (Just Loading) model
-                , Maybe.map (\effect -> Effect.Request (effect val (GotRequestResponse val >> tagger))) request
+                , Maybe.map (\effect -> Effect.Request (effect val (Result.mapError (\_ -> "") >> GotRequestResponse val >> tagger))) request
                     |> Maybe.withDefault Effect.none
                 )
 
