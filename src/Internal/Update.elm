@@ -122,7 +122,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                      else
                         []
                     )
-            , Effect.none
+            , Effect.FocusInput (Model.toInputElementId model) (tagger NoOp)
             )
 
         InputDebounceReturned val ->

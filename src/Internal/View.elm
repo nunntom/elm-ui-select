@@ -277,12 +277,7 @@ optionElement v i opt =
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
 clearButtonElement tagger attribs element =
-    Input.button
-        ([ Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( tagger NoOp, True )))
-         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( tagger ClearButtonPressed, True )))
-         ]
-            ++ attribs
-        )
+    Input.button attribs
         { onPress = Just (tagger ClearButtonPressed)
         , label = element
         }
