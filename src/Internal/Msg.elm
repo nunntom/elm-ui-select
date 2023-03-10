@@ -5,7 +5,7 @@ import Internal.Option exposing (Option)
 
 
 type Msg a
-    = InputChanged String
+    = InputChanged String (List (Option a))
     | OptionClicked (Option a)
     | InputFocused (Maybe Int)
     | InputClicked (Maybe Int)

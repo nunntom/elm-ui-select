@@ -84,6 +84,13 @@ exampleProgramTest =
                 programTestWith (Select.withMinInputLength (Just 3))
                     |> ProgramTest.fillIn "" "Choose a country" "zzzz"
                     |> ProgramTest.expectViewHas [ Selector.text "No matches" ]
+        , Test.test "Choosing an option and then focusing back on the input shows all the options again" <|
+            \() ->
+                programTest
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
+                    |> ProgramTest.expectViewHas [ Selector.text "🇦🇩 Andorra" ]
         ]
 
 
