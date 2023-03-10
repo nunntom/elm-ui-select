@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.1.1
+
+### Enhancements
+
+- Optimised filtering. Previously filtering ran every time the virtual DOM re-rendered the select. This caused performance issues with large lists of items. Now the filter only runs when the input or options are changed.
+- Filter startsWithThenContains now uses a faster implementation.
+
 ## 3.1.0
 
 ### New features
