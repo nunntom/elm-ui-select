@@ -1,6 +1,5 @@
 module Internal.Model exposing
     ( Model
-    , applyFilter
     , blur
     , clear
     , closeMenu
@@ -13,6 +12,7 @@ module Internal.Model exposing
     , openMenu
     , selectOption
     , setElements
+    , setFilteredOptions
     , setFocused
     , setInputValue
     , setItems
@@ -55,6 +55,7 @@ type Model a
 type alias InternalState a =
     { id : String
     , items : List a
+    , filteredOptions : Maybe (List (Option a))
     , selected : Maybe a
     , inputValue : String
     , highlighted : Maybe Int
@@ -77,6 +78,7 @@ init id =
     Model
         { id = id
         , items = []
+        , filteredOptions = Nothing
         , selected = Nothing
         , inputValue = ""
         , highlighted = Nothing
@@ -129,20 +131,28 @@ toFilteredOptions minInputLength itemToString filter (Model model) =
     case minInputLength of
         Just chars ->
             if String.length model.inputValue >= chars then
-                List.map (Option.init itemToString) model.items
-                    |> Filter.filterOptions model.inputValue filter
+                toFilteredOptions_ itemToString filter (Model model)
 
             else
                 []
 
         Nothing ->
-            List.map (Option.init itemToString) model.items
-                |> (if model.applyFilter then
-                        Filter.filterOptions model.inputValue filter
+            if model.applyFilter then
+                toFilteredOptions_ itemToString filter (Model model)
 
-                    else
-                        identity
-                   )
+            else
+                List.map (Option.init itemToString) model.items
+
+
+toFilteredOptions_ : (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
+toFilteredOptions_ itemToString filter (Model model) =
+    case model.filteredOptions of
+        Just opts ->
+            opts
+
+        Nothing ->
+            List.map (Option.init itemToString) model.items
+                |> Filter.filterOptions model.inputValue filter
 
 
 toInputElementId : Model a -> String
@@ -233,18 +243,42 @@ isRequestFailed (Model { requestState }) =
 
 
 setItems : List a -> Model a -> Model a
-setItems items (Model d) =
-    Model { d | items = items }
+setItems items (Model model) =
+    Model
+        { model
+            | items = items
+            , filteredOptions =
+                if items == model.items then
+                    model.filteredOptions
+
+                else
+                    Nothing
+        }
 
 
 setSelected : Maybe a -> Model a -> Model a
-setSelected a (Model d) =
-    Model { d | selected = a }
+setSelected a (Model model) =
+    Model { model | selected = a }
 
 
 setInputValue : String -> Model a -> Model a
-setInputValue v (Model d) =
-    Model { d | inputValue = v }
+setInputValue v (Model model) =
+    Model
+        { model
+            | inputValue = v
+            , applyFilter = True
+            , filteredOptions =
+                if v == model.inputValue then
+                    model.filteredOptions
+
+                else
+                    Nothing
+        }
+
+
+setFilteredOptions : List (Option a) -> Model a -> Model a
+setFilteredOptions opts (Model model) =
+    Model { model | filteredOptions = Just opts }
 
 
 selectOption : Option a -> Model a -> Model a
@@ -305,11 +339,6 @@ setElements { container, menu } (Model model) =
             | menuViewPort = menu
             , containerElement = container
         }
-
-
-applyFilter : Bool -> Model a -> Model a
-applyFilter v (Model model) =
-    Model { model | applyFilter = v }
 
 
 setFocused : Bool -> Model a -> Model a

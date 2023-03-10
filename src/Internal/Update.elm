@@ -25,7 +25,7 @@ update ({ onSelect } as options) tagger msg model =
 update_ : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
 update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput } tagger msg model =
     case msg of
-        InputChanged val ->
+        InputChanged val filteredOptions ->
             ( model
                 |> Model.setInputValue val
                 |> Model.highlightIndex
@@ -36,7 +36,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                         Just 0
                     )
                     False
-                |> Model.applyFilter True
+                |> Model.setFilteredOptions filteredOptions
                 |> Model.setSelected Nothing
                 |> Model.setItems
                     (if request /= Nothing && val == "" then

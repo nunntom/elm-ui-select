@@ -80,7 +80,10 @@ view attribs v =
 
 toElement : Model a -> ViewConfigInternal a msg -> Element msg
 toElement model config =
-    toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model) (Model.toFilteredOptions config.minInputLength config.itemToString config.filter model) model config
+    toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)
+        (Model.toFilteredOptions config.minInputLength config.itemToString config.filter model)
+        model
+        config
 
 
 toElement_ : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
@@ -173,7 +176,13 @@ inputView filteredOptions model config =
                ]
             ++ inputAccessibilityAttributes filteredOptions model
         )
-        { onChange = InputChanged >> config.onChange
+        { onChange =
+            \v ->
+                InputChanged v
+                    (Model.setInputValue v model
+                        |> Model.toFilteredOptions config.minInputLength config.itemToString config.filter
+                    )
+                    |> config.onChange
         , text =
             if Model.isFocused model then
                 Model.toInputValue model
