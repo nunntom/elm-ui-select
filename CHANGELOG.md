@@ -1,5 +1,11 @@
 # Changelog
 
+# 3.1.2
+
+### Enhancements
+
+- More filtering optimisations. Prevented case where filtering would still run on DOM updates if the input or items were changed programatically, such as when updated by a request.
+
 ## 3.1.1
 
 ### Enhancements

@@ -1,21 +1,17 @@
 {
-    "type": "package",
-    "name": "nunntom/elm-ui-select",
-    "summary": "A select widget for Elm Ui",
-    "license": "BSD-3-Clause",
-    "version": "3.1.1",
-    "exposed-modules": [
-        "Select",
-        "Select.Filter",
-        "Select.Effect"
-    ],
-    "elm-version": "0.19.0 <= v < 0.20.0",
-    "dependencies": {
-        "elm/browser": "1.0.0 <= v < 2.0.0",
-        "elm/core": "1.0.0 <= v < 2.0.0",
-        "elm/html": "1.0.0 <= v < 2.0.0",
-        "elm/json": "1.0.0 <= v < 2.0.0",
-        "mdgriffith/elm-ui": "1.0.0 <= v < 2.0.0"
-    },
-    "test-dependencies": {}
+  "type": "package",
+  "name": "nunntom/elm-ui-select",
+  "summary": "A select widget for elm-ui with keyboard input, filter, scrolling and requests!",
+  "license": "BSD-3-Clause",
+  "version": "3.1.2",
+  "exposed-modules": ["Select", "Select.Filter", "Select.Effect"],
+  "elm-version": "0.19.0 <= v < 0.20.0",
+  "dependencies": {
+    "elm/browser": "1.0.0 <= v < 2.0.0",
+    "elm/core": "1.0.0 <= v < 2.0.0",
+    "elm/html": "1.0.0 <= v < 2.0.0",
+    "elm/json": "1.0.0 <= v < 2.0.0",
+    "mdgriffith/elm-ui": "1.0.0 <= v < 2.0.0"
+  },
+  "test-dependencies": {}
 }
