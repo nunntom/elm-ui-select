@@ -85,13 +85,19 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.emitJust onLoseFocus
             )
 
+        GotNewFilteredOptions options ->
+            ( Model.setFilteredOptions options model
+            , Effect.None
+            )
+
         MouseEnteredOption i ->
             ( Model.highlightIndex (Just i) True model
             , Effect.none
             )
 
         KeyDown selectOnTab filteredOptions key ->
-            handleKey selectOnTab tagger model key filteredOptions
+            Model.setFilteredOptions filteredOptions model
+                |> handleKey selectOnTab tagger key filteredOptions
 
         GotContainerAndMenuElements maybeIdx result ->
             ( model
@@ -176,8 +182,8 @@ onFocusMenu tagger maybeOptionIdx hasRequest model =
     )
 
 
-handleKey : Bool -> (Msg a -> msg) -> Model a -> String -> List (Option a) -> ( Model a, Effect effect msg )
-handleKey selectOnTab tagger model key filteredOptions =
+handleKey : Bool -> (Msg a -> msg) -> String -> List (Option a) -> Model a -> ( Model a, Effect effect msg )
+handleKey selectOnTab tagger key filteredOptions model =
     let
         selectHighlighted =
             case Model.toHighlighted model |> Maybe.andThen (\idx -> getAt idx filteredOptions) of

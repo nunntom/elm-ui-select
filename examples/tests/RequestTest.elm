@@ -1,10 +1,10 @@
 module RequestTest exposing (exampleProgramTest)
 
-import EffectRequestExample as App
+import EffectRequestExample as App exposing (Cocktail)
 import Http
 import Json.Decode as Decode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
-import Select
+import Select exposing (Select)
 import Select.Effect
 import SimulateInput
 import SimulatedEffect.Cmd as SimulatedCmd
@@ -12,6 +12,7 @@ import SimulatedEffect.Http as SimulateHttp
 import SimulatedEffect.Process as SimulatedProcess
 import SimulatedEffect.Task as SimulatedTask
 import Test exposing (Test)
+import Test.Html.Event
 import Test.Html.Query as Query exposing (Single)
 import Test.Html.Selector as Selector exposing (Selector)
 
@@ -22,6 +23,7 @@ exampleProgramTest =
         [ Test.test "Type in Chocolate, and choose second option with keyboard navigation" <|
             \() ->
                 programTest
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 500
                     |> ProgramTest.simulateHttpOk "GET"
@@ -33,6 +35,7 @@ exampleProgramTest =
         , Test.test "Type in Chocolate, and choose \"Chocolate Drink\" with mouse click" <|
             \() ->
                 programTest
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 300
                     |> ProgramTest.simulateHttpOk "GET"
@@ -95,6 +98,18 @@ simulateConfig =
     , find = Query.find
     , attribute = Selector.attribute
     }
+
+
+drinkSelect : Select Cocktail
+drinkSelect =
+    App.init ()
+        |> Tuple.first
+        |> .select
+
+
+focusInput : ProgramTest model msg effect -> ProgramTest model msg effect
+focusInput =
+    ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId drinkSelect) ]) Test.Html.Event.focus
 
 
 cocktailsResponse : String

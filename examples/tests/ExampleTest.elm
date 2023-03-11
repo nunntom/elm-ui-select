@@ -25,6 +25,7 @@ exampleProgramTest =
         [ Test.test "Filter for United Kingdom produces one result" <|
             \() ->
                 programTest
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United Kingdom"
                     |> ProgramTest.ensureView
                         (Query.find [ Selector.id (Select.toMenuElementId countrySelect) ]
@@ -38,12 +39,14 @@ exampleProgramTest =
         , Test.test "Click United Kingdom selects it" <|
             \() ->
                 programTest
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         , Test.test "Keyboard select United Kingdom" <|
             \() ->
                 programTest
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> SimulateInput.arrowDown "country-select"
                     |> SimulateInput.enter "country-select"
@@ -51,12 +54,12 @@ exampleProgramTest =
         , Test.test "Focusing on the input triggers the onFocus msg" <|
             \() ->
                 programTest
-                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
+                    |> focusInput
                     |> ProgramTest.expectModel (.inputIsFocused >> Expect.equal (Just True))
         , Test.test "Input losing focus triggers the onLoseFocus msg" <|
             \() ->
                 programTest
-                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
+                    |> focusInput
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.blur
                     |> ProgramTest.expectModel (.inputIsFocused >> Expect.equal (Just False))
         , Test.test "Filling in the input triggers the onInput msg" <|
@@ -67,26 +70,31 @@ exampleProgramTest =
         , Test.test "Typing 2 chars with withMinInputLength (Just 3) does not show any items" <|
             \() ->
                 programTestWith (Select.withMinInputLength (Just 3))
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "un"
                     |> ProgramTest.expectViewHasNot [ Selector.text "🇬🇧 United Kingdom of Great Britain and Northern Ireland" ]
         , Test.test "Typing 3 chars with withMinInputLength (Just 3) does shows items" <|
             \() ->
                 programTestWith (Select.withMinInputLength (Just 3))
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "uni"
                     |> ProgramTest.expectViewHas [ Selector.text "🇬🇧 United Kingdom of Great Britain and Northern Ireland" ]
         , Test.test "Typing less than minInputLength does not show no matches even if nothing matched" <|
             \() ->
                 programTestWith (Select.withMinInputLength (Just 5))
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "zzzz"
                     |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
         , Test.test "Typing up to the minInputLength shows no matches if nothing matched" <|
             \() ->
                 programTestWith (Select.withMinInputLength (Just 3))
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "zzzz"
                     |> ProgramTest.expectViewHas [ Selector.text "No matches" ]
         , Test.test "Choosing an option and then focusing back on the input shows all the options again" <|
             \() ->
                 programTest
+                    |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
@@ -155,3 +163,8 @@ simulateEffect effect =
                 , sleep = SimulatedProcess.sleep
                 }
                 selectEffect
+
+
+focusInput : ProgramTest model msg effect -> ProgramTest model msg effect
+focusInput =
+    ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus

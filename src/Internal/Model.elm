@@ -10,6 +10,7 @@ module Internal.Model exposing
     , isOpen
     , isRequestFailed
     , openMenu
+    , requiresNewFilteredOptions
     , selectOption
     , setElements
     , setFilteredOptions
@@ -128,20 +129,24 @@ wasHighlightedByMouse (Model { highlightedByMouse }) =
 
 toFilteredOptions : Maybe Int -> (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
 toFilteredOptions minInputLength itemToString filter (Model model) =
-    case minInputLength of
-        Just chars ->
-            if String.length model.inputValue >= chars then
-                toFilteredOptions_ itemToString filter (Model model)
+    if not model.focused then
+        []
 
-            else
-                []
+    else
+        case minInputLength of
+            Just chars ->
+                if String.length model.inputValue >= chars then
+                    toFilteredOptions_ itemToString filter (Model model)
 
-        Nothing ->
-            if model.applyFilter then
-                toFilteredOptions_ itemToString filter (Model model)
+                else
+                    []
 
-            else
-                List.map (Option.init itemToString) model.items
+            Nothing ->
+                if model.applyFilter then
+                    toFilteredOptions_ itemToString filter (Model model)
+
+                else
+                    List.map (Option.init itemToString) model.items
 
 
 toFilteredOptions_ : (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
@@ -236,6 +241,11 @@ isLoading (Model { requestState }) =
 isRequestFailed : Model a -> Bool
 isRequestFailed (Model { requestState }) =
     requestState == Just Failed
+
+
+requiresNewFilteredOptions : Model a -> Bool
+requiresNewFilteredOptions (Model { filteredOptions }) =
+    filteredOptions == Nothing
 
 
 
