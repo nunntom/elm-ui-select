@@ -89,58 +89,66 @@ toElement model config =
 toElement_ : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
 toElement_ placement filteredOptions model config =
     Element.el
-        ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId model)
-         , Element.width Element.fill
-         , Element.below <|
-            if
-                List.length filteredOptions
-                    == 0
-                    && Model.isOpen model
-                    && (String.length (Model.toInputValue model) >= Maybe.withDefault 1 config.minInputLength)
-                    && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success)
-            then
-                config.noMatchElement
+        (List.concat
+            [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId model)
+              , Element.width Element.fill
+              , Element.below <|
+                    if
+                        List.length filteredOptions
+                            == 0
+                            && Model.isOpen model
+                            && (String.length (Model.toInputValue model) >= Maybe.withDefault 1 config.minInputLength)
+                            && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success)
+                    then
+                        config.noMatchElement
 
-            else
-                Element.none
-         , Placement.toAttribute
-            (if config.positionFixed then
-                Placement.Below
+                    else
+                        Element.none
+              , Placement.toAttribute
+                    (if config.positionFixed then
+                        Placement.Below
 
-             else
-                placement
-            )
-           <|
-            (if config.positionFixed then
-                positionFixedEl placement (Model.toContainerElement model)
-
-             else
-                identity
-            )
-            <|
-                menuView
-                    (defaultMenuAttrs
-                        { menuWidth = Model.toMenuMinWidth model
-                        , maxWidth = config.menuMaxWidth
-                        , menuHeight = Model.toMenuMaxHeight config.menuMaxHeight config.menuPlacement model
-                        }
-                        ++ List.concatMap (\toAttrs -> toAttrs (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)) config.menuAttributes
+                     else
+                        placement
                     )
-                    { menuId = Model.toMenuElementId model
-                    , toOptionId = Model.toOptionElementId model
-                    , toOptionState = Model.toOptionState model
-                    , onChange = config.onChange
-                    , menuOpen = Model.isOpen model
-                    , options = filteredOptions
-                    , optionElement = config.optionElement
-                    }
-         ]
-            ++ (if Model.isOpen model then
-                    [ Element.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
+                <|
+                    (if config.positionFixed then
+                        positionFixedEl placement (Model.toContainerElement model)
 
-                else
-                    []
-               )
+                     else
+                        identity
+                    )
+                    <|
+                        menuView
+                            (defaultMenuAttrs
+                                { menuWidth = Model.toMenuMinWidth model
+                                , maxWidth = config.menuMaxWidth
+                                , menuHeight = Model.toMenuMaxHeight config.menuMaxHeight config.menuPlacement model
+                                }
+                                ++ List.concatMap (\toAttrs -> toAttrs (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)) config.menuAttributes
+                            )
+                            { menuId = Model.toMenuElementId model
+                            , toOptionId = Model.toOptionElementId model
+                            , toOptionState = Model.toOptionState model
+                            , onChange = config.onChange
+                            , menuOpen = Model.isOpen model
+                            , options = filteredOptions
+                            , optionElement = config.optionElement
+                            }
+              ]
+            , if Model.isOpen model then
+                [ Element.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
+
+              else
+                []
+            , if Model.isFocused model && Model.requiresNewFilteredOptions model then
+                [ Element.htmlAttribute (Html.Events.on "focusin" (Decode.succeed (GotNewFilteredOptions filteredOptions |> config.onChange)))
+                , Element.htmlAttribute (Html.Events.on "mousemove" (Decode.succeed (GotNewFilteredOptions filteredOptions |> config.onChange)))
+                ]
+
+              else
+                []
+            ]
         )
         (inputView filteredOptions model config)
 
@@ -153,10 +161,11 @@ inputView filteredOptions model config =
                 |> Maybe.andThen (Option.findIndex filteredOptions)
     in
     Input.text
-        (config.inputAttribs
-            ++ [ Events.onFocus (InputFocused selectedIdx |> config.onChange)
-               , Events.onClick (InputClicked selectedIdx |> config.onChange)
-               , Events.onLoseFocus
+        (List.concat
+            [ config.inputAttribs
+            , [ Events.onFocus (InputFocused selectedIdx |> config.onChange)
+              , Events.onClick (InputClicked selectedIdx |> config.onChange)
+              , Events.onLoseFocus
                     (config.onChange
                         (InputLostFocus
                             { clearInputValue = config.clearInputValueOnBlur
@@ -165,16 +174,17 @@ inputView filteredOptions model config =
                             filteredOptions
                         )
                     )
-               , onKeyDown (Model.isOpen model) (KeyDown config.selectOnTab filteredOptions >> config.onChange)
-               , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
-               , Element.inFront <|
+              , onKeyDown (Model.isOpen model) (KeyDown config.selectOnTab filteredOptions >> config.onChange)
+              , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
+              , Element.inFront <|
                     if Model.toValue model /= Nothing || Model.toInputValue model /= "" then
                         Maybe.withDefault Element.none config.clearButton
 
                     else
                         Element.none
-               ]
-            ++ inputAccessibilityAttributes filteredOptions model
+              ]
+            , inputAccessibilityAttributes filteredOptions model
+            ]
         )
         { onChange =
             \v ->

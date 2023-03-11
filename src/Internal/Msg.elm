@@ -8,6 +8,7 @@ type Msg a
     = InputChanged String (List (Option a))
     | OptionClicked (Option a)
     | InputFocused (Maybe Int)
+    | GotNewFilteredOptions (List (Option a))
     | InputClicked (Maybe Int)
     | InputLostFocus
         { clearInputValue : Bool
