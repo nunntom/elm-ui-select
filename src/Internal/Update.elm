@@ -3,7 +3,7 @@ module Internal.Update exposing (update)
 import Internal.Effect as Effect exposing (Effect)
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
-import Internal.Option exposing (Option)
+import Internal.Option as Option exposing (Option)
 import Internal.RequestState exposing (RequestState(..))
 import Internal.UpdateOptions exposing (UpdateOptions)
 
@@ -73,20 +73,29 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.none
             )
 
-        InputFocused maybeIdx ->
-            onFocusMenu tagger maybeIdx (request /= Nothing) model
+        InputFocused maybeOptions ->
+            (case maybeOptions of
+                Just ( items, options ) ->
+                    Model.setItems items model
+                        |> Model.setFilteredOptions options
+
+                Nothing ->
+                    model
+            )
+                |> onFocusMenu tagger (request /= Nothing)
                 |> withEffect (\_ -> Effect.emitJust onFocus)
 
-        InputClicked maybeIdx ->
-            onFocusMenu tagger maybeIdx (request /= Nothing) model
+        InputClicked ->
+            onFocusMenu tagger (request /= Nothing) model
 
         InputLostFocus config filteredOptions ->
             ( Model.blur config (request /= Nothing) filteredOptions model
             , Effect.emitJust onLoseFocus
             )
 
-        GotNewFilteredOptions options ->
-            ( Model.setFilteredOptions options model
+        GotNewFilteredOptions ( items, options ) ->
+            ( Model.setItems items model
+                |> Model.setFilteredOptions options
             , Effect.None
             )
 
@@ -97,7 +106,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
 
         KeyDown selectOnTab filteredOptions key ->
             Model.setFilteredOptions filteredOptions model
-                |> handleKey selectOnTab tagger key filteredOptions
+                |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
 
         GotContainerAndMenuElements maybeIdx result ->
             ( model
@@ -167,14 +176,19 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             ( model, Effect.none )
 
 
-onFocusMenu : (Msg a -> msg) -> Maybe Int -> Bool -> Model a -> ( Model a, Effect effect msg )
-onFocusMenu tagger maybeOptionIdx hasRequest model =
+onFocusMenu : (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
+onFocusMenu tagger hasRequest model =
+    let
+        selectedIdx =
+            Model.toValue model
+                |> Maybe.andThen (Option.findIndex (Model.currentFilteredOptions model))
+    in
     ( Model.setFocused True model
-        |> Model.highlightIndex maybeOptionIdx False
+        |> Model.highlightIndex selectedIdx False
     , if not hasRequest || Model.toRequestState model == Just Success then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
-            , getContainerAndMenuElementsEffect maybeOptionIdx tagger model
+            , getContainerAndMenuElementsEffect selectedIdx tagger model
             ]
 
       else
@@ -182,8 +196,8 @@ onFocusMenu tagger maybeOptionIdx hasRequest model =
     )
 
 
-handleKey : Bool -> (Msg a -> msg) -> String -> List (Option a) -> Model a -> ( Model a, Effect effect msg )
-handleKey selectOnTab tagger key filteredOptions model =
+handleKey : Bool -> (Msg a -> msg) -> Bool -> String -> List (Option a) -> Model a -> ( Model a, Effect effect msg )
+handleKey selectOnTab tagger hasRequest key filteredOptions model =
     let
         selectHighlighted =
             case Model.toHighlighted model |> Maybe.andThen (\idx -> getAt idx filteredOptions) of
@@ -195,16 +209,16 @@ handleKey selectOnTab tagger key filteredOptions model =
     in
     case key of
         "ArrowDown" ->
-            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Maybe.withDefault -1 (Model.toHighlighted model) + 1)) model
+            moveHighlight tagger hasRequest (Basics.min (List.length filteredOptions - 1) (Maybe.withDefault -1 (Model.toHighlighted model) + 1)) model
 
         "ArrowUp" ->
-            moveHighlight tagger (Basics.max 0 (Maybe.withDefault 0 (Model.toHighlighted model) - 1)) model
+            moveHighlight tagger hasRequest (Basics.max 0 (Maybe.withDefault 0 (Model.toHighlighted model) - 1)) model
 
         "PageDown" ->
-            moveHighlight tagger (Basics.min (List.length filteredOptions - 1) (Maybe.withDefault -1 (Model.toHighlighted model) + 10)) model
+            moveHighlight tagger hasRequest (Basics.min (List.length filteredOptions - 1) (Maybe.withDefault -1 (Model.toHighlighted model) + 10)) model
 
         "PageUp" ->
-            moveHighlight tagger (Basics.max 0 (Maybe.withDefault 0 (Model.toHighlighted model) - 10)) model
+            moveHighlight tagger hasRequest (Basics.max 0 (Maybe.withDefault 0 (Model.toHighlighted model) - 10)) model
 
         "Enter" ->
             selectHighlighted
@@ -223,17 +237,15 @@ handleKey selectOnTab tagger key filteredOptions model =
             ( model, Effect.none )
 
 
-moveHighlight : (Msg a -> msg) -> Int -> Model a -> ( Model a, Effect effect msg )
-moveHighlight tagger newHighlighted model =
+moveHighlight : (Msg a -> msg) -> Bool -> Int -> Model a -> ( Model a, Effect effect msg )
+moveHighlight tagger hasRequest newHighlighted model =
     if Model.isOpen model then
         ( Model.highlightIndex (Just newHighlighted) False model
         , getContainerAndMenuElementsEffect (Just newHighlighted) tagger model
         )
 
     else
-        ( model
-        , getContainerAndMenuElementsEffect Nothing tagger model
-        )
+        onFocusMenu tagger hasRequest model
 
 
 getContainerAndMenuElementsEffect : Maybe Int -> (Msg a -> msg) -> Model a -> Effect effect msg

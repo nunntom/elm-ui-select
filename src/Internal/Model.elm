@@ -3,6 +3,7 @@ module Internal.Model exposing
     , blur
     , clear
     , closeMenu
+    , currentFilteredOptions
     , highlightIndex
     , init
     , isFocused
@@ -127,9 +128,9 @@ wasHighlightedByMouse (Model { highlightedByMouse }) =
     highlightedByMouse
 
 
-toFilteredOptions : Maybe Int -> (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
-toFilteredOptions minInputLength itemToString filter (Model model) =
-    if not model.focused then
+toFilteredOptions : Bool -> Maybe Int -> (a -> String) -> Maybe (Filter a) -> Model a -> List (Option a)
+toFilteredOptions onlyIfFocused minInputLength itemToString filter (Model model) =
+    if onlyIfFocused && not model.focused then
         []
 
     else
@@ -158,6 +159,11 @@ toFilteredOptions_ itemToString filter (Model model) =
         Nothing ->
             List.map (Option.init itemToString) model.items
                 |> Filter.filterOptions model.inputValue filter
+
+
+currentFilteredOptions : Model a -> List (Option a)
+currentFilteredOptions (Model { filteredOptions }) =
+    Maybe.withDefault [] filteredOptions
 
 
 toInputElementId : Model a -> String
@@ -297,6 +303,7 @@ selectOption opt (Model model) =
         { model
             | menuOpen = False
             , selected = Just (Option.toItem opt)
+            , highlighted = Nothing
             , inputValue = Option.toString opt
             , applyFilter = False
         }
