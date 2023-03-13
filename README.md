@@ -1,6 +1,6 @@
 # Elm-Ui Select
 
-A select/dropdown widget for elm-ui.
+A select widget for elm-ui with keyboard input, filtering, menu scrolling and requests.
 
 ## Features:
 
@@ -87,4 +87,4 @@ view countries model =
 
 ## Limitations
 
-There are issues when the input is placed within a parent element that has overflow scroll or auto: the menu may be clipped by the parent. This can be overcome by using [Select.withMenuPositionFixed](https://package.elm-lang.org/packages/nunntom/elm-ui-select/3.1.2/Select/#withMenuPositionFixed), but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
+There are issues when the input is placed within a parent element that has overflow scroll or auto: the menu may be clipped by the parent. This can be overcome by using [Select.withMenuPositionFixed](https://package.elm-lang.org/packages/nunntom/elm-ui-select/3.1.3/Select/#withMenuPositionFixed), but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
