@@ -181,7 +181,7 @@ onFocusMenu tagger hasRequest model =
     let
         selectedIdx =
             Model.toValue model
-                |> Maybe.andThen (Option.findIndex (Model.currentFilteredOptions model))
+                |> Maybe.andThen (Option.findIndex (Model.toCurrentFilteredOptions model))
     in
     ( Model.setFocused True model
         |> Model.highlightIndex selectedIdx False

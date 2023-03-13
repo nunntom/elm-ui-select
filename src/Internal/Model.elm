@@ -3,7 +3,6 @@ module Internal.Model exposing
     , blur
     , clear
     , closeMenu
-    , currentFilteredOptions
     , highlightIndex
     , init
     , isFocused
@@ -22,6 +21,7 @@ module Internal.Model exposing
     , setSelected
     , toContainerElement
     , toContainerElementId
+    , toCurrentFilteredOptions
     , toFilteredOptions
     , toHighlighted
     , toInputElementId
@@ -161,8 +161,8 @@ toFilteredOptions_ itemToString filter (Model model) =
                 |> Filter.filterOptions model.inputValue filter
 
 
-currentFilteredOptions : Model a -> List (Option a)
-currentFilteredOptions (Model { filteredOptions }) =
+toCurrentFilteredOptions : Model a -> List (Option a)
+toCurrentFilteredOptions (Model { filteredOptions }) =
     Maybe.withDefault [] filteredOptions
 
 
