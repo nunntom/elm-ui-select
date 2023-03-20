@@ -1,5 +1,21 @@
 # Changelog
 
+# 3.1.3
+
+### Fixes
+
+- Fixed a potential issue related to previous filtering optimisations where filtering could run more than necessary if items were set in view instead of init.
+
+### Enhancements
+
+- After pressing the clear button if any, focus will go to the input.
+
+# 3.1.2
+
+### Enhancements
+
+- More filtering optimisations. Prevented case where filtering would still run on DOM updates if the input or items were changed programatically, such as when updated by a request.
+
 ## 3.1.1
 
 ### Enhancements

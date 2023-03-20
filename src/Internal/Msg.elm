@@ -7,9 +7,9 @@ import Internal.Option exposing (Option)
 type Msg a
     = InputChanged String (List (Option a))
     | OptionClicked (Option a)
-    | InputFocused (Maybe Int)
-    | GotNewFilteredOptions (List (Option a))
-    | InputClicked (Maybe Int)
+    | InputFocused (Maybe ( List a, List (Option a) ))
+    | GotNewFilteredOptions ( List a, List (Option a) )
+    | InputClicked
     | InputLostFocus
         { clearInputValue : Bool
         , selectExactMatch : Bool

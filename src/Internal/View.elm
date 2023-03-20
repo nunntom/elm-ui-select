@@ -81,7 +81,7 @@ view attribs v =
 toElement : Model a -> ViewConfigInternal a msg -> Element msg
 toElement model config =
     toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)
-        (Model.toFilteredOptions config.minInputLength config.itemToString config.filter model)
+        (Model.toFilteredOptions True config.minInputLength config.itemToString config.filter model)
         model
         config
 
@@ -141,9 +141,14 @@ toElement_ placement filteredOptions model config =
 
               else
                 []
-            , if Model.isFocused model && Model.requiresNewFilteredOptions model then
-                [ Element.htmlAttribute (Html.Events.on "focusin" (Decode.succeed (GotNewFilteredOptions filteredOptions |> config.onChange)))
-                , Element.htmlAttribute (Html.Events.on "mousemove" (Decode.succeed (GotNewFilteredOptions filteredOptions |> config.onChange)))
+            , if Model.requiresNewFilteredOptions model then
+                let
+                    options _ =
+                        optionsUpdate model config filteredOptions
+                in
+                [ Element.htmlAttribute <| Html.Events.on "keydown" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> config.onChange)))
+                , Element.htmlAttribute <| Html.Events.on "touchstart" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> config.onChange)))
+                , Element.htmlAttribute <| Html.Events.on "mousemove" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> config.onChange)))
                 ]
 
               else
@@ -155,16 +160,15 @@ toElement_ placement filteredOptions model config =
 
 inputView : List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
 inputView filteredOptions model config =
-    let
-        selectedIdx =
-            Model.toValue model
-                |> Maybe.andThen (Option.findIndex filteredOptions)
-    in
     Input.text
         (List.concat
             [ config.inputAttribs
-            , [ Events.onFocus (InputFocused selectedIdx |> config.onChange)
-              , Events.onClick (InputClicked selectedIdx |> config.onChange)
+            , if Model.requiresNewFilteredOptions model then
+                [ Element.htmlAttribute (Html.Events.on "focus" (Decode.lazy (\_ -> Decode.succeed (InputFocused (Just <| optionsUpdate model config filteredOptions) |> config.onChange)))) ]
+
+              else
+                [ Events.onFocus (InputFocused Nothing |> config.onChange) ]
+            , [ Events.onClick (InputClicked |> config.onChange)
               , Events.onLoseFocus
                     (config.onChange
                         (InputLostFocus
@@ -190,7 +194,7 @@ inputView filteredOptions model config =
             \v ->
                 InputChanged v
                     (Model.setInputValue v model
-                        |> Model.toFilteredOptions config.minInputLength config.itemToString config.filter
+                        |> Model.toFilteredOptions False config.minInputLength config.itemToString config.filter
                     )
                     |> config.onChange
         , text =
@@ -203,6 +207,21 @@ inputView filteredOptions model config =
         , placeholder = config.placeholder
         , label = config.label
         }
+
+
+optionsUpdate : Model a -> ViewConfigInternal a msg -> List (Option a) -> ( List a, List (Option a) )
+optionsUpdate model config filteredOptions =
+    ( Model.toItems model
+    , if List.isEmpty filteredOptions then
+        Model.toFilteredOptions False config.minInputLength config.itemToString config.filter model
+
+      else
+        filteredOptions
+    )
+
+
+
+--)
 
 
 inputAccessibilityAttributes : List (Option a) -> Model a -> List (Attribute msg)
