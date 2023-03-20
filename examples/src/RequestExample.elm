@@ -68,7 +68,7 @@ update msg model =
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 
-fetchCocktails : String -> (Result String (List Cocktail) -> Msg) -> Cmd Msg
+fetchCocktails : String -> (Result String (List Cocktail) -> msg) -> Cmd msg
 fetchCocktails query tagger =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query

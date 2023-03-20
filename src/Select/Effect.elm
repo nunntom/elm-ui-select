@@ -2,6 +2,7 @@ module Select.Effect exposing
     ( Effect
     , update, updateWith
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+    , sendRequest
     , perform, performWithRequest
     , simulate, simulateWithRequest
     , simulateClickOption, SimulateInputConfig
@@ -27,6 +28,11 @@ you don't need this module.
 # Update Options
 
 @docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+
+
+# Send Request
+
+@docs sendRequest
 
 
 # Perform Effect
@@ -201,6 +207,43 @@ onFocus msg =
 onLoseFocus : msg -> UpdateOption err effect a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
+
+
+{-| Send a request to populate the menu items. This is useful for initialising the select with items from an api.
+Provide a function that takes the current input value and a msg tagger and returns an effect which can be used to perform an HTTP request.
+
+    init : ( Model, Effect )
+    init =
+        let
+            ( select, effect ) =
+                Select.Effect.init "thing-select"
+                    |> Select.Effect.sendRequest SelectMsg FetchThings Nothing
+        in
+        ( { select = select }
+        , effect
+        )
+
+    type MyEffect
+        = SelectEffect (Select.Effect MyEffect Msg)
+        | FetchThings String (Result Http.Error (List Thing) -> Msg)
+
+Optionally provide a function to select one the items when the response returns:
+
+    init : ThingId -> ( Model, Effect )
+    init thingId =
+        let
+            ( select, effect ) =
+                Select.Effect. "thing-select"
+                    |> Select.Effect.sendRequest SelectMsg fetchThings (Just (\{ id } -> id == thingId))
+        in
+        ( { select = select }
+        , effect
+        )
+
+-}
+sendRequest : (Msg a -> msg) -> (String -> (Result err (List a) -> msg) -> effect) -> Maybe (a -> Bool) -> Select a -> ( Select a, Effect effect msg )
+sendRequest tagger req andSelect select =
+    Update.sendRequest tagger andSelect select req
 
 
 

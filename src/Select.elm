@@ -1,9 +1,10 @@
 module Select exposing
-    ( Select, init
+    ( Select
+    , init
     , setItems, setSelected, setInputValue, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
-    , Msg, update, updateWith
+    , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
     , toElement
@@ -15,7 +16,12 @@ module Select exposing
 
 # Type
 
-@docs Select, init
+@docs Select
+
+
+# Create
+
+@docs init
 
 
 # Set
@@ -35,7 +41,7 @@ module Select exposing
 
 # Update the Select
 
-@docs Msg, update, updateWith
+@docs Msg, update, updateWith, sendRequest
 
 
 # Update Options
@@ -93,30 +99,20 @@ init =
 
 You can do this on init:
 
-    import Element exposing (Element)
-    import Element.Input as Input
-
     type alias Model =
         { select : Select String
-        , things : List String
         }
 
-    init : List String -> ( Model, Cmd Never )
+    init : List String -> ( Model, Cmd Msg )
     init things =
         ( { select =
                 Select.init "thing-select"
                     |> Select.setItems things
-            , things = [ "Thing 1" ]
           }
         , Cmd.none
         )
 
-    init []    --> init []
-
 Or you can do it in your view if you prefer to keep your items in your own model.
-
-    type Msg
-        = SelectMsg (Select.Msg String)
 
     view : Model -> Element Msg
     view model =
@@ -127,8 +123,6 @@ Or you can do it in your view if you prefer to keep your items in your own model
             , itemToString = identity
             }
             |> Select.toElement (Select.setItems model.things model.select)
-
-    view (Tuple.first (init [])) --> <div></div>
 
 -}
 setItems : List a -> Select a -> Select a
@@ -272,7 +266,7 @@ type alias UpdateOption err a msg =
     UpdateOptions.UpdateOption err (Cmd msg) a msg
 
 
-{-| Use an HTTP request to retrieve matching remote results. ote that in order to avoid an elm/http dependency in this package,
+{-| Use an HTTP request to retrieve matching remote results. Note that in order to avoid an elm/http dependency in this package,
 you will need to provide the request Cmd yourself. Provide a function that takes the input value and a msg tagger and returns a Cmd.
 Update will return this Cmd when the user types in the input.
 
@@ -348,6 +342,49 @@ onFocus msg =
 onLoseFocus : msg -> UpdateOption err a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
+
+
+{-| Send a request to populate the menu items. This is useful for initialising the select with items from an api.
+Provide a function that takes the current input value and a msg tagger and returns a Cmd which can be used to perform an HTTP request.
+
+    init : ( Model, Cmd Msg )
+    init =
+        let
+            ( select, cmd ) =
+                Select.init "thing-select"
+                    |> Select.sendRequest SelectMsg fetchThings Nothing
+        in
+        ( { select = select }
+        , cmd
+        )
+
+    fetchThings : String -> (Result Http.Error (List Thing) -> Msg) -> Cmd Msg
+    fetchThings query tagger =
+        Http.get
+            { url = "https://awesome-thing.api/things?search=" ++ query
+            , expect =
+                Http.expectJson tagger
+                    (Decode.list thingDecoder)
+            }
+
+Optionally provide a function to select one the items when the response returns:
+
+    init : ThingId -> ( Model, Cmd Msg )
+    init thingId =
+        let
+            ( select, cmd ) =
+                Select.init "thing-select"
+                    |> Select.sendRequest SelectMsg fetchThings (Just (\{ id } -> id == thingId))
+        in
+        ( { select = select }
+        , cmd
+        )
+
+-}
+sendRequest : (Msg a -> msg) -> (String -> (Result err (List a) -> msg) -> Cmd msg) -> Maybe (a -> Bool) -> Select a -> ( Select a, Cmd msg )
+sendRequest tagger req andSelect select =
+    Update.sendRequest tagger andSelect select req
+        |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
 

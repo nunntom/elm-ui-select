@@ -1,5 +1,7 @@
 module Internal.Option exposing (Option, findByString, findByValue, findIndex, init, toItem, toString)
 
+import List.Extra
+
 
 type alias Option a =
     ( a, String )
@@ -54,13 +56,4 @@ findIndex list a =
 
 findByString : List (Option a) -> String -> Maybe (Option a)
 findByString list s =
-    case list of
-        [] ->
-            Nothing
-
-        x :: xs ->
-            if String.toLower s == String.toLower (toString x) then
-                Just x
-
-            else
-                findByString xs s
+    List.Extra.find (\o -> String.toLower s == String.toLower (toString o)) list

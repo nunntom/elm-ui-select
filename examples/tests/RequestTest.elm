@@ -2,6 +2,7 @@ module RequestTest exposing (exampleProgramTest)
 
 import EffectRequestExample as App exposing (Cocktail)
 import Json.Decode as Decode
+import Json.Encode as Encode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
 import Select exposing (Select)
 import Select.Effect
@@ -21,7 +22,7 @@ exampleProgramTest =
     Test.describe "Select Tests"
         [ Test.test "Type in Chocolate, and choose second option with keyboard navigation" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 500
@@ -33,7 +34,7 @@ exampleProgramTest =
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         , Test.test "Type in Chocolate, and choose \"Chocolate Drink\" with mouse click" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 300
@@ -42,18 +43,35 @@ exampleProgramTest =
                         cocktailsResponse
                     |> Select.Effect.simulateClickOption simulateConfig "cocktail-select" "Chocolate Drink"
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
+        , Test.test "Can initialise the select with an item selected" <|
+            \() ->
+                programTest (Just { name = "Chocolate Drink", id = "2" })
+                    |> ProgramTest.simulateHttpOk "GET"
+                        "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate+Drink"
+                        cocktailsResponse
+                    |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         ]
 
 
-programTest : ProgramTest App.Model App.Msg App.MyEffect
-programTest =
+programTest : Maybe { name : String, id : String } -> ProgramTest App.Model App.Msg App.MyEffect
+programTest flags =
     ProgramTest.createElement
         { init = App.init
         , update = App.update
         , view = App.view
         }
         |> ProgramTest.withSimulatedEffects simulateEffect
-        |> ProgramTest.start ()
+        |> ProgramTest.start
+            (Encode.object <|
+                case flags of
+                    Just { name, id } ->
+                        [ ( "name", Encode.string name )
+                        , ( "id", Encode.string id )
+                        ]
+
+                    Nothing ->
+                        []
+            )
 
 
 simulateEffect : App.MyEffect -> SimulatedEffect App.Msg
@@ -101,7 +119,7 @@ simulateConfig =
 
 drinkSelect : Select Cocktail
 drinkSelect =
-    App.init ()
+    App.init (Encode.object [])
         |> Tuple.first
         |> .select
 
@@ -116,6 +134,7 @@ cocktailsResponse =
     """{
     "drinks": [
         {
+            "idDrink": "1",
             "strDrink": "Chocolate Milk",
             "strInstructions": "Put the milk in the bottom, pour the Liquer on top and add the dash of amaretto. Do not mix. SLAM IT!",
             "strDrinkThumb": "https://www.thecocktaildb.com/images/media/drink/j6q35t1504889399.jpg",
@@ -136,6 +155,7 @@ cocktailsResponse =
             "strIngredient15": null
         },
         {
+            "idDrink": "2",
             "strDrink": "Chocolate Drink",
             "strInstructions": "Melt the bar in a small amount of boiling water. Add milk. Cook over low heat, whipping gently (with a whisk, i would assume) until heated well. Don't let it boil! Serve in coffee mug.",
             "strDrinkThumb": "https://www.thecocktaildb.com/images/media/drink/q7w4xu1487603180.jpg",
