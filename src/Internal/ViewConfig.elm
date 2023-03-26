@@ -1,6 +1,6 @@
 module Internal.ViewConfig exposing (ViewConfigInternal, init, shouldShowNoMatchElement, toFilteredOptions, toPlacement)
 
-import Internal.Filter exposing (Filter)
+import Internal.Filter as Filter exposing (Filter)
 import Internal.Model as Model exposing (Model)
 import Internal.Option exposing (Option)
 import Internal.OptionState exposing (OptionState)
@@ -27,7 +27,7 @@ type alias ViewConfigInternal a attribute view =
 
 init : ViewConfigInternal a attribute view
 init =
-    { filter = Nothing
+    { filter = Just Filter.startsWithThenContains
     , menuPlacement = Nothing
     , menuMaxHeight = Nothing
     , menuMaxWidth = Nothing
@@ -38,7 +38,7 @@ init =
     , positionFixed = False
     , clearInputValueOnBlur = False
     , selectExactMatchOnBlur = False
-    , selectOnTab = False
+    , selectOnTab = True
     , minInputLength = Nothing
     }
 
