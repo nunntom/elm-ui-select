@@ -73,7 +73,7 @@ exampleProgramTest =
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "un"
                     |> ProgramTest.expectViewHasNot [ Selector.text "🇬🇧 United Kingdom of Great Britain and Northern Ireland" ]
-        , Test.test "Typing 3 chars with withMinInputLength (Just 3) does shows items" <|
+        , Test.test "Typing 3 chars with withMinInputLength (Just 3) does show items" <|
             \() ->
                 programTestWith (Select.withMinInputLength (Just 3))
                     |> focusInput
@@ -121,14 +121,15 @@ programTestWith f =
         , view =
             \m ->
                 Element.layout [] <|
-                    (Select.view []
-                        { onChange = App.CountrySelectMsg
-                        , label = Input.labelAbove [] (Element.text "Choose a country")
-                        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-                        , itemToString = \c -> c.flag ++ " " ++ c.name
-                        }
+                    (Select.view
                         |> f
-                        |> Select.toElement m.countrySelect
+                        |> Select.toElement []
+                            { select = m.countrySelect
+                            , onChange = App.CountrySelectMsg
+                            , label = Input.labelAbove [] (Element.text "Choose a country")
+                            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+                            , itemToString = \c -> c.flag ++ " " ++ c.name
+                            }
                     )
         }
         |> ProgramTest.withSimulatedEffects simulateEffect

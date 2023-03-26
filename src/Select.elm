@@ -74,7 +74,7 @@ import Internal.OptionState as OptionState
 import Internal.Placement as Placement
 import Internal.Update as Update
 import Internal.UpdateOptions as UpdateOptions exposing (UpdateOption)
-import Internal.View as View exposing (ViewConfigInternal)
+import Internal.View as View
 import Select.Filter exposing (Filter)
 
 
@@ -112,7 +112,8 @@ You can do this on init:
         , Cmd.none
         )
 
-Or you can do it in your view if you prefer to keep your items in your own model.
+Or you can do it in your view if you need to keep your items in your own model.
+You'd probably only do this if you want to select from things that are owned/managed by other parts of the app.
 
     view : Model -> Element Msg
     view model =
@@ -405,22 +406,14 @@ sendRequest tagger req andSelect select =
 
 -}
 type ViewConfig a msg
-    = ViewConfig (ViewConfigInternal a msg)
+    = ViewConfig (View.ViewConfig a msg)
 
 
 {-| Initialise the default ViewConfig
 -}
-view :
-    List (Attribute msg)
-    ->
-        { onChange : Msg a -> msg
-        , itemToString : a -> String
-        , label : Input.Label msg
-        , placeholder : Maybe (Input.Placeholder msg)
-        }
-    -> ViewConfig a msg
-view attribs config =
-    ViewConfig (View.view attribs config)
+view : ViewConfig a msg
+view =
+    ViewConfig View.init
 
 
 {-| Customise the filtering of the menu based on input value. See [Select.Filter](Select-Filter). Default is startsWithThenContains.
@@ -538,7 +531,7 @@ type MenuPlacement
 -}
 withOptionElement : (OptionState -> a -> Element msg) -> ViewConfig a msg -> ViewConfig a msg
 withOptionElement toEl (ViewConfig config) =
-    ViewConfig { config | optionElement = \state -> toEl (mapOptionState state) }
+    ViewConfig { config | optionElement = Just (\state -> toEl (mapOptionState state)) }
 
 
 {-| The default option element. Use this with withOptionElement only if you want the
@@ -562,7 +555,7 @@ type OptionState
 -}
 withNoMatchElement : Element msg -> ViewConfig a msg -> ViewConfig a msg
 withNoMatchElement element (ViewConfig config) =
-    ViewConfig { config | noMatchElement = element }
+    ViewConfig { config | noMatchElement = Just element }
 
 
 {-| Add a button to clear the input. This element is positioned as Element.inFront.
@@ -588,18 +581,18 @@ withNoMatchElement element (ViewConfig config) =
 -}
 withClearButton : Maybe (ClearButton msg) -> ViewConfig a msg -> ViewConfig a msg
 withClearButton cb (ViewConfig config) =
-    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attribs label) -> View.clearButtonElement config.onChange attribs label) cb }
+    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attrs el) -> ( List.map (Element.mapAttribute never) attrs, el )) cb }
 
 
 {-| A button to clear the input
 -}
 type ClearButton msg
-    = ClearButton (List (Attribute msg)) (Element msg)
+    = ClearButton (List (Attribute Never)) (Element msg)
 
 
 {-| Create a clear button
 -}
-clearButton : List (Attribute msg) -> Element msg -> ClearButton msg
+clearButton : List (Attribute Never) -> Element msg -> ClearButton msg
 clearButton attribs label =
     ClearButton attribs label
 
@@ -646,9 +639,19 @@ withMinInputLength v (ViewConfig config) =
 
 {-| Turn the ViewConfig into an Element.
 -}
-toElement : Select a -> ViewConfig a msg -> Element msg
-toElement model (ViewConfig config) =
-    View.toElement model config
+toElement :
+    List (Attribute msg)
+    ->
+        { select : Model a
+        , onChange : Msg a -> msg
+        , itemToString : a -> String
+        , label : Input.Label msg
+        , placeholder : Maybe (Input.Placeholder msg)
+        }
+    -> ViewConfig a msg
+    -> Element msg
+toElement attrs config (ViewConfig vc) =
+    View.toElement attrs config vc
 
 
 

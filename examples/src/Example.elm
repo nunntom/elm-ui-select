@@ -43,14 +43,15 @@ view model =
             , Element.spacing 20
             , Element.padding 30
             ]
-            [ Select.view []
-                { onChange = CountrySelectMsg
-                , label = Input.labelAbove [] (Element.text "Choose a country")
-                , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-                , itemToString = \c -> c.flag ++ " " ++ c.name
-                }
+            [ Select.view
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
-                |> Select.toElement model.countrySelect
+                |> Select.toElement []
+                    { select = model.countrySelect
+                    , onChange = CountrySelectMsg
+                    , label = Input.labelAbove [] (Element.text "Choose a country")
+                    , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+                    , itemToString = \c -> c.flag ++ " " ++ c.name
+                    }
             , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
                 |> Maybe.withDefault Element.none
             ]

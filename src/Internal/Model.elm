@@ -25,6 +25,7 @@ module Internal.Model exposing
     , toFilteredOptions
     , toHighlighted
     , toInputElementId
+    , toInputText
     , toInputValue
     , toItems
     , toMenuElementId
@@ -164,6 +165,16 @@ toFilteredOptions_ itemToString filter (Model model) =
 toCurrentFilteredOptions : Model a -> List (Option a)
 toCurrentFilteredOptions (Model { filteredOptions }) =
     Maybe.withDefault [] filteredOptions
+
+
+toInputText : List (Option a) -> Model a -> String
+toInputText filteredOptions model =
+    if isFocused model then
+        toInputValue model
+
+    else
+        Maybe.andThen (Option.findByValue filteredOptions >> Maybe.map Option.toString) (toValue model)
+            |> Maybe.withDefault (toInputValue model)
 
 
 toInputElementId : Model a -> String
