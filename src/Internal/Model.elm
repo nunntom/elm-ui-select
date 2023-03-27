@@ -21,6 +21,7 @@ module Internal.Model exposing
     , setSelected
     , toContainerElement
     , toContainerElementId
+    , toContainerHeight
     , toCurrentFilteredOptions
     , toFilteredOptions
     , toHighlighted
@@ -234,6 +235,11 @@ toMenuMaxHeight maxHeight forcedPlacement (Model model) =
 toContainerElement : Model a -> Maybe Dom.Element
 toContainerElement (Model { containerElement }) =
     containerElement
+
+
+toContainerHeight : Model a -> Maybe Float
+toContainerHeight (Model { containerElement }) =
+    Maybe.map (.element >> .height) containerElement
 
 
 
