@@ -1,12 +1,12 @@
 module Internal.Update exposing (sendRequest, update)
 
 import Internal.Effect as Effect exposing (Effect)
+import Internal.List.Extra as List
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option as Option exposing (Option)
 import Internal.RequestState exposing (RequestState(..))
 import Internal.UpdateOptions exposing (UpdateOptions)
-import List.Extra
 
 
 update : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
@@ -268,7 +268,7 @@ sendRequest tagger selectItem model effect =
                         (\items ->
                             case selectItem of
                                 Just selectItem_ ->
-                                    ( items, List.Extra.find selectItem_ items )
+                                    ( items, List.find selectItem_ items )
 
                                 Nothing ->
                                     ( items, Nothing )
