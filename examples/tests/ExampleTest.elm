@@ -6,6 +6,7 @@ import Element
 import Element.Input as Input
 import Expect
 import Html
+import Html.Attributes
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
 import Select exposing (Select)
 import Select.Effect
@@ -24,7 +25,7 @@ exampleProgramTest =
     Test.describe "Select Tests"
         [ Test.test "Filter for United Kingdom produces one result" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United Kingdom"
                     |> ProgramTest.ensureView
@@ -38,14 +39,14 @@ exampleProgramTest =
                         )
         , Test.test "Click United Kingdom selects it" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         , Test.test "Keyboard select United Kingdom" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> SimulateInput.arrowDown "country-select"
@@ -53,18 +54,18 @@ exampleProgramTest =
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         , Test.test "Focusing on the input triggers the onFocus msg" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.expectModel (.inputIsFocused >> Expect.equal (Just True))
         , Test.test "Input losing focus triggers the onLoseFocus msg" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.blur
                     |> ProgramTest.expectModel (.inputIsFocused >> Expect.equal (Just False))
         , Test.test "Filling in the input triggers the onInput msg" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> ProgramTest.fillIn "" "Choose a country" "Testing the input"
                     |> ProgramTest.expectModel (.inputValue >> Expect.equal "Testing the input")
         , Test.test "Typing 2 chars with withMinInputLength (Just 3) does not show any items" <|
@@ -93,19 +94,29 @@ exampleProgramTest =
                     |> ProgramTest.expectViewHas [ Selector.text "No matches" ]
         , Test.test "Choosing an option and then focusing back on the input shows all the options again" <|
             \() ->
-                programTest
+                programTest Nothing
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
                     |> ProgramTest.expectViewHas [ Selector.text "🇦🇩 Andorra" ]
+        , Test.test "Programatically selecting an item shows the correct input value and selects the item" <|
+            \() ->
+                programTest (Countries.fromCode "AQ")
+                    |> ProgramTest.ensureView
+                        (Query.find
+                            [ Selector.id (Select.toInputElementId countrySelect)
+                            ]
+                            >> Query.has [ Selector.attribute (Html.Attributes.value "🇦🇶 Antarctica") ]
+                        )
+                    |> ProgramTest.expectModel (.countrySelect >> Select.toValue >> Expect.equal (Countries.fromCode "AQ"))
         ]
 
 
-programTest : ProgramTest App.Model App.Msg App.MyEffect
-programTest =
+programTest : Maybe Country -> ProgramTest App.Model App.Msg App.MyEffect
+programTest country =
     ProgramTest.createElement
-        { init = App.init
+        { init = App.init >> Tuple.mapFirst (\m -> { m | countrySelect = Select.setSelected country m.countrySelect })
         , update = App.update
         , view = App.view
         }
