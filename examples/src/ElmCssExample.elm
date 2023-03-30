@@ -56,26 +56,22 @@ view model =
                 |> Select.withClearButton
                     (Just <|
                         Select.clearButton
-                            [ css
-                                [ Css.height (Css.pct 100)
-                                , Css.displayFlex
-                                , Css.alignItems Css.center
-                                , Css.marginRight (Css.em 1)
-                                , Css.fontSize (Css.rem 0.6)
-                                , Css.cursor Css.pointer
-                                ]
+                            [ Css.height (Css.pct 100)
+                            , Css.displayFlex
+                            , Css.alignItems Css.center
+                            , Css.marginRight (Css.em 1)
+                            , Css.fontSize (Css.rem 0.6)
+                            , Css.cursor Css.pointer
                             ]
                             (Html.text "❌")
                     )
                 |> Select.toStyled
-                    [ css
-                        [ Css.padding (Css.em 0.5)
-                        , Css.paddingRight (Css.em 1.5)
-                        , Css.fontSize (Css.rem 1.2)
-                        , Css.borderRadius (Css.px 4)
-                        , Css.borderWidth (Css.px 1)
-                        , Css.borderColor (Css.rgba 0 0 0 0.5)
-                        ]
+                    [ Css.padding (Css.em 0.5)
+                    , Css.paddingRight (Css.em 1.5)
+                    , Css.fontSize (Css.rem 1.2)
+                    , Css.borderRadius (Css.px 4)
+                    , Css.borderWidth (Css.px 1)
+                    , Css.borderColor (Css.rgba 0 0 0 0.5)
                     ]
                     { select = model.countrySelect
                     , onChange = CountrySelectMsg
