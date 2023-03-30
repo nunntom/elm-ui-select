@@ -148,7 +148,7 @@ inputView attrs filteredOptions ({ select } as config) viewConfig =
             ]
         )
         { onChange = ViewEvents.onInput config.onChange config.itemToString select viewConfig
-        , text = Model.toInputText filteredOptions select
+        , text = Model.toInputText config.itemToString select
         , placeholder = config.placeholder
         , label = config.label
         }

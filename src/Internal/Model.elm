@@ -168,13 +168,13 @@ toCurrentFilteredOptions (Model { filteredOptions }) =
     Maybe.withDefault [] filteredOptions
 
 
-toInputText : List (Option a) -> Model a -> String
-toInputText filteredOptions model =
+toInputText : (a -> String) -> Model a -> String
+toInputText itemToString model =
     if isFocused model then
         toInputValue model
 
     else
-        Maybe.andThen (Option.findByValue filteredOptions >> Maybe.map Option.toString) (toValue model)
+        Maybe.map itemToString (toValue model)
             |> Maybe.withDefault (toInputValue model)
 
 
