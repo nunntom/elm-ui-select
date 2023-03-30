@@ -66,7 +66,7 @@ module Select.ElmCss exposing
 -}
 
 import Css exposing (Style)
-import Html.Styled as Html exposing (Html)
+import Html.Styled as Html exposing (Attribute, Html)
 import Internal.Effect as Effect
 import Internal.Model as Model exposing (Model)
 import Internal.Msg as Msg
@@ -485,7 +485,7 @@ You can define different attributes based on whether the menu appears above or b
         |> Select.toElement model.select
 
 -}
-withMenuAttributes : (MenuPlacement -> List Style) -> ViewConfig a msg -> ViewConfig a msg
+withMenuAttributes : (MenuPlacement -> List (Attribute msg)) -> ViewConfig a msg -> ViewConfig a msg
 withMenuAttributes attribs (ViewConfig config) =
     ViewConfig { config | menuAttributes = config.menuAttributes ++ [ mapPlacement >> attribs ] }
 
@@ -587,12 +587,12 @@ withClearButton cb (ViewConfig config) =
 {-| A button to clear the input
 -}
 type ClearButton msg
-    = ClearButton (List Style) (Html msg)
+    = ClearButton (List (Attribute msg)) (Html msg)
 
 
 {-| Create a clear button
 -}
-clearButton : List Style -> Html msg -> ClearButton msg
+clearButton : List (Attribute msg) -> Html msg -> ClearButton msg
 clearButton attribs label =
     ClearButton attribs label
 
@@ -640,7 +640,7 @@ withMinInputLength v (ViewConfig config) =
 {-| Turn the ViewConfig into an Element.
 -}
 toStyled :
-    List Style
+    List (Attribute msg)
     ->
         { select : Model a
         , onChange : Msg a -> msg
