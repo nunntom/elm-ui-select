@@ -206,6 +206,7 @@ inputView attrs filteredOptions ({ select } as config) viewConfig =
          , Attributes.id <| Model.toInputElementId select
          , Events.onInput (ViewEvents.onInput config.onChange config.itemToString select viewConfig)
          , Attributes.value <| Model.toInputText filteredOptions select
+         , Attributes.attribute "autocomplete" "dont-fill-in-this-box"
          , Attributes.css
             [ Css.width (Css.pct 100)
             , Css.boxSizing Css.borderBox
