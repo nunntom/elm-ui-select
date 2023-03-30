@@ -58,15 +58,13 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
               , Attributes.css
                     [ Css.position Css.relative
                     , Css.boxSizing Css.borderBox
+                    , if Model.isOpen select then
+                        Css.zIndex (Css.int 21)
+
+                      else
+                        Css.batch []
                     ]
               ]
-
-            {- , if Model.isOpen select then
-                 [ Element.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
-
-               else
-                 []
-            -}
             , ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
                 |> List.map Attributes.fromUnstyled
             ]
@@ -149,40 +147,6 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
 
           else
             Html.text ""
-
-        {-
-           , Placement.toAttribute
-                 (if viewConfig.positionFixed then
-                     Placement.Below
-
-                  else
-                     placement
-                 )
-             <|
-                 (if viewConfig.positionFixed then
-                     positionFixedEl placement (Model.toContainerElement select)
-
-                  else
-                     identity
-                 )
-                 <|
-                     menuView
-                         (defaultMenuAttrs
-                             { menuWidth = Model.toMenuMinWidth select
-                             , maxWidth = viewConfig.menuMaxWidth
-                             , menuHeight = Model.toMenuMaxHeight viewConfig.menuMaxHeight viewConfig.menuPlacement select
-                             }
-                             ++ List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes
-                         )
-                         { menuId = Model.toMenuElementId select
-                         , toOptionId = Model.toOptionElementId select
-                         , toOptionState = Model.toOptionState select
-                         , onChange = config.onChange
-                         , menuOpen = Model.isOpen select
-                         , options = filteredOptions
-                         , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
-                         }
-        -}
         ]
 
 
