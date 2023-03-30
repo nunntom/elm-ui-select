@@ -1,4 +1,4 @@
-module Internal.Option exposing (Option, findByString, findByValue, findIndex, init, toItem, toString)
+module Internal.Option exposing (Option, findByString, findIndex, init, toItem, toString)
 
 import List.Extra
 
@@ -20,20 +20,6 @@ toItem ( a, _ ) =
 toString : Option a -> String
 toString ( _, s ) =
     s
-
-
-findByValue : List (Option a) -> a -> Maybe (Option a)
-findByValue list a =
-    case list of
-        [] ->
-            Nothing
-
-        x :: xs ->
-            if a == toItem x then
-                Just x
-
-            else
-                findByValue xs a
 
 
 findIndex : List (Option a) -> a -> Maybe Int

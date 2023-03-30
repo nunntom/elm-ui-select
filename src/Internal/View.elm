@@ -202,7 +202,7 @@ inputView filteredOptions model config =
                 Model.toInputValue model
 
             else
-                Maybe.andThen (Option.findByValue filteredOptions >> Maybe.map Option.toString) (Model.toValue model)
+                Maybe.map config.itemToString (Model.toValue model)
                     |> Maybe.withDefault (Model.toInputValue model)
         , placeholder = config.placeholder
         , label = config.label
