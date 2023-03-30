@@ -288,6 +288,7 @@ clearButtonElement onChange attribs element =
             , Css.margin Css.zero
             , Css.batch attribs
             ]
+        , Attributes.tabindex -1
         , Events.onClick (onChange ClearButtonPressed)
         ]
         [ element ]
