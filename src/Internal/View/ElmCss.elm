@@ -8,9 +8,7 @@ module Internal.View.ElmCss exposing
 
 import Browser.Dom as Dom
 import Css exposing (Style)
-import Element exposing (Attribute, Element)
-import Element.Background as Background
-import Element.Border as Border
+import Element exposing (Attribute)
 import Html.Styled as Html exposing (Attribute, Html)
 import Html.Styled.Attributes as Attributes
 import Html.Styled.Events as Events

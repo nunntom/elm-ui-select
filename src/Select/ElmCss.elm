@@ -7,8 +7,8 @@ module Select.ElmCss exposing
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
-    , Effect
     , toStyled
+    , Effect
     )
 
 {-| A select widget for elm-ui.
@@ -56,7 +56,7 @@ module Select.ElmCss exposing
 
 # Element
 
-@docs toElement
+@docs toStyled
 
 
 # Effect
@@ -66,7 +66,7 @@ module Select.ElmCss exposing
 -}
 
 import Css exposing (Style)
-import Html.Styled as Html exposing (Html)
+import Html.Styled exposing (Html)
 import Internal.Effect as Effect
 import Internal.Model as Model exposing (Model)
 import Internal.Msg as Msg
