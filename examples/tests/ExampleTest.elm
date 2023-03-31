@@ -110,6 +110,16 @@ exampleProgramTest =
                             >> Query.has [ Selector.attribute (Html.Attributes.value "🇦🇶 Antarctica") ]
                         )
                     |> ProgramTest.expectModel (.countrySelect >> Select.toValue >> Expect.equal (Countries.fromCode "AQ"))
+        , Test.test "Programatically selecting an item and the focusing the input keeps the selected item input value" <|
+            \() ->
+                programTest (Countries.fromCode "AQ")
+                    |> focusInput
+                    |> ProgramTest.expectView
+                        (Query.find
+                            [ Selector.id (Select.toInputElementId countrySelect)
+                            ]
+                            >> Query.has [ Selector.attribute (Html.Attributes.value "🇦🇶 Antarctica") ]
+                        )
         ]
 
 

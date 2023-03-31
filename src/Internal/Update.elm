@@ -28,7 +28,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
     case msg of
         InputChanged val filteredOptions ->
             ( model
-                |> Model.setInputValue val
+                |> Model.onInputChange val
                 |> Model.highlightIndex
                     (if String.isEmpty val then
                         Nothing
@@ -74,7 +74,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.none
             )
 
-        InputFocused maybeOptions ->
+        InputFocused inputValue maybeOptions ->
             (case maybeOptions of
                 Just ( items, options ) ->
                     Model.setItems items model
@@ -83,6 +83,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                 Nothing ->
                     model
             )
+                |> Model.setInputValue inputValue
                 |> onFocusMenu tagger (request /= Nothing)
                 |> withEffect (\_ -> Effect.emitJust onFocus)
 

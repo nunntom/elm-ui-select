@@ -142,7 +142,7 @@ setSelected =
 -}
 setInputValue : String -> Select a -> Select a
 setInputValue =
-    Model.setInputValue
+    Model.onInputChange
 
 
 {-| Close the menu

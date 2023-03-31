@@ -9,6 +9,7 @@ module Internal.Model exposing
     , isLoading
     , isOpen
     , isRequestFailed
+    , onInputChange
     , openMenu
     , requiresNewFilteredOptions
     , selectOption
@@ -296,6 +297,11 @@ setSelected a (Model model) =
 
 setInputValue : String -> Model a -> Model a
 setInputValue v (Model model) =
+    Model { model | inputValue = v }
+
+
+onInputChange : String -> Model a -> Model a
+onInputChange v (Model model) =
     Model
         { model
             | inputValue = v

@@ -36,7 +36,7 @@ hijackKey menuOpen tagger key =
 onInput : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> String -> msg
 onInput onChange itemToString model viewConfig v =
     InputChanged v
-        (Model.setInputValue v model
+        (Model.onInputChange v model
             |> Model.toFilteredOptions False viewConfig.minInputLength itemToString viewConfig.filter
         )
         |> onChange
@@ -46,10 +46,10 @@ onFocus : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a att
 onFocus onChange itemToString model viewConfig filteredOptions =
     Html.Events.on "focus" <|
         if Model.requiresNewFilteredOptions model then
-            Decode.lazy (\_ -> Decode.succeed (onChange <| InputFocused (Just <| optionsUpdate itemToString model viewConfig filteredOptions)))
+            Decode.lazy (\_ -> Decode.succeed (onChange <| InputFocused (Model.toInputText itemToString model) (Just <| optionsUpdate itemToString model viewConfig filteredOptions)))
 
         else
-            InputFocused Nothing
+            InputFocused (Model.toInputText itemToString model) Nothing
                 |> onChange
                 |> Decode.succeed
 
