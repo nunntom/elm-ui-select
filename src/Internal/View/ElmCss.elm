@@ -251,6 +251,7 @@ clearButtonElement onChange attribs element =
             , Css.batch attribs
             ]
         , Attributes.tabindex -1
+        , Attributes.type_ "button"
         , Events.onClick (onChange ClearButtonPressed)
         ]
         [ element ]

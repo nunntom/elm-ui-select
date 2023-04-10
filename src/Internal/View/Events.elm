@@ -29,7 +29,7 @@ hijackKey :
 hijackKey menuOpen tagger key =
     { message = tagger key
     , stopPropagation = menuOpen && key == "Escape"
-    , preventDefault = List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ]
+    , preventDefault = List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Enter" ]
     }
 
 
