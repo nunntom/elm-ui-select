@@ -24,7 +24,7 @@ update ({ onSelect } as options) tagger msg model =
 
 
 update_ : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
-update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput } tagger msg model =
+update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput, onKeyDown } tagger msg model =
     case msg of
         InputChanged val filteredOptions ->
             ( model
@@ -114,6 +114,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
         KeyDown selectOnTab filteredOptions key ->
             Model.setFilteredOptions filteredOptions model
                 |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
+                |> withEffect (\_ -> Effect.emitJust (Maybe.map (\ev -> ev key) onKeyDown))
 
         GotContainerAndMenuElements maybeIdx result ->
             ( model

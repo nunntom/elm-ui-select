@@ -1,7 +1,7 @@
 module Select.Effect exposing
     ( Effect
     , update, updateWith
-    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
     , sendRequest
     , perform, performWithRequest
     , simulate, simulateWithRequest
@@ -27,7 +27,7 @@ you don't need this module.
 
 # Update Options
 
-@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
 
 
 # Send Request
@@ -207,6 +207,13 @@ onFocus msg =
 onLoseFocus : msg -> UpdateOption err effect a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
+
+
+{-| If provided this will be sent whenever there is a keydown event in the input.
+-}
+onKeyDown : (String -> msg) -> UpdateOption err effect a msg
+onKeyDown msg =
+    UpdateOptions.OnKeyDown msg
 
 
 {-| Send a request to populate the menu items. This is useful for initialising the select with items from an api.

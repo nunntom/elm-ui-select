@@ -5,7 +5,7 @@ module Select exposing
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith, sendRequest
-    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
     , toElement
     , Effect
@@ -46,7 +46,7 @@ module Select exposing
 
 # Update Options
 
-@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
 
 
 # Configure View
@@ -343,6 +343,13 @@ onFocus msg =
 onLoseFocus : msg -> UpdateOption err a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
+
+
+{-| If provided this will be sent whenever there is a keydown event in the input.
+-}
+onKeyDown : (String -> msg) -> UpdateOption err a msg
+onKeyDown msg =
+    UpdateOptions.OnKeyDown msg
 
 
 {-| Send a request to populate the menu items. This is useful for initialising the select with items from an api.
