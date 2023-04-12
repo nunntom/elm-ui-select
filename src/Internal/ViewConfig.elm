@@ -22,6 +22,7 @@ type alias ViewConfigInternal a attribute view =
     , selectExactMatchOnBlur : Bool
     , selectOnTab : Bool
     , minInputLength : Maybe Int
+    , openOnFocus : Bool
     }
 
 
@@ -40,6 +41,7 @@ init =
     , selectExactMatchOnBlur = False
     , selectOnTab = True
     , minInputLength = Nothing
+    , openOnFocus = True
     }
 
 

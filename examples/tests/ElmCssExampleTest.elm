@@ -1,15 +1,13 @@
 module ElmCssExampleTest exposing (exampleProgramTest)
 
 import Countries exposing (Country)
-import Element
-import Element.Input as Input
 import ElmCssEffectExample as App
 import Expect
 import Html
 import Html.Styled
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
-import Select exposing (Select)
 import Select.Effect
+import Select.ElmCss as Select exposing (Select)
 import SimulateInput
 import SimulatedEffect.Cmd as SimulatedCmd
 import SimulatedEffect.Process as SimulatedProcess
@@ -100,6 +98,16 @@ exampleProgramTest =
                     |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
                     |> ProgramTest.expectViewHas [ Selector.text "🇦🇩 Andorra" ]
+        , Test.test "Setting open on focus to false does not open the menu when the input is focused" <|
+            \() ->
+                programTestWith (Select.withOpenMenuOnFocus False)
+                    |> focusInput
+                    |> ProgramTest.expectModel (.countrySelect >> Select.isMenuOpen >> Expect.equal False)
+        , Test.test "Setting open on focus to true does open the menu when the input is focused" <|
+            \() ->
+                programTestWith (Select.withOpenMenuOnFocus True)
+                    |> focusInput
+                    |> ProgramTest.expectModel (.countrySelect >> Select.isMenuOpen >> Expect.equal True)
         ]
 
 
@@ -121,17 +129,19 @@ programTestWith f =
         , update = App.update
         , view =
             \m ->
-                Element.layout [] <|
-                    (Select.view
-                        |> f
-                        |> Select.toElement []
-                            { select = m.countrySelect
-                            , onChange = App.CountrySelectMsg
-                            , label = Input.labelAbove [] (Element.text "Choose a country")
-                            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-                            , itemToString = \c -> c.flag ++ " " ++ c.name
-                            }
-                    )
+                Html.div []
+                    [ Html.label []
+                        [ Html.text "Choose a country"
+                        , Select.view
+                            |> f
+                            |> Select.toStyled []
+                                { select = m.countrySelect
+                                , onChange = App.CountrySelectMsg
+                                , itemToString = \c -> c.flag ++ " " ++ c.name
+                                }
+                            |> Html.Styled.toUnstyled
+                        ]
+                    ]
         }
         |> ProgramTest.withSimulatedEffects simulateEffect
         |> ProgramTest.start ()

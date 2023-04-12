@@ -6,7 +6,7 @@ module Select exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
     , toElement
     , Effect
     )
@@ -51,7 +51,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
 
 
 # Element
@@ -635,6 +635,13 @@ withSelectOnTab v (ViewConfig config) =
 withMinInputLength : Maybe Int -> ViewConfig a msg -> ViewConfig a msg
 withMinInputLength v (ViewConfig config) =
     ViewConfig { config | minInputLength = v }
+
+
+{-| Should the menu be opened when the input gets focus?
+-}
+withOpenMenuOnFocus : Bool -> ViewConfig a msg -> ViewConfig a msg
+withOpenMenuOnFocus v (ViewConfig config) =
+    ViewConfig { config | openOnFocus = v }
 
 
 {-| Turn the ViewConfig into an Element.

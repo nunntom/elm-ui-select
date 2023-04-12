@@ -120,6 +120,16 @@ exampleProgramTest =
                             ]
                             >> Query.has [ Selector.attribute (Html.Attributes.value "🇦🇶 Antarctica") ]
                         )
+        , Test.test "Setting open on focus to false does not open the menu when the input is focused" <|
+            \() ->
+                programTestWith (Select.withOpenMenuOnFocus False)
+                    |> focusInput
+                    |> ProgramTest.expectModel (.countrySelect >> Select.isMenuOpen >> Expect.equal False)
+        , Test.test "Setting open on focus to true does open the menu when the input is focused" <|
+            \() ->
+                programTestWith (Select.withOpenMenuOnFocus True)
+                    |> focusInput
+                    |> ProgramTest.expectModel (.countrySelect >> Select.isMenuOpen >> Expect.equal True)
         ]
 
 

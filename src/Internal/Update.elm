@@ -74,7 +74,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.none
             )
 
-        InputFocused inputValue maybeOptions ->
+        InputFocused openMenu inputValue maybeOptions ->
             (case maybeOptions of
                 Just ( items, options ) ->
                     Model.setItems items model
@@ -84,7 +84,12 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                     model
             )
                 |> Model.setInputValue inputValue
-                |> onFocusMenu tagger (request /= Nothing)
+                |> (if openMenu then
+                        onFocusMenu tagger (request /= Nothing)
+
+                    else
+                        \m -> ( Model.setFocused True m, Effect.none )
+                   )
                 |> withEffect (\_ -> Effect.emitJust onFocus)
 
         InputClicked ->

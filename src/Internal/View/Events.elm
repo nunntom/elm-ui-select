@@ -46,10 +46,10 @@ onFocus : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a att
 onFocus onChange itemToString model viewConfig filteredOptions =
     Html.Events.on "focus" <|
         if Model.requiresNewFilteredOptions model then
-            Decode.lazy (\_ -> Decode.succeed (onChange <| InputFocused (Model.toInputText itemToString model) (Just <| optionsUpdate itemToString model viewConfig filteredOptions)))
+            Decode.lazy (\_ -> Decode.succeed (onChange <| InputFocused viewConfig.openOnFocus (Model.toInputText itemToString model) (Just <| optionsUpdate itemToString model viewConfig filteredOptions)))
 
         else
-            InputFocused (Model.toInputText itemToString model) Nothing
+            InputFocused viewConfig.openOnFocus (Model.toInputText itemToString model) Nothing
                 |> onChange
                 |> Decode.succeed
 
