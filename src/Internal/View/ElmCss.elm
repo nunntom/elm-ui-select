@@ -68,7 +68,9 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
                 |> List.map Attributes.fromUnstyled
             ]
         )
-        [ inputView attrs filteredOptions config viewConfig
+        [ View.relativeContainerMarker select
+            |> Html.fromUnstyled
+        , inputView attrs filteredOptions config viewConfig
         , if Model.toValue select /= Nothing || Model.toInputValue select /= "" then
             viewConfig.clearButton
                 |> Maybe.map

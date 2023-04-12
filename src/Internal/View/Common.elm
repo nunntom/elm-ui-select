@@ -1,4 +1,4 @@
-module Internal.View.Common exposing (ariaLive, inputAccessibilityAttributes)
+module Internal.View.Common exposing (ariaLive, inputAccessibilityAttributes, relativeContainerMarker)
 
 import Html exposing (Attribute, Html)
 import Html.Attributes exposing (style)
@@ -51,3 +51,17 @@ ariaLive optionCount =
             else
                 "No suggestions found."
         ]
+
+
+relativeContainerMarker : Model a -> Html msg
+relativeContainerMarker model =
+    Html.div
+        [ Html.Attributes.style "position" "absolute"
+        , Html.Attributes.style "height" "100%"
+        , Html.Attributes.style "top" "0"
+        , Html.Attributes.style "left" "0"
+        , Html.Attributes.style "width" "0"
+        , Html.Attributes.style "visibility" "hidden"
+        , Html.Attributes.id (Model.toRelativeContainerMarkerId model)
+        ]
+        []

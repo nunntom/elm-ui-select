@@ -254,7 +254,7 @@ getContainerAndMenuElementsEffect maybeIdx tagger model =
     Effect.GetContainerAndMenuElements
         (GotContainerAndMenuElements maybeIdx >> tagger)
         { menuId = Model.toMenuElementId model
-        , containerId = Model.toContainerElementId model
+        , containerId = Model.toRelativeContainerMarkerId model
         }
 
 

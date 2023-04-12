@@ -57,6 +57,9 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
     Element.el
         (List.concat
             [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
+              , View.relativeContainerMarker select
+                    |> Element.html
+                    |> Element.inFront
               , Element.width Element.fill
               , Element.below <|
                     if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then

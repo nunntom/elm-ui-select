@@ -22,7 +22,6 @@ module Internal.Model exposing
     , setSelected
     , toContainerElement
     , toContainerElementId
-    , toContainerHeight
     , toCurrentFilteredOptions
     , toFilteredOptions
     , toHighlighted
@@ -36,6 +35,7 @@ module Internal.Model exposing
     , toMenuPlacement
     , toOptionElementId
     , toOptionState
+    , toRelativeContainerMarkerId
     , toRequestState
     , toValue
     , wasHighlightedByMouse
@@ -199,6 +199,11 @@ toOptionElementId (Model { id }) idx =
     id ++ "-option-" ++ String.fromInt idx
 
 
+toRelativeContainerMarkerId : Model a -> String
+toRelativeContainerMarkerId (Model { id }) =
+    id ++ "-container-marker"
+
+
 toOptionState : Model a -> ( Int, a ) -> OptionState
 toOptionState (Model { highlighted, selected }) ( idx, a ) =
     if highlighted == Just idx && selected == Just a then
@@ -236,11 +241,6 @@ toMenuMaxHeight maxHeight forcedPlacement (Model model) =
 toContainerElement : Model a -> Maybe Dom.Element
 toContainerElement (Model { containerElement }) =
     containerElement
-
-
-toContainerHeight : Model a -> Maybe Float
-toContainerHeight (Model { containerElement }) =
-    Maybe.map (.element >> .height) containerElement
 
 
 
