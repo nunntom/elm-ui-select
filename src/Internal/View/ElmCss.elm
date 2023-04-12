@@ -53,6 +53,7 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
     Html.div
         (List.concat
             [ [ Attributes.id <| Model.toContainerElementId select
+              , Attributes.class "elm-select-container"
               , Attributes.css
                     [ Css.position Css.relative
                     , Css.boxSizing Css.borderBox
@@ -93,7 +94,7 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
             positionFixedEl placement
                 (Model.toContainerElement select)
                 (menuView
-                    (defaultMenuAttrs
+                    (defaultMenuAttrs placement
                         (List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes)
                         { menuWidth = Model.toMenuMinWidth select
                         , maxWidth = viewConfig.menuMaxWidth
@@ -111,34 +112,22 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
                 )
 
           else
-            Html.div
-                [ Attributes.css
-                    [ Css.position Css.absolute
-                    , case placement of
-                        Placement.Above ->
-                            Css.bottom (Css.px (Maybe.withDefault 0 <| Model.toContainerHeight select))
-
-                        Placement.Below ->
-                            Css.batch []
-                    ]
-                ]
-                [ menuView
-                    (defaultMenuAttrs
-                        (List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes)
-                        { menuWidth = Model.toMenuMinWidth select
-                        , maxWidth = viewConfig.menuMaxWidth
-                        , menuHeight = Model.toMenuMaxHeight viewConfig.menuMaxHeight viewConfig.menuPlacement select
-                        }
-                    )
-                    { menuId = Model.toMenuElementId select
-                    , toOptionId = Model.toOptionElementId select
-                    , toOptionState = Model.toOptionState select
-                    , onChange = config.onChange
-                    , menuOpen = Model.isOpen select
-                    , options = filteredOptions
-                    , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+            menuView
+                (defaultMenuAttrs placement
+                    (List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes)
+                    { menuWidth = Model.toMenuMinWidth select
+                    , maxWidth = viewConfig.menuMaxWidth
+                    , menuHeight = Model.toMenuMaxHeight viewConfig.menuMaxHeight viewConfig.menuPlacement select
                     }
-                ]
+                )
+                { menuId = Model.toMenuElementId select
+                , toOptionId = Model.toOptionElementId select
+                , toOptionState = Model.toOptionState select
+                , onChange = config.onChange
+                , menuOpen = Model.isOpen select
+                , options = filteredOptions
+                , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+                }
         , if Model.isOpen select then
             View.ariaLive (List.length filteredOptions)
                 |> Html.fromUnstyled
@@ -194,24 +183,26 @@ menuView :
     -> Html msg
 menuView attribs v =
     List.indexedMap (optionElement v) v.options
-        |> Html.div (attribs ++ [ Attributes.id v.menuId ])
-        |> List.singleton
         |> Html.div
-            (if v.menuOpen && List.length v.options > 0 then
-                []
+            (attribs
+                ++ (Attributes.id v.menuId
+                        :: (if v.menuOpen && List.length v.options > 0 then
+                                []
 
-             else
-                [ Attributes.style "visibility" "hidden"
-                , Attributes.attribute "aria-visible"
-                    (if v.menuOpen then
-                        "false"
+                            else
+                                [ Attributes.style "visibility" "hidden"
+                                , Attributes.attribute "aria-visible"
+                                    (if v.menuOpen then
+                                        "false"
 
-                     else
-                        "true"
-                    )
-                , Attributes.style "height" "0"
-                , Attributes.style "overflow-y" "hidden"
-                ]
+                                     else
+                                        "true"
+                                    )
+                                , Attributes.style "height" "0"
+                                , Attributes.style "overflow-y" "hidden"
+                                ]
+                           )
+                   )
             )
 
 
@@ -258,17 +249,25 @@ clearButtonElement onChange attribs element =
 
 
 defaultMenuAttrs :
-    List Style
+    Placement
+    -> List Style
     ->
         { menuWidth : Maybe Int
         , maxWidth : Maybe Int
         , menuHeight : Maybe Int
         }
     -> List (Attribute msg)
-defaultMenuAttrs css { menuWidth, maxWidth, menuHeight } =
+defaultMenuAttrs placement css { menuWidth, maxWidth, menuHeight } =
     [ Attributes.attribute "role" "listbox"
     , Attributes.css
-        [ Maybe.map (toFloat >> Css.px >> Css.maxHeight) menuHeight
+        [ Css.position Css.absolute
+        , case placement of
+            Placement.Above ->
+                Css.bottom (Css.pct 100)
+
+            Placement.Below ->
+                Css.batch []
+        , Maybe.map (toFloat >> Css.px >> Css.maxHeight) menuHeight
             |> Maybe.withDefault (Css.batch [])
         , Maybe.map (toFloat >> Css.px >> Css.maxWidth) maxWidth
             |> Maybe.withDefault (Css.batch [])
