@@ -9,6 +9,7 @@ type UpdateOption err effect a msg
     | OnFocus msg
     | OnLoseFocus msg
     | OnInput (String -> msg)
+    | OnKeyDown (String -> msg)
 
 
 type alias UpdateOptions err effect a msg =
@@ -19,6 +20,7 @@ type alias UpdateOptions err effect a msg =
     , onFocus : Maybe msg
     , onLoseFocus : Maybe msg
     , onInput : Maybe (String -> msg)
+    , onKeyDown : Maybe (String -> msg)
     }
 
 
@@ -31,6 +33,7 @@ init =
     , onFocus = Nothing
     , onLoseFocus = Nothing
     , onInput = Nothing
+    , onKeyDown = Nothing
     }
 
 
@@ -59,5 +62,8 @@ fromList =
 
                 OnInput msg ->
                     { opts | onInput = Just msg }
+
+                OnKeyDown msg ->
+                    { opts | onKeyDown = Just msg }
         )
         init

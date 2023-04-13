@@ -9,6 +9,7 @@ module Internal.Model exposing
     , isLoading
     , isOpen
     , isRequestFailed
+    , onInputChange
     , openMenu
     , requiresNewFilteredOptions
     , selectOption
@@ -25,6 +26,7 @@ module Internal.Model exposing
     , toFilteredOptions
     , toHighlighted
     , toInputElementId
+    , toInputText
     , toInputValue
     , toItems
     , toMenuElementId
@@ -33,6 +35,7 @@ module Internal.Model exposing
     , toMenuPlacement
     , toOptionElementId
     , toOptionState
+    , toRelativeContainerMarkerId
     , toRequestState
     , toValue
     , wasHighlightedByMouse
@@ -166,6 +169,16 @@ toCurrentFilteredOptions (Model { filteredOptions }) =
     Maybe.withDefault [] filteredOptions
 
 
+toInputText : (a -> String) -> Model a -> String
+toInputText itemToString model =
+    if isFocused model then
+        toInputValue model
+
+    else
+        Maybe.map itemToString (toValue model)
+            |> Maybe.withDefault (toInputValue model)
+
+
 toInputElementId : Model a -> String
 toInputElementId (Model { id }) =
     id ++ "-input"
@@ -184,6 +197,11 @@ toMenuElementId (Model { id }) =
 toOptionElementId : Model a -> Int -> String
 toOptionElementId (Model { id }) idx =
     id ++ "-option-" ++ String.fromInt idx
+
+
+toRelativeContainerMarkerId : Model a -> String
+toRelativeContainerMarkerId (Model { id }) =
+    id ++ "-container-marker"
 
 
 toOptionState : Model a -> ( Int, a ) -> OptionState
@@ -279,6 +297,11 @@ setSelected a (Model model) =
 
 setInputValue : String -> Model a -> Model a
 setInputValue v (Model model) =
+    Model { model | inputValue = v }
+
+
+onInputChange : String -> Model a -> Model a
+onInputChange v (Model model) =
     Model
         { model
             | inputValue = v

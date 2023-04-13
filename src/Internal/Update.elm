@@ -1,12 +1,12 @@
 module Internal.Update exposing (sendRequest, update)
 
 import Internal.Effect as Effect exposing (Effect)
+import Internal.List.Extra as List
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option as Option exposing (Option)
 import Internal.RequestState exposing (RequestState(..))
 import Internal.UpdateOptions exposing (UpdateOptions)
-import List.Extra
 
 
 update : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
@@ -24,11 +24,11 @@ update ({ onSelect } as options) tagger msg model =
 
 
 update_ : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
-update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput } tagger msg model =
+update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput, onKeyDown } tagger msg model =
     case msg of
         InputChanged val filteredOptions ->
             ( model
-                |> Model.setInputValue val
+                |> Model.onInputChange val
                 |> Model.highlightIndex
                     (if String.isEmpty val then
                         Nothing
@@ -74,7 +74,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.none
             )
 
-        InputFocused maybeOptions ->
+        InputFocused openMenu inputValue maybeOptions ->
             (case maybeOptions of
                 Just ( items, options ) ->
                     Model.setItems items model
@@ -83,7 +83,13 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                 Nothing ->
                     model
             )
-                |> onFocusMenu tagger (request /= Nothing)
+                |> Model.setInputValue inputValue
+                |> (if openMenu then
+                        onFocusMenu tagger (request /= Nothing)
+
+                    else
+                        \m -> ( Model.setFocused True m, Effect.none )
+                   )
                 |> withEffect (\_ -> Effect.emitJust onFocus)
 
         InputClicked ->
@@ -108,6 +114,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
         KeyDown selectOnTab filteredOptions key ->
             Model.setFilteredOptions filteredOptions model
                 |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
+                |> withEffect (\_ -> Effect.emitJust (Maybe.map (\ev -> ev key) onKeyDown))
 
         GotContainerAndMenuElements maybeIdx result ->
             ( model
@@ -253,7 +260,7 @@ getContainerAndMenuElementsEffect maybeIdx tagger model =
     Effect.GetContainerAndMenuElements
         (GotContainerAndMenuElements maybeIdx >> tagger)
         { menuId = Model.toMenuElementId model
-        , containerId = Model.toContainerElementId model
+        , containerId = Model.toRelativeContainerMarkerId model
         }
 
 
@@ -268,7 +275,7 @@ sendRequest tagger selectItem model effect =
                         (\items ->
                             case selectItem of
                                 Just selectItem_ ->
-                                    ( items, List.Extra.find selectItem_ items )
+                                    ( items, List.find selectItem_ items )
 
                                 Nothing ->
                                     ( items, Nothing )

@@ -1,9 +1,9 @@
 module Internal.View exposing
-    ( ViewConfigInternal
-    , clearButtonElement
+    ( Config
+    , ViewConfig
     , defaultOptionElement
+    , init
     , toElement
-    , view
     )
 
 import Browser.Dom as Dom
@@ -12,108 +12,71 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
-import Element.Region
 import Html.Attributes
 import Html.Events
-import Internal.Filter as Filter exposing (Filter)
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option as Option exposing (Option)
 import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement as Placement exposing (Placement)
-import Internal.RequestState exposing (RequestState(..))
+import Internal.View.Common as View
+import Internal.View.Events as ViewEvents
+import Internal.ViewConfig as ViewConfig exposing (ViewConfigInternal)
 import Json.Decode as Decode
 
 
-type alias ViewConfigInternal a msg =
-    { onChange : Msg a -> msg
-    , inputAttribs : List (Attribute msg)
+type alias Config a msg =
+    { select : Model a
+    , onChange : Msg a -> msg
     , itemToString : a -> String
     , label : Input.Label msg
     , placeholder : Maybe (Input.Placeholder msg)
-    , filter : Maybe (Filter a)
-    , menuPlacement : Maybe Placement
-    , menuMaxHeight : Maybe Int
-    , menuMaxWidth : Maybe Int
-    , menuAttributes : List (Placement -> List (Attribute msg))
-    , noMatchElement : Element msg
-    , optionElement : OptionState -> a -> Element msg
-    , clearButton : Maybe (Element msg)
-    , positionFixed : Bool
-    , clearInputValueOnBlur : Bool
-    , selectExactMatchOnBlur : Bool
-    , selectOnTab : Bool
-    , minInputLength : Maybe Int
     }
 
 
-view :
-    List (Attribute msg)
-    ->
-        { onChange : Msg a -> msg
-        , itemToString : a -> String
-        , label : Input.Label msg
-        , placeholder : Maybe (Input.Placeholder msg)
-        }
-    -> ViewConfigInternal a msg
-view attribs v =
-    { onChange = v.onChange
-    , inputAttribs = attribs
-    , itemToString = v.itemToString
-    , optionElement = defaultOptionElement v.itemToString
-    , label = v.label
-    , placeholder = v.placeholder
-    , filter = Just Filter.startsWithThenContains
-    , menuPlacement = Nothing
-    , menuMaxHeight = Nothing
-    , menuMaxWidth = Nothing
-    , menuAttributes = []
-    , noMatchElement = defaultNoMatchElement
-    , clearButton = Nothing
-    , positionFixed = False
-    , clearInputValueOnBlur = False
-    , selectExactMatchOnBlur = False
-    , selectOnTab = True
-    , minInputLength = Nothing
-    }
+type alias ViewConfig a msg =
+    ViewConfigInternal a (Attribute msg) (Element msg)
 
 
-toElement : Model a -> ViewConfigInternal a msg -> Element msg
-toElement model config =
-    toElement_ (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)
-        (Model.toFilteredOptions True config.minInputLength config.itemToString config.filter model)
-        model
+init : ViewConfigInternal a (Attribute msg) (Element msg)
+init =
+    ViewConfig.init
+
+
+toElement : List (Attribute msg) -> Config a msg -> ViewConfig a msg -> Element msg
+toElement attrs ({ select } as config) viewConfig =
+    toElement_ attrs
+        (ViewConfig.toPlacement select viewConfig)
+        (ViewConfig.toFilteredOptions select config.itemToString viewConfig)
         config
+        viewConfig
 
 
-toElement_ : Placement -> List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
-toElement_ placement filteredOptions model config =
+toElement_ : List (Attribute msg) -> Placement -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
+toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
     Element.el
         (List.concat
-            [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId model)
+            [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
+              , View.relativeContainerMarker select
+                    |> Element.html
+                    |> Element.inFront
               , Element.width Element.fill
               , Element.below <|
-                    if
-                        List.length filteredOptions
-                            == 0
-                            && Model.isOpen model
-                            && (String.length (Model.toInputValue model) >= Maybe.withDefault 1 config.minInputLength)
-                            && (Model.toRequestState model == Nothing || Model.toRequestState model == Just Success)
-                    then
-                        config.noMatchElement
+                    if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
+                        Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement
 
                     else
                         Element.none
               , Placement.toAttribute
-                    (if config.positionFixed then
+                    (if viewConfig.positionFixed then
                         Placement.Below
 
                      else
                         placement
                     )
                 <|
-                    (if config.positionFixed then
-                        positionFixedEl placement (Model.toContainerElement model)
+                    (if viewConfig.positionFixed then
+                        positionFixedEl placement (Model.toContainerElement select)
 
                      else
                         identity
@@ -121,137 +84,77 @@ toElement_ placement filteredOptions model config =
                     <|
                         menuView
                             (defaultMenuAttrs
-                                { menuWidth = Model.toMenuMinWidth model
-                                , maxWidth = config.menuMaxWidth
-                                , menuHeight = Model.toMenuMaxHeight config.menuMaxHeight config.menuPlacement model
+                                { menuWidth = Model.toMenuMinWidth select
+                                , maxWidth = viewConfig.menuMaxWidth
+                                , menuHeight = Model.toMenuMaxHeight viewConfig.menuMaxHeight viewConfig.menuPlacement select
                                 }
-                                ++ List.concatMap (\toAttrs -> toAttrs (Model.toMenuPlacement config.menuMaxHeight config.menuPlacement model)) config.menuAttributes
+                                ++ List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes
                             )
-                            { menuId = Model.toMenuElementId model
-                            , toOptionId = Model.toOptionElementId model
-                            , toOptionState = Model.toOptionState model
+                            { menuId = Model.toMenuElementId select
+                            , toOptionId = Model.toOptionElementId select
+                            , toOptionState = Model.toOptionState select
                             , onChange = config.onChange
-                            , menuOpen = Model.isOpen model
+                            , menuOpen = Model.isOpen select
                             , options = filteredOptions
-                            , optionElement = config.optionElement
+                            , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
                             }
               ]
-            , if Model.isOpen model then
+            , if Model.isOpen select then
                 [ Element.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
 
               else
                 []
-            , if Model.requiresNewFilteredOptions model then
-                let
-                    options _ =
-                        optionsUpdate model config filteredOptions
-                in
-                [ Element.htmlAttribute <| Html.Events.on "keydown" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> config.onChange)))
-                , Element.htmlAttribute <| Html.Events.on "touchstart" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> config.onChange)))
-                , Element.htmlAttribute <| Html.Events.on "mousemove" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> config.onChange)))
-                ]
-
-              else
-                []
+            , ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
+                |> List.map Element.htmlAttribute
             ]
         )
-        (inputView filteredOptions model config)
+        (inputView attrs filteredOptions config viewConfig)
 
 
-inputView : List (Option a) -> Model a -> ViewConfigInternal a msg -> Element msg
-inputView filteredOptions model config =
+inputView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
+inputView attrs filteredOptions ({ select } as config) viewConfig =
     Input.text
         (List.concat
-            [ config.inputAttribs
-            , if Model.requiresNewFilteredOptions model then
-                [ Element.htmlAttribute (Html.Events.on "focus" (Decode.lazy (\_ -> Decode.succeed (InputFocused (Just <| optionsUpdate model config filteredOptions) |> config.onChange)))) ]
-
-              else
-                [ Events.onFocus (InputFocused Nothing |> config.onChange) ]
-            , [ Events.onClick (InputClicked |> config.onChange)
+            [ attrs
+            , [ ViewEvents.onFocus config.onChange config.itemToString select viewConfig filteredOptions
+                    |> Element.htmlAttribute
+              , Events.onClick (InputClicked |> config.onChange)
               , Events.onLoseFocus
                     (config.onChange
                         (InputLostFocus
-                            { clearInputValue = config.clearInputValueOnBlur
-                            , selectExactMatch = config.selectExactMatchOnBlur
+                            { clearInputValue = viewConfig.clearInputValueOnBlur
+                            , selectExactMatch = viewConfig.selectExactMatchOnBlur
                             }
                             filteredOptions
                         )
                     )
-              , onKeyDown (Model.isOpen model) (KeyDown config.selectOnTab filteredOptions >> config.onChange)
-              , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId model)
+              , Element.htmlAttribute <|
+                    ViewEvents.onKeyDown (Model.isOpen select) (KeyDown viewConfig.selectOnTab filteredOptions >> config.onChange)
+              , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId select)
               , Element.inFront <|
-                    if Model.toValue model /= Nothing || Model.toInputValue model /= "" then
-                        Maybe.withDefault Element.none config.clearButton
+                    if Model.toValue select /= Nothing || Model.toInputValue select /= "" then
+                        viewConfig.clearButton
+                            |> Maybe.map (\( attrs_, el ) -> clearButtonElement config.onChange attrs_ el)
+                            |> Maybe.withDefault Element.none
 
                     else
                         Element.none
               ]
-            , inputAccessibilityAttributes filteredOptions model
+            , List.map Element.htmlAttribute (View.inputAccessibilityAttributes select)
+            , [ Element.below <|
+                    if Model.isOpen select then
+                        Element.html <| View.ariaLive (List.length filteredOptions)
+
+                    else
+                        Element.none
+              ]
             ]
         )
-        { onChange =
-            \v ->
-                InputChanged v
-                    (Model.setInputValue v model
-                        |> Model.toFilteredOptions False config.minInputLength config.itemToString config.filter
-                    )
-                    |> config.onChange
-        , text =
-            if Model.isFocused model then
-                Model.toInputValue model
-
-            else
-                Maybe.map config.itemToString (Model.toValue model)
-                    |> Maybe.withDefault (Model.toInputValue model)
+        { onChange = ViewEvents.onInput config.onChange config.itemToString select viewConfig
+        , text = Model.toInputText config.itemToString select
         , placeholder = config.placeholder
         , label = config.label
         }
-
-
-optionsUpdate : Model a -> ViewConfigInternal a msg -> List (Option a) -> ( List a, List (Option a) )
-optionsUpdate model config filteredOptions =
-    ( Model.toItems model
-    , if List.isEmpty filteredOptions then
-        Model.toFilteredOptions False config.minInputLength config.itemToString config.filter model
-
-      else
-        filteredOptions
-    )
-
-
-
---)
-
-
-inputAccessibilityAttributes : List (Option a) -> Model a -> List (Attribute msg)
-inputAccessibilityAttributes filteredOptions model =
-    [ htmlAttribute "role" "combobox"
-    , htmlAttribute "aria-owns" (Model.toMenuElementId model)
-    , htmlAttribute "aria-autocomplete" "list"
-    , htmlAttribute "aria-activedescendant" <|
-        if Model.isOpen model then
-            Model.toHighlighted model
-                |> Maybe.map (Model.toOptionElementId model)
-                |> Maybe.withDefault ""
-
-        else
-            ""
-    , htmlAttribute "aria-expanded"
-        (if Model.isOpen model then
-            "true"
-
-         else
-            "false"
-        )
-    , htmlAttribute "aria-haspopup" "listbox"
-    , Element.below <|
-        if Model.isOpen model then
-            ariaLive (List.length filteredOptions)
-
-        else
-            Element.none
-    ]
 
 
 menuView :
@@ -314,9 +217,9 @@ optionElement v i opt =
 
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
-clearButtonElement tagger attribs element =
+clearButtonElement onChange attribs element =
     Input.button attribs
-        { onPress = Just (tagger ClearButtonPressed)
+        { onPress = Just (onChange ClearButtonPressed)
         , label = element
         }
 
@@ -404,55 +307,6 @@ defaultNoMatchElement =
         , Element.width Element.fill
         ]
         (Element.text "No matches")
-
-
-onKeyDown : Bool -> (String -> msg) -> Attribute msg
-onKeyDown menuOpen tagger =
-    Element.htmlAttribute <|
-        Html.Events.custom "keydown"
-            (Decode.map (hijackKey menuOpen tagger)
-                (Decode.field "key" Decode.string)
-            )
-
-
-hijackKey :
-    Bool
-    -> (String -> msg)
-    -> String
-    ->
-        { message : msg
-        , stopPropagation : Bool
-        , preventDefault : Bool
-        }
-hijackKey menuOpen tagger key =
-    { message = tagger key
-    , stopPropagation = menuOpen && key == "Escape"
-    , preventDefault = List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown" ]
-    }
-
-
-ariaLive : Int -> Element msg
-ariaLive optionCount =
-    Element.el
-        [ Element.Region.announceUrgently
-        , style "position" "absolute"
-        , style "width" "1px"
-        , style "height" "1px"
-        , style "padding" "0"
-        , style "margin" "-1px"
-        , style "overflow" "hidden"
-        , style "clip" "rect(0, 0, 0, 0)"
-        , style "white-space" "nowrap"
-        , style "border" "0"
-        , style "display" "hidden"
-        ]
-        (Element.text <|
-            if optionCount > 0 then
-                String.fromInt optionCount ++ " suggestions found. Use up and down arrows to review"
-
-            else
-                "No suggestions found."
-        )
 
 
 htmlAttribute : String -> String -> Attribute msg

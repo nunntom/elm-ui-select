@@ -1,0 +1,81 @@
+module Internal.View.Events exposing (onFocus, onInput, onKeyDown, updateFilteredOptions)
+
+import Html exposing (Attribute)
+import Html.Events
+import Internal.Model as Model exposing (Model)
+import Internal.Msg exposing (Msg(..))
+import Internal.Option exposing (Option)
+import Internal.ViewConfig exposing (ViewConfigInternal)
+import Json.Decode as Decode
+
+
+onKeyDown : Bool -> (String -> msg) -> Attribute msg
+onKeyDown menuOpen tagger =
+    Html.Events.custom "keydown"
+        (Decode.map (hijackKey menuOpen tagger)
+            (Decode.field "key" Decode.string)
+        )
+
+
+hijackKey :
+    Bool
+    -> (String -> msg)
+    -> String
+    ->
+        { message : msg
+        , stopPropagation : Bool
+        , preventDefault : Bool
+        }
+hijackKey menuOpen tagger key =
+    { message = tagger key
+    , stopPropagation = menuOpen && key == "Escape"
+    , preventDefault = List.member key [ "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Enter" ]
+    }
+
+
+onInput : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> String -> msg
+onInput onChange itemToString model viewConfig v =
+    InputChanged v
+        (Model.onInputChange v model
+            |> Model.toFilteredOptions False viewConfig.minInputLength itemToString viewConfig.filter
+        )
+        |> onChange
+
+
+onFocus : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> Attribute msg
+onFocus onChange itemToString model viewConfig filteredOptions =
+    Html.Events.on "focus" <|
+        if Model.requiresNewFilteredOptions model then
+            Decode.lazy (\_ -> Decode.succeed (onChange <| InputFocused viewConfig.openOnFocus (Model.toInputText itemToString model) (Just <| optionsUpdate itemToString model viewConfig filteredOptions)))
+
+        else
+            InputFocused viewConfig.openOnFocus (Model.toInputText itemToString model) Nothing
+                |> onChange
+                |> Decode.succeed
+
+
+optionsUpdate : (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> ( List a, List (Option a) )
+optionsUpdate itemToString model viewConfig filteredOptions =
+    ( Model.toItems model
+    , if List.isEmpty filteredOptions then
+        Model.toFilteredOptions False viewConfig.minInputLength itemToString viewConfig.filter model
+
+      else
+        filteredOptions
+    )
+
+
+updateFilteredOptions : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> List (Attribute msg)
+updateFilteredOptions onChange itemToString model viewConfig filteredOptions =
+    if Model.requiresNewFilteredOptions model then
+        let
+            options _ =
+                optionsUpdate itemToString model viewConfig filteredOptions
+        in
+        [ Html.Events.on "keydown" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> onChange)))
+        , Html.Events.on "touchstart" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> onChange)))
+        , Html.Events.on "mousemove" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> onChange)))
+        ]
+
+    else
+        []

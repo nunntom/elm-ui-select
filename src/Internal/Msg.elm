@@ -7,7 +7,7 @@ import Internal.Option exposing (Option)
 type Msg a
     = InputChanged String (List (Option a))
     | OptionClicked (Option a)
-    | InputFocused (Maybe ( List a, List (Option a) ))
+    | InputFocused Bool String (Maybe ( List a, List (Option a) ))
     | GotNewFilteredOptions ( List a, List (Option a) )
     | InputClicked
     | InputLostFocus

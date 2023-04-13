@@ -1,24 +1,19 @@
-module EffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
-
-{- This example shows how the select can be used with effects.
-   And is useful for testing the elm-ui-select package as a whole.
--}
+module ElmCssEffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
 
 import Browser
 import Countries exposing (Country)
-import Element
-import Element.Input as Input
-import Html exposing (Html)
-import Resources.ClearButton
-import Select exposing (Select)
+import Css
+import Html.Styled as Html exposing (Html)
+import Html.Styled.Attributes exposing (css)
 import Select.Effect
+import Select.ElmCss as Select exposing (Select)
 
 
 main : Program () Model Msg
 main =
     Browser.element
         { init = \_ -> init () |> Tuple.mapSecond performEffect
-        , view = view
+        , view = view >> Html.toUnstyled
         , update = \msg model -> update msg model |> Tuple.mapSecond performEffect
         , subscriptions = \_ -> Sub.none
         }
@@ -50,24 +45,54 @@ init _ =
 
 view : Model -> Html Msg
 view model =
-    Element.layout [] <|
-        Element.column
-            [ Element.centerX
-            , Element.spacing 20
-            , Element.padding 30
+    Html.div
+        [ css
+            [ Css.displayFlex
+            , Css.alignItems Css.center
+            , Css.flexDirection Css.column
+            , Css.marginTop (Css.px 200)
+            , Css.property "gap" "2em"
+            , Css.fontFamilies [ "Arial" ]
             ]
-            [ Select.view
-                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
-                |> Select.toElement []
+        ]
+        [ Html.label
+            [ css
+                [ Css.fontSize (Css.rem 1.2)
+                , Css.lineHeight (Css.rem 1.5)
+                ]
+            ]
+            [ Html.text "Choose a country"
+            , Select.view
+                |> Select.withClearButton
+                    (Just <|
+                        Select.clearButton
+                            [ Css.height (Css.pct 100)
+                            , Css.displayFlex
+                            , Css.alignItems Css.center
+                            , Css.marginRight (Css.em 1)
+                            , Css.fontSize (Css.rem 0.6)
+                            , Css.cursor Css.pointer
+                            ]
+                            (Html.text "❌")
+                    )
+                |> Select.toStyled
+                    [ Css.padding (Css.em 0.5)
+                    , Css.paddingRight (Css.em 1.5)
+                    , Css.fontSize (Css.rem 1.2)
+                    , Css.borderRadius (Css.px 4)
+                    , Css.borderWidth (Css.px 1)
+                    , Css.borderColor (Css.rgba 0 0 0 0.5)
+                    ]
                     { select = model.countrySelect
                     , onChange = CountrySelectMsg
-                    , label = Input.labelAbove [] (Element.text "Choose a country")
-                    , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
                     , itemToString = \c -> c.flag ++ " " ++ c.name
                     }
-            , Maybe.map (\{ name } -> Element.text ("You chose " ++ name)) model.selectedCountry
-                |> Maybe.withDefault Element.none
             ]
+        , Html.div []
+            [ Maybe.map (\{ name } -> Html.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
+                |> Maybe.withDefault (Html.text "")
+            ]
+        ]
 
 
 type Msg
