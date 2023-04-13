@@ -58,10 +58,14 @@ relativeContainerMarker model =
     Html.div
         [ Html.Attributes.style "position" "absolute"
         , Html.Attributes.style "height" "100%"
+        , Html.Attributes.style "width" "100%"
         , Html.Attributes.style "top" "0"
         , Html.Attributes.style "left" "0"
-        , Html.Attributes.style "width" "0"
+        , Html.Attributes.style "bottom" "0"
+        , Html.Attributes.style "right" "0"
         , Html.Attributes.style "visibility" "hidden"
+        , Html.Attributes.style "pointer-events" "none"
+        , Html.Attributes.style "z-index" "-100"
         , Html.Attributes.id (Model.toRelativeContainerMarkerId model)
         ]
         []

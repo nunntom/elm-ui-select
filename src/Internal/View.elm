@@ -57,6 +57,7 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
     Element.el
         (List.concat
             [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
+              , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
               , View.relativeContainerMarker select
                     |> Element.html
                     |> Element.inFront
@@ -171,9 +172,9 @@ menuView :
     -> Element msg
 menuView attribs v =
     List.indexedMap (optionElement v) v.options
-        |> Element.column (attribs ++ [ Element.htmlAttribute <| Html.Attributes.id v.menuId ])
-        |> Element.el
-            (Element.width Element.fill
+        |> Element.column
+            (attribs
+                ++ (Element.htmlAttribute <| Html.Attributes.id v.menuId)
                 :: (if v.menuOpen && List.length v.options > 0 then
                         []
 
@@ -218,7 +219,12 @@ optionElement v i opt =
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
 clearButtonElement onChange attribs element =
-    Input.button attribs
+    Input.button
+        (attribs
+            ++ [ Element.htmlAttribute <|
+                    Html.Events.preventDefaultOn "click" (Decode.succeed ( onChange ClearButtonPressed, True ))
+               ]
+        )
         { onPress = Just (onChange ClearButtonPressed)
         , label = element
         }
@@ -243,7 +249,9 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
 
             Nothing ->
                 Element.fill
-    , Element.scrollbarY
+
+    --, Element.scrollbarY
+    , style "overflow-y" "auto"
     , Border.solid
     , Border.color (Element.rgb 0.8 0.8 0.8)
     , Border.width 1
