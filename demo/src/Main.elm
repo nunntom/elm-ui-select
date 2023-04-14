@@ -134,32 +134,55 @@ view model =
                 , Font.center
                 ]
                 [ Element.text "elm-ui-select demo" ]
-            , Element.row
+            , Element.wrappedRow
                 [ Element.spacing 50
                 , Element.height Element.fill
                 ]
-                [ Select.view []
-                    { onChange = SelectMsg
-                    , itemToString = \c -> c.name ++ " " ++ c.flag
-                    , label = Input.labelAbove [] (Element.text "Choose a country")
-                    , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
-                    }
-                    |> configureIf model.clearButton (Select.withClearButton (Just clearButton))
-                    |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
-                    |> configureIf (model.forcePlacement == Just Select.MenuBelow) Select.withMenuAlwaysBelow
-                    |> Select.withMenuMaxHeight model.maxHeight
-                    |> Select.withMenuMaxWidth model.maxWidth
-                    |> Select.withMinInputLength model.minInputLength
-                    |> Select.withSelectOnTab model.selectOnTab
-                    |> configureIf model.customMenuStyle (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen model.select))
-                    |> Select.toElement model.select
-                    |> Element.el
-                        [ Element.alignTop
-                        , Element.htmlAttribute <| Html.Attributes.style "z-index" "100"
-                        , Element.width <| Element.fillPortion 1
-                        , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
-                        , Element.htmlAttribute <| Html.Attributes.style "top" (String.fromInt (Maybe.withDefault 0 model.moveDown) ++ "%")
-                        ]
+                [ Element.column
+                    [ Element.width Element.fill
+                    , Element.spacing 20
+                    , Element.alignTop
+                    , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
+                    , Element.htmlAttribute <| Html.Attributes.style "top" (String.fromInt (Maybe.withDefault 0 model.moveDown) ++ "%")
+                    ]
+                    [ Select.view []
+                        { onChange = SelectMsg
+                        , itemToString = \c -> c.name ++ " " ++ c.flag
+                        , label = Input.labelAbove [] (Element.text "Choose a country")
+                        , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
+                        }
+                        |> configureIf model.clearButton (Select.withClearButton (Just clearButton))
+                        |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
+                        |> configureIf (model.forcePlacement == Just Select.MenuBelow) Select.withMenuAlwaysBelow
+                        |> Select.withMenuMaxHeight model.maxHeight
+                        |> Select.withMenuMaxWidth model.maxWidth
+                        |> Select.withMinInputLength model.minInputLength
+                        |> Select.withSelectOnTab model.selectOnTab
+                        |> configureIf model.customMenuStyle (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen model.select))
+                        |> Select.toElement model.select
+                        |> Element.el
+                            [ Element.alignTop
+                            , Element.htmlAttribute <| Html.Attributes.style "z-index" "100"
+                            , Element.width <| Element.fillPortion 1
+                            ]
+                    , [ "Type to filter the options"
+                      , "Up/down arrows navigate options (menu scrolls automatically)"
+                      , "PgUp/PgDn moves highlighted option by 10"
+                      , "Escape key closes the menu"
+                      , "Try changing some of the configuration options"
+                      ]
+                        |> List.map
+                            (\t ->
+                                Element.row [ Element.spacing 10 ]
+                                    [ Element.text "•"
+                                    , Element.paragraph [] [ Element.text t ]
+                                    ]
+                            )
+                        |> Element.column
+                            [ Element.spacing 10
+                            , Font.size 14
+                            ]
+                    ]
                 , Element.column
                     [ Element.spacing 20
                     , Element.alignTop

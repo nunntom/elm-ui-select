@@ -1,6 +1,6 @@
 # Elm-Ui Select
 
-A select widget for elm-ui with keyboard input, filtering, menu scrolling and requests.
+A select widget for elm-ui with keyboard input/scrolling, filtering and requests.
 
 ## Features:
 
@@ -10,6 +10,8 @@ A select widget for elm-ui with keyboard input, filtering, menu scrolling and re
 - Customisable: Supply your own attributes for the input, menu or your own option Element.
 - Make HTTP requests to retrieve matching options (The package does not make the requests, but you supply the Cmd/Effect - no elm/http dependency)
 - Can be used with the Effect pattern and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/) to simulate input to the select.
+
+### [View a live interactive demo](https://nunntom.github.io/elm-ui-select/)
 
 ## Example
 
