@@ -12,6 +12,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
+import Element.Region as Region
 import Html.Attributes
 import Html.Events
 import Internal.Model as Model exposing (Model)
@@ -223,6 +224,7 @@ clearButtonElement onChange attribs element =
         (attribs
             ++ [ Element.htmlAttribute <|
                     Html.Events.preventDefaultOn "click" (Decode.succeed ( onChange ClearButtonPressed, True ))
+               , Region.description "clear"
                ]
         )
         { onPress = Just (onChange ClearButtonPressed)
