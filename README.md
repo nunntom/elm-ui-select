@@ -50,13 +50,14 @@ update msg model =
 
 view : Model -> Element Msg
 view model =
-    Select.view []
-        { onChange = CountrySelectMsg
-        , label = Input.labelAbove [] (text "Choose a country")
-        , placeholder = Just (Input.placeholder [] (text "Type to search"))
-        , itemToString = \c -> c.flag ++ " " ++ c.name
-        }
-        |> Select.toElement model.countrySelect
+    Select.view
+        |> Select.toElement []
+            { select = model.countrySelect
+            , onChange = CountrySelectMsg
+            , itemToString = \c -> c.flag ++ " " ++ c.name
+            , label = Input.labelAbove [] (text "Choose a country")
+            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            }
 
 ```
 
@@ -74,13 +75,14 @@ init =
 
 view : List Country -> PageModel -> Element Msg
 view countries model =
-    Select.view []
-        { onChange = CountrySelectMsg
-        , label = Input.labelAbove [] (text "Choose a country")
-        , placeholder = Just (Input.placeholder [] (text "Type to search"))
-        , itemToString = \c -> c.flag ++ " " ++ c.name
-        }
-        |> Select.toElement (Select.setItems countries model.countrySelect)
+    Select.view
+        |> Select.toElement []
+            { onChange = CountrySelectMsg
+            , select = Select.setItems countries model.countrySelect
+            , label = Input.labelAbove [] (text "Choose a country")
+            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            , itemToString = \c -> c.flag ++ " " ++ c.name
+            }
 
 
 ```

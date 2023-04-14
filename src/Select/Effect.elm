@@ -155,9 +155,7 @@ When the effect is performed you must use Select.Effect.performWithRequest inste
             FetchThings query tagger ->
                 Http.get
                     { url = "https://awesome-thing.api/things?search=" ++ query
-                    , expect =
-                        Http.expectJson tagger
-                            (Decode.list thingDecoder)
+                    , expect = Http.expectJson tagger (Decode.list thingDecoder)
                     }
 
 -}
@@ -167,6 +165,15 @@ request effect =
 
 
 {-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
+
+    Select.Effect.updateWith
+        [ Select.Effect.request FetchThings
+        , Select.Effect.requestDebounceDelay 500
+        ]
+        SelectMsg
+        subMsg
+        model.select
+
 -}
 requestDebounceDelay : Float -> UpdateOption err effect a msg
 requestDebounceDelay delay =
@@ -175,6 +182,15 @@ requestDebounceDelay delay =
 
 {-| How many characters does a user need to type before a request is sent?
 If this is too low you may get an unmanagable number of results! Default is 3 characters.
+
+    Select.Effect.updateWith
+        [ Select.Effect.request FetchThings
+        , Select.Effect.requestMinInputLength 4
+        ]
+        SelectMsg
+        subMsg
+        model.select
+
 -}
 requestMinInputLength : Int -> UpdateOption err effect a msg
 requestMinInputLength len =
@@ -182,6 +198,9 @@ requestMinInputLength len =
 
 
 {-| If provided this msg will be sent whenever the selected item changes.
+
+    Select.Effect.updateWith [ Select.Effect.onSelectedChange ThingSelected ] SelectMsg subMsg model.select
+
 -}
 onSelectedChange : (Maybe a -> msg) -> UpdateOption err effect a msg
 onSelectedChange msg =
@@ -189,6 +208,9 @@ onSelectedChange msg =
 
 
 {-| If provided this msg will be sent whenever the input value changes.
+
+    Select.Effect.updateWith [ Select.Effect.onInput InputChanged ] SelectMsg subMsg model.select
+
 -}
 onInput : (String -> msg) -> UpdateOption err effect a msg
 onInput msg =
@@ -196,6 +218,9 @@ onInput msg =
 
 
 {-| If provided this msg will be sent whenever the input gets focus.
+
+    Select.Effect.updateWith [ Select.Effect.onFocus InputFocused ] SelectMsg subMsg model.select
+
 -}
 onFocus : msg -> UpdateOption err effect a msg
 onFocus msg =
@@ -203,13 +228,19 @@ onFocus msg =
 
 
 {-| If provided this msg will be sent whenever the input loses focus.
+
+    Select.Effect.updateWith [ Select.Effect.onLoseFocus InputBlurred ] SelectMsg subMsg model.select
+
 -}
 onLoseFocus : msg -> UpdateOption err effect a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
 
 
-{-| If provided this will be sent whenever there is a keydown event in the input.
+{-| If provided this will be sent whenever there is a keydown event in the input. The name of the key is provided.
+
+    Select.Effect.updateWith [ Select.Effect.onKeyDown InputKeyDown ] SelectMsg subMsg model.select
+
 -}
 onKeyDown : (String -> msg) -> UpdateOption err effect a msg
 onKeyDown msg =
