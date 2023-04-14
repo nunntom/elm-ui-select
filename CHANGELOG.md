@@ -1,5 +1,22 @@
 # Changelog
 
+# 4.0.0
+
+### Enhancements
+
+- Added new function to enable sending a request on initialising the select.
+- New update option to trigger msg on keydown event on input.
+- Menu is now slightly more biased towards opening below the input rather than above.
+
+### Breaking changes
+
+- Change to `view`/`toElement`. The attributes and config record are now provided in `toElement` rather than `view`.
+- Changed how requests work in updateWith. The `onRequestResponse` msg is no longer exposed. Instead the function/Effect passed to `Select.request` is provided a tagger with which to tag the response.
+
+### Bugfixes
+
+- OptionState constructors are now exposed, meaning it's now actually possible to provide a custom option element.
+
 # 3.1.3
 
 ### Fixes
