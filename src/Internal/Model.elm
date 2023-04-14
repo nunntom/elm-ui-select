@@ -441,7 +441,16 @@ calculateMenuDimensionsAndPlacement maxHeight forcedPlacement container menu =
 
 calculateMenuDimensionsAndPlacementHelper : Maybe Placement -> { menuHeight : Int, containerWidth : Int } -> { above : Float, below : Float } -> { minWidth : Int, maxHeight : Int, placement : Placement }
 calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuHeight, containerWidth } { above, below } =
-    if forcedPlacement == Just Above || (Basics.round below < menuHeight && above > below && forcedPlacement /= Just Below) then
+    if
+        forcedPlacement
+            == Just Above
+            || (Basics.round below
+                    < menuHeight
+                    && shouldPreferAbove { spaceAbove = above, spaceBelow = below }
+                    && forcedPlacement
+                    /= Just Below
+               )
+    then
         { minWidth = containerWidth
         , maxHeight =
             Basics.min menuHeight (Basics.round (above - 20))
@@ -453,6 +462,11 @@ calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuHeight, containe
         , maxHeight = Basics.min menuHeight (Basics.round (below - 20))
         , placement = Below
         }
+
+
+shouldPreferAbove : { spaceAbove : Float, spaceBelow : Float } -> Bool
+shouldPreferAbove { spaceAbove, spaceBelow } =
+    spaceAbove > (spaceBelow * 1.25)
 
 
 calculateSpace : Dom.Element -> { above : Float, below : Float }
