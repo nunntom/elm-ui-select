@@ -28,6 +28,7 @@ type alias Model =
     , minInputLength : Maybe Int
     , selectOnTab : Bool
     , customMenuStyle : Bool
+    , placeholder : Maybe String
     }
 
 
@@ -44,6 +45,7 @@ init _ =
       , minInputLength = Nothing
       , selectOnTab = True
       , customMenuStyle = False
+      , placeholder = Nothing
       }
     , Cmd.none
     )
@@ -63,6 +65,7 @@ type Msg
     | MinInputLengthChanged (Maybe Int)
     | SelectOnTabChanged Bool
     | CustomMenuStyleChanged Bool
+    | PlaceholderChanged Bool
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -96,6 +99,18 @@ update msg model =
         CustomMenuStyleChanged v ->
             ( { model | customMenuStyle = v }, Cmd.none )
 
+        PlaceholderChanged v ->
+            ( { model
+                | placeholder =
+                    if v then
+                        Just "Start typing to search..."
+
+                    else
+                        Nothing
+              }
+            , Cmd.none
+            )
+
 
 
 -- VIEW
@@ -127,7 +142,7 @@ view model =
                     { onChange = SelectMsg
                     , itemToString = \c -> c.name ++ " " ++ c.flag
                     , label = Input.labelAbove [] (Element.text "Choose a country")
-                    , placeholder = Nothing
+                    , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
                     }
                     |> configureIf model.clearButton (Select.withClearButton (Just clearButton))
                     |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
@@ -150,6 +165,16 @@ view model =
                     , Element.alignTop
                     , Element.width <| Element.fillPortion 1
                     , Font.size 16
+                    , Background.gradient
+                        { angle = 0.6
+                        , steps =
+                            [ Element.rgb255 241 238 255
+                            , Element.rgb255 200 210 255
+                            ]
+                        }
+                    , Element.padding 30
+                    , Border.rounded 10
+                    , Border.glow (Element.rgba 0 0 0 0.2) 2
                     ]
                     [ Input.checkbox []
                         { onChange = ClearButtonChanged
@@ -157,17 +182,23 @@ view model =
                         , checked = model.clearButton
                         , label = Input.labelRight [] (Element.text "With clear button")
                         }
+                    , Input.checkbox []
+                        { onChange = PlaceholderChanged
+                        , icon = Input.defaultCheckbox
+                        , checked = model.placeholder /= Nothing
+                        , label = Input.labelRight [] (Element.text "Placeholder")
+                        }
                     , Input.radio [ Element.spacing 10 ]
                         { onChange = ForcePlacementChanged
                         , options =
-                            [ Input.option Nothing (Element.text "None")
-                            , Input.option (Just Select.MenuAbove) (Element.text "Above")
-                            , Input.option (Just Select.MenuBelow) (Element.text "Below")
+                            [ Input.option Nothing (Element.text "Auto")
+                            , Input.option (Just Select.MenuAbove) (Element.text "Always above")
+                            , Input.option (Just Select.MenuBelow) (Element.text "Always below")
                             ]
                         , selected = Just model.forcePlacement
                         , label =
                             Input.labelAbove [ Element.paddingEach { top = 0, bottom = 20, left = 0, right = 0 } ]
-                                (Element.text "Force placement of menu:")
+                                (Element.text "Placement of menu:")
                         }
                     , Element.column [ Element.spacing 20 ]
                         [ Element.text "Move down"
@@ -193,7 +224,10 @@ view model =
                             ]
                             [ Element.text "Move the input down the page to see how it affects the placement and size of the dropdown menu." ]
                         ]
-                    , Element.column [ Element.spacing 10 ]
+                    , Element.column
+                        [ Element.spacing 10
+                        , Element.width Element.fill
+                        ]
                         [ Input.text []
                             { onChange = String.toInt >> MaxWidthChanged
                             , text = model.maxWidth |> Maybe.map String.fromInt |> Maybe.withDefault ""
