@@ -20,6 +20,7 @@ import Select exposing (Select)
 
 type alias Model =
     { select : Select Country
+    , timeoutPassed : Bool
     , clearButton : Bool
     , forcePlacement : Maybe Select.MenuPlacement
     , moveDown : Maybe Int
@@ -32,11 +33,12 @@ type alias Model =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : String -> ( Model, Cmd Msg )
+init uniqueId =
     ( { select =
-            Select.init "country-select"
+            Select.init ("country-select-" ++ uniqueId)
                 |> Select.setItems Countries.all
+      , timeoutPassed = False
       , clearButton = False
       , forcePlacement = Nothing
       , moveDown = Nothing
@@ -346,7 +348,7 @@ menuAttributes isOpen placement =
 -- MAIN
 
 
-main : Program () Model Msg
+main : Program String Model Msg
 main =
     Browser.element
         { init = init
