@@ -7,7 +7,7 @@ import Internal.Option exposing (Option)
 type Msg a
     = InputChanged String (List (Option a))
     | OptionClicked (Option a)
-    | InputFocused (Maybe ( List a, List (Option a) ))
+    | InputFocused Bool String (Maybe ( List a, List (Option a) ))
     | GotNewFilteredOptions ( List a, List (Option a) )
     | InputClicked
     | InputLostFocus
@@ -20,5 +20,5 @@ type Msg a
     | GotContainerAndMenuElements (Maybe Int) (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })
     | ClearButtonPressed
     | InputDebounceReturned String
-    | GotRequestResponse String (Result () (List a))
+    | GotRequestResponse String (Result String ( List a, Maybe a ))
     | NoOp

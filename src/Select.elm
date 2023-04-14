@@ -1,11 +1,13 @@
 module Select exposing
-    ( Select, init
-    , setItems, setSelected, setInputValue, closeMenu
+    ( Select
+    , init
+    , setItems, setSelected, setInputValue, openMenu, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
-    , Msg, update, updateWith
-    , UpdateOption, request, gotRequestResponse, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
+    , Msg, update
+    , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+    , sendRequest
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState(..), withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
     , toElement
     , Effect
     )
@@ -15,12 +17,17 @@ module Select exposing
 
 # Type
 
-@docs Select, init
+@docs Select
+
+
+# Create
+
+@docs init
 
 
 # Set
 
-@docs setItems, setSelected, setInputValue, closeMenu
+@docs setItems, setSelected, setInputValue, openMenu, closeMenu
 
 
 # Get
@@ -35,17 +42,22 @@ module Select exposing
 
 # Update the Select
 
-@docs Msg, update, updateWith
+@docs Msg, update
 
 
 # Update Options
 
-@docs UpdateOption, request, gotRequestResponse, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+@docs UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+
+
+# Initialise with a request
+
+@docs sendRequest
 
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
 
 
 # Element
@@ -68,7 +80,7 @@ import Internal.OptionState as OptionState
 import Internal.Placement as Placement
 import Internal.Update as Update
 import Internal.UpdateOptions as UpdateOptions exposing (UpdateOption)
-import Internal.View as View exposing (ViewConfigInternal)
+import Internal.View.ElmUi as View
 import Select.Filter exposing (Filter)
 
 
@@ -93,42 +105,32 @@ init =
 
 You can do this on init:
 
-    import Element exposing (Element)
-    import Element.Input as Input
-
     type alias Model =
         { select : Select String
-        , things : List String
         }
 
-    init : List String -> ( Model, Cmd Never )
+    init : List String -> ( Model, Cmd Msg )
     init things =
         ( { select =
                 Select.init "thing-select"
                     |> Select.setItems things
-            , things = [ "Thing 1" ]
           }
         , Cmd.none
         )
 
-    init []    --> init []
-
-Or you can do it in your view if you prefer to keep your items in your own model.
-
-    type Msg
-        = SelectMsg (Select.Msg String)
+Or you can do it in your view if you need to keep your items in your own model.
+You'd probably only do this if you want to select from things that are owned/managed by other parts of the app.
 
     view : Model -> Element Msg
     view model =
-        Select.view []
-            { onChange = SelectMsg
-            , label = Input.labelAbove [] (Element.text "Choose a thing")
-            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-            , itemToString = identity
-            }
-            |> Select.toElement (Select.setItems model.things model.select)
-
-    view (Tuple.first (init [])) --> <div></div>
+        Select.view
+            |> Select.toElement []
+                { select = Select.setItems model.things model.select
+                , onChange = SelectMsg
+                , itemToString = identity
+                , label = Input.labelAbove [] (Element.text "Choose a thing")
+                , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+                }
 
 -}
 setItems : List a -> Select a -> Select a
@@ -147,14 +149,21 @@ setSelected =
 -}
 setInputValue : String -> Select a -> Select a
 setInputValue =
-    Model.setInputValue
+    Model.onInputChange
 
 
-{-| Close the menu
+{-| Close the menu programatically (You probably don't need to use this)
 -}
 closeMenu : Select a -> Select a
 closeMenu =
     Model.closeMenu
+
+
+{-| Open the menu programatically (You probably don't need to use this)
+-}
+openMenu : Select a -> Select a
+openMenu =
+    Model.openMenu
 
 
 
@@ -175,14 +184,14 @@ toInputValue =
     Model.toInputValue
 
 
-{-| Get the id of the DOM input element. Useful in tests or to associate the provided label with the input
+{-| Get the id of the DOM input element. Useful in tests or to associate a label with the input
 -}
 toInputElementId : Select a -> String
 toInputElementId =
     Model.toInputElementId
 
 
-{-| Get the id of the DOM menu container. Useful for testing
+{-| Get the id of the DOM menu element. Useful for testing
 -}
 toMenuElementId : Select a -> String
 toMenuElementId =
@@ -240,6 +249,8 @@ type alias Msg a =
                     Select.update SelectMsg subMsg model.select
                         |> Tuple.mapFirst (\select -> { model | select = select })
 
+If you'd like to use the Effects pattern, see [Select.Effect](Select-Effect)
+
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 update tagger msg select =
@@ -260,7 +271,7 @@ update tagger msg select =
                 Debug.todo "Do something when the thing is selected/deselected"
 
 -}
-updateWith : List (UpdateOption a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
+updateWith : List (UpdateOption err a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
 updateWith options tagger msg select =
     Update.update (UpdateOptions.fromList options) tagger msg select
         |> Tuple.mapSecond (Effect.perform identity)
@@ -268,13 +279,13 @@ updateWith options tagger msg select =
 
 {-| Options for use with updateWith.
 -}
-type alias UpdateOption a msg =
-    UpdateOptions.UpdateOption (Cmd msg) a msg
+type alias UpdateOption err a msg =
+    UpdateOptions.UpdateOption err (Cmd msg) a msg
 
 
-{-| Use an HTTP request to retrieve matching remote results. ote that in order to avoid an elm/http dependency in this package,
-you will need to provide the request Cmd yourself. Provide a function that takes the input value and returns a Cmd.
-Update will return this Cmd when the user types in the input. Note, you need to hook in the response using the Select.gotRequestResponse msg.
+{-| Use an HTTP request to retrieve matching remote results. Note that in order to avoid an elm/http dependency in this package,
+you will need to provide the request Cmd yourself. Provide a function that takes the input value and a msg tagger and returns a Cmd.
+Update will return this Cmd when the user types in the input.
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
@@ -283,25 +294,31 @@ Update will return this Cmd when the user types in the input. Note, you need to 
                 Select.updateWith [ Select.request fetchThings ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
 
-    fetchThings : String -> Cmd Msg
-    fetchThings query =
+    fetchThings : String -> (Result Http.Error (List Thing) -> Msg) -> Cmd Msg
+    fetchThings query tagger =
         Http.get
             { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson (Select.gotRequestResponse query >> SelectMsg) (Decode.list thingDecoder)
+            , expect = Http.expectJson tagger (Decode.list thingDecoder)
             }
 
 -}
-request : (String -> Cmd msg) -> UpdateOption a msg
+request : (String -> (Result err (List a) -> msg) -> Cmd msg) -> UpdateOption err a msg
 request effect =
     UpdateOptions.Request effect
 
 
 {-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
 
-    Select.updateWith [ Select.request fetchThings, Select.requestDebounceDelay 500 ] SelectMsg subMsg model.select
+    Select.updateWith
+        [ Select.request fetchThings
+        , Select.requestDebounceDelay 500
+        ]
+        SelectMsg
+        subMsg
+        model.select
 
 -}
-requestDebounceDelay : Float -> UpdateOption a msg
+requestDebounceDelay : Float -> UpdateOption err a msg
 requestDebounceDelay delay =
     UpdateOptions.DebounceRequest delay
 
@@ -309,10 +326,16 @@ requestDebounceDelay delay =
 {-| How many characters does a user need to type before a request is sent?
 If this is too low you may get an unmanagable number of results! Default is 3 characters.
 
-    Select.updateWith [ Select.request fetchThings, Select.requestMinInputLength 4 ] SelectMsg subMsg model.select
+    Select.updateWith
+        [ Select.request fetchThings
+        , Select.requestMinInputLength 4
+        ]
+        SelectMsg
+        subMsg
+        model.select
 
 -}
-requestMinInputLength : Int -> UpdateOption a msg
+requestMinInputLength : Int -> UpdateOption err a msg
 requestMinInputLength len =
     UpdateOptions.RequestMinInputLength len
 
@@ -322,46 +345,90 @@ requestMinInputLength len =
     Select.updateWith [ Select.onSelectedChange SelectionChanged ] SelectMsg subMsg model.select
 
 -}
-onSelectedChange : (Maybe a -> msg) -> UpdateOption a msg
+onSelectedChange : (Maybe a -> msg) -> UpdateOption err a msg
 onSelectedChange msg =
     UpdateOptions.OnSelect msg
 
 
 {-| If provided this msg will be sent whenever the input value changes.
+
+    Select.updateWith [ Select.onInput SelectInputValueChanged ] SelectMsg subMsg model.select
+
 -}
-onInput : (String -> msg) -> UpdateOption a msg
+onInput : (String -> msg) -> UpdateOption err a msg
 onInput msg =
     UpdateOptions.OnInput msg
 
 
 {-| If provided this msg will be sent whenever the input is focused.
+
+    Select.updateWith [ Select.onFocus SelectFocused ] SelectMsg subMsg model.select
+
 -}
-onFocus : msg -> UpdateOption a msg
+onFocus : msg -> UpdateOption err a msg
 onFocus msg =
     UpdateOptions.OnFocus msg
 
 
 {-| If provided this msg will be sent whenever the input loses focus.
+
+    Select.updateWith [ Select.onLoseFocus SelectLostFocus ] SelectMsg subMsg model.select
+
 -}
-onLoseFocus : msg -> UpdateOption a msg
+onLoseFocus : msg -> UpdateOption err a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
 
 
-{-| Hook the request Cmd result back into update with this Msg. You need to pass in the string query (input value)
-that was used for the request. This is used to match up the correct response to most recent request in case of race conditions.
+{-| If provided this will be sent whenever there is a keydown event in the input.
 
-    fetchThings : String -> Cmd Msg
-    fetchThings query =
-        Http.get
-            { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson (Select.gotRequestResponse query >> SelectMsg) (Decode.list thingDecoder)
-            }
+    Select.updateWith [ Select.onKeyDown SelectKeyDown ] SelectMsg subMsg model.select
 
 -}
-gotRequestResponse : String -> Result err (List a) -> Msg a
-gotRequestResponse inputValue =
-    Result.mapError (\_ -> ()) >> Msg.GotRequestResponse inputValue
+onKeyDown : (String -> msg) -> UpdateOption err a msg
+onKeyDown msg =
+    UpdateOptions.OnKeyDown msg
+
+
+{-| Send a request to populate the menu items. This is useful for initialising the select with items from an api.
+Provide a function that takes the current input value and a msg tagger and returns a Cmd which can be used to perform an HTTP request.
+
+    init : ( Model, Cmd Msg )
+    init =
+        let
+            ( select, cmd ) =
+                Select.init "thing-select"
+                    |> Select.sendRequest SelectMsg fetchThings Nothing
+        in
+        ( { select = select }
+        , cmd
+        )
+
+    fetchThings : String -> (Result Http.Error (List Thing) -> Msg) -> Cmd Msg
+    fetchThings query tagger =
+        Http.get
+            { url = "https://awesome-thing.api/things?search=" ++ query
+            , expect = Http.expectJson tagger (Decode.list thingDecoder)
+            }
+
+Optionally provide a function to select one the items when the response returns:
+
+    init : ThingId -> ( Model, Cmd Msg )
+    init thingId =
+        let
+            ( select, cmd ) =
+                Select.init "thing-select"
+                    |> Select.sendRequest SelectMsg fetchThings (Just (\{ id } -> id == thingId))
+        in
+        ( { select = select }
+        , cmd
+        )
+
+-}
+sendRequest : (Msg a -> msg) -> (String -> (Result err (List a) -> msg) -> Cmd msg) -> Maybe (a -> Bool) -> Select a -> ( Select a, Cmd msg )
+sendRequest tagger req andSelect select =
+    Update.sendRequest tagger andSelect select req
+        |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
 
@@ -372,32 +439,25 @@ gotRequestResponse inputValue =
 
     view : Model -> Element Msg
     view model =
-        Select.view []
-            { onChange = SelectMsg
-            , label = Input.labelAbove [] (text "Choose a thing")
-            , placeholder = Just (Input.placeholder [] (text "Type to search"))
-            , itemToString = .name
-            }
-            |> Select.toElement model.thingsSelect
+        Select.view
+            |> Select.toElement []
+                { select = model.thingSelect
+                , onChange = SelectMsg
+                , itemToString = .name
+                , label = Input.labelAbove [] (text "Choose a thing")
+                , placeholder = Just (Input.placeholder [] (text "Type to search"))
+                }
 
 -}
 type ViewConfig a msg
-    = ViewConfig (ViewConfigInternal a msg)
+    = ViewConfig (View.ViewConfig a msg)
 
 
 {-| Initialise the default ViewConfig
 -}
-view :
-    List (Attribute msg)
-    ->
-        { onChange : Msg a -> msg
-        , itemToString : a -> String
-        , label : Input.Label msg
-        , placeholder : Maybe (Input.Placeholder msg)
-        }
-    -> ViewConfig a msg
-view attribs config =
-    ViewConfig (View.view attribs config)
+view : ViewConfig a msg
+view =
+    ViewConfig View.init
 
 
 {-| Customise the filtering of the menu based on input value. See [Select.Filter](Select-Filter). Default is startsWithThenContains.
@@ -447,12 +507,7 @@ withMenuMaxWidth width (ViewConfig config) =
 {-| Set arbitrary attributes for the menu element. You can call this multiple times and it will accumulate attributes.
 You can define different attributes based on whether the menu appears above or below the input.
 
-    Select.view []
-        { onChange = SelectMsg
-        , label = Input.labelAbove [] (Element.text "Choose a thing")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = .name
-        }
+    Select.view
         |> Select.withMenuAttributes
             (\placement ->
                 [ Element.Font.size 16
@@ -466,7 +521,13 @@ You can define different attributes based on whether the menu appears above or b
                                 [ Element.moveDown 10 ]
                        )
             )
-        |> Select.toElement model.select
+        |> Select.toElement []
+            { select = model.select
+            , onChange = SelectMsg
+            , itemToString = .name
+            , label = Input.labelAbove [] (Element.text "Choose a thing")
+            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+            }
 
 -}
 withMenuAttributes : (MenuPlacement -> List (Attribute msg)) -> ViewConfig a msg -> ViewConfig a msg
@@ -483,12 +544,7 @@ type MenuPlacement
 
 {-| Provide your own element for the options in the menu, based on the current [state](#OptionState) of the option.
 
-    Select.view []
-        { onChange = SelectMsg
-        , label = Input.labelAbove [] (Element.text "Choose a thing")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = .name
-        }
+    Select.view
         |> Select.withOptionElement
             (\state item ->
                 Element.el
@@ -510,12 +566,18 @@ type MenuPlacement
                     ]
                     (Element.text item.name)
             )
-        |> Select.toElement model.select
+        |> Select.toElement []
+            { select = model.select
+            , onChange = SelectMsg
+            , itemToString = .name
+            , label = Input.labelAbove [] (Element.text "Choose a thing")
+            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+            }
 
 -}
 withOptionElement : (OptionState -> a -> Element msg) -> ViewConfig a msg -> ViewConfig a msg
 withOptionElement toEl (ViewConfig config) =
-    ViewConfig { config | optionElement = \state -> toEl (mapOptionState state) }
+    ViewConfig { config | optionElement = Just (\state -> toEl (mapOptionState state)) }
 
 
 {-| The default option element. Use this with withOptionElement only if you want the
@@ -539,17 +601,12 @@ type OptionState
 -}
 withNoMatchElement : Element msg -> ViewConfig a msg -> ViewConfig a msg
 withNoMatchElement element (ViewConfig config) =
-    ViewConfig { config | noMatchElement = element }
+    ViewConfig { config | noMatchElement = Just element }
 
 
 {-| Add a button to clear the input. This element is positioned as Element.inFront.
 
-    Select.view []
-        { onChange = SelectMsg
-        , label = Input.labelAbove [] (Element.text "Choose a thing")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = .name
-        }
+    Select.view
         |> Select.withClearButton
             (Just
                 (Select.clearButton
@@ -560,23 +617,29 @@ withNoMatchElement element (ViewConfig config) =
                     (Element.el [ Element.Region.description "clear selection" ] (Element.text "❌"))
                 )
             )
-        |> Select.toElement model.select
+        |> Select.toElement []
+            { select = model.select
+            , onChange = SelectMsg
+            , itemToString = .name
+            , label = Input.labelAbove [] (Element.text "Choose a thing")
+            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
+            }
 
 -}
 withClearButton : Maybe (ClearButton msg) -> ViewConfig a msg -> ViewConfig a msg
 withClearButton cb (ViewConfig config) =
-    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attribs label) -> View.clearButtonElement config.onChange attribs label) cb }
+    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attrs el) -> ( List.map (Element.mapAttribute never) attrs, el )) cb }
 
 
 {-| A button to clear the input
 -}
 type ClearButton msg
-    = ClearButton (List (Attribute msg)) (Element msg)
+    = ClearButton (List (Attribute Never)) (Element msg)
 
 
 {-| Create a clear button
 -}
-clearButton : List (Attribute msg) -> Element msg -> ClearButton msg
+clearButton : List (Attribute Never) -> Element msg -> ClearButton msg
 clearButton attribs label =
     ClearButton attribs label
 
@@ -621,18 +684,35 @@ withMinInputLength v (ViewConfig config) =
     ViewConfig { config | minInputLength = v }
 
 
+{-| Should the menu be opened when the input gets focus?
+-}
+withOpenMenuOnFocus : Bool -> ViewConfig a msg -> ViewConfig a msg
+withOpenMenuOnFocus v (ViewConfig config) =
+    ViewConfig { config | openOnFocus = v }
+
+
 {-| Turn the ViewConfig into an Element.
 -}
-toElement : Select a -> ViewConfig a msg -> Element msg
-toElement model (ViewConfig config) =
-    View.toElement model config
+toElement :
+    List (Attribute msg)
+    ->
+        { select : Model a
+        , onChange : Msg a -> msg
+        , itemToString : a -> String
+        , label : Input.Label msg
+        , placeholder : Maybe (Input.Placeholder msg)
+        }
+    -> ViewConfig a msg
+    -> Element msg
+toElement attrs config (ViewConfig vc) =
+    View.toElement attrs config vc
 
 
 
 -- EFFECT
 
 
-{-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html) and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/),
+{-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html) and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/),
 see [Select.Effect](Select-Effect).
 -}
 type alias Effect effect msg =

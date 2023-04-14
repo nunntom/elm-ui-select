@@ -7,7 +7,8 @@
     "review": "elm-review",
     "review-examples": "elm-review --elmjson examples/elm.json --config=review --ignore-dirs=../src",
     "ci": "npm run review && npm run review-examples && npm run test",
-    "examples": "cd examples/src && elm reactor"
+    "examples": "cd examples/src && elm reactor",
+    "build-demo": "cd demo && npm run build"
   },
   "pre-commit": [
     "ci"

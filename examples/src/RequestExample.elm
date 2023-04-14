@@ -68,12 +68,12 @@ update msg model =
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 
-fetchCocktails : String -> Cmd Msg
-fetchCocktails query =
+fetchCocktails : String -> (Result String (List Cocktail) -> msg) -> Cmd msg
+fetchCocktails query tagger =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
-            Http.expectJson (Select.gotRequestResponse query >> SelectMsg)
+            Http.expectJson (Result.mapError (\_ -> "Failed loading cocktails") >> tagger)
                 (Decode.field "drinks"
                     (Decode.oneOf
                         [ Decode.list cocktailDecoder
@@ -97,15 +97,16 @@ view model =
             , Element.spacing 40
             , Element.width (Element.maximum 500 Element.shrink)
             ]
-            [ Select.view []
-                { onChange = SelectMsg
-                , label = Input.labelHidden "Find a cocktail"
-                , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
-                , itemToString = .name
-                }
+            [ Select.view
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
                 |> Select.withSelectExactMatchOnBlur True
-                |> Select.toElement model.select
+                |> Select.toElement []
+                    { select = model.select
+                    , onChange = SelectMsg
+                    , label = Input.labelHidden "Find a cocktail"
+                    , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
+                    , itemToString = .name
+                    }
             , Maybe.map drinkView (Select.toValue model.select)
                 |> Maybe.withDefault Element.none
             ]

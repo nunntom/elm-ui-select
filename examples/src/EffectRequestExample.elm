@@ -14,10 +14,10 @@ import Select exposing (Select)
 import Select.Effect
 
 
-main : Program () Model Msg
+main : Program Decode.Value Model Msg
 main =
     Browser.element
-        { init = \_ -> init () |> Tuple.mapSecond performEffect
+        { init = init >> Tuple.mapSecond performEffect
         , view = view
         , update = \msg model -> update msg model |> Tuple.mapSecond performEffect
         , subscriptions = \_ -> Sub.none
@@ -34,21 +34,42 @@ type alias Model =
 
 
 type alias Cocktail =
-    { name : String
+    { id : String
+    , name : String
     , imgUrl : String
     , instructions : String
     , ingredients : List String
     }
 
 
-init : () -> ( Model, MyEffect )
-init _ =
-    ( { select =
-            Select.init "cocktail-select"
-                |> Select.setItems []
-      }
-    , NoEffect
+init : Decode.Value -> ( Model, MyEffect )
+init flags =
+    let
+        selected =
+            Decode.decodeValue flagDecoder flags
+
+        ( select, effect ) =
+            case selected of
+                Ok sel ->
+                    Select.init "cocktail-select"
+                        |> Select.setInputValue sel.name
+                        |> Select.Effect.sendRequest SelectMsg FetchCocktails (Just (\{ id } -> id == sel.id))
+                        |> Tuple.mapSecond SelectEffect
+
+                Err _ ->
+                    ( Select.init "cocktail-select", NoEffect )
+    in
+    ( { select = select }
+    , effect
     )
+
+
+flagDecoder : Decoder { name : String, id : String }
+flagDecoder =
+    Decode.map2
+        (\name id -> { name = name, id = id })
+        (Decode.field "name" Decode.string)
+        (Decode.field "id" Decode.string)
 
 
 
@@ -67,8 +88,8 @@ update msg model =
                 |> Tuple.mapBoth (\select -> { model | select = select }) SelectEffect
 
 
-fetchCocktails : (Result Http.Error (List Cocktail) -> msg) -> String -> Cmd msg
-fetchCocktails tagger query =
+fetchCocktails : String -> (Result Http.Error (List Cocktail) -> Msg) -> Cmd Msg
+fetchCocktails query tagger =
     Http.get
         { url = "https://thecocktaildb.com/api/json/v1/1/search.php?s=" ++ String.replace " " "+" query
         , expect =
@@ -90,7 +111,7 @@ fetchCocktails tagger query =
 type MyEffect
     = NoEffect
     | SelectEffect (Select.Effect MyEffect Msg)
-    | FetchCocktails String
+    | FetchCocktails String (Result Http.Error (List Cocktail) -> Msg)
 
 
 performEffect : MyEffect -> Cmd Msg
@@ -102,8 +123,8 @@ performEffect effect =
         SelectEffect selectEffect ->
             Select.Effect.performWithRequest performEffect selectEffect
 
-        FetchCocktails query ->
-            fetchCocktails (Select.gotRequestResponse query >> SelectMsg) query
+        FetchCocktails query msg ->
+            fetchCocktails query msg
 
 
 
@@ -119,14 +140,15 @@ view model =
             , Element.spacing 40
             , Element.width (Element.maximum 500 Element.shrink)
             ]
-            [ Select.view []
-                { onChange = SelectMsg
-                , label = Input.labelHidden "Find a cocktail"
-                , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
-                , itemToString = .name
-                }
+            [ Select.view
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
-                |> Select.toElement model.select
+                |> Select.toElement []
+                    { select = model.select
+                    , onChange = SelectMsg
+                    , label = Input.labelHidden "Find a cocktail"
+                    , placeholder = Just (Input.placeholder [] (Element.text "Type to search cocktails"))
+                    , itemToString = .name
+                    }
             , Maybe.map drinkView (Select.toValue model.select)
                 |> Maybe.withDefault Element.none
             ]
@@ -166,7 +188,8 @@ drinkView cocktail =
 
 cocktailDecoder : Decoder Cocktail
 cocktailDecoder =
-    Decode.map4 Cocktail
+    Decode.map5 Cocktail
+        (Decode.field "idDrink" Decode.string)
         (Decode.field "strDrink" Decode.string)
         (Decode.field "strDrinkThumb" Decode.string)
         (Decode.field "strInstructions" Decode.string)

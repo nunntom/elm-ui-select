@@ -9,6 +9,7 @@ module Internal.Model exposing
     , isLoading
     , isOpen
     , isRequestFailed
+    , onInputChange
     , openMenu
     , requiresNewFilteredOptions
     , selectOption
@@ -25,6 +26,7 @@ module Internal.Model exposing
     , toFilteredOptions
     , toHighlighted
     , toInputElementId
+    , toInputText
     , toInputValue
     , toItems
     , toMenuElementId
@@ -33,6 +35,7 @@ module Internal.Model exposing
     , toMenuPlacement
     , toOptionElementId
     , toOptionState
+    , toRelativeContainerMarkerId
     , toRequestState
     , toValue
     , wasHighlightedByMouse
@@ -166,6 +169,16 @@ toCurrentFilteredOptions (Model { filteredOptions }) =
     Maybe.withDefault [] filteredOptions
 
 
+toInputText : (a -> String) -> Model a -> String
+toInputText itemToString model =
+    if isFocused model then
+        toInputValue model
+
+    else
+        Maybe.map itemToString (toValue model)
+            |> Maybe.withDefault (toInputValue model)
+
+
 toInputElementId : Model a -> String
 toInputElementId (Model { id }) =
     id ++ "-input"
@@ -184,6 +197,11 @@ toMenuElementId (Model { id }) =
 toOptionElementId : Model a -> Int -> String
 toOptionElementId (Model { id }) idx =
     id ++ "-option-" ++ String.fromInt idx
+
+
+toRelativeContainerMarkerId : Model a -> String
+toRelativeContainerMarkerId (Model { id }) =
+    id ++ "-container-marker"
 
 
 toOptionState : Model a -> ( Int, a ) -> OptionState
@@ -279,6 +297,11 @@ setSelected a (Model model) =
 
 setInputValue : String -> Model a -> Model a
 setInputValue v (Model model) =
+    Model { model | inputValue = v }
+
+
+onInputChange : String -> Model a -> Model a
+onInputChange v (Model model) =
     Model
         { model
             | inputValue = v
@@ -292,9 +315,9 @@ setInputValue v (Model model) =
         }
 
 
-setFilteredOptions : List (Option a) -> Model a -> Model a
+setFilteredOptions : Maybe (List (Option a)) -> Model a -> Model a
 setFilteredOptions opts (Model model) =
-    Model { model | filteredOptions = Just opts }
+    Model { model | filteredOptions = opts }
 
 
 selectOption : Option a -> Model a -> Model a
@@ -396,6 +419,7 @@ blur { clearInputValue, selectExactMatch } hasRequest filteredOptions (Model mod
      else
         Model model
     )
+        |> setFilteredOptions Nothing
         |> setFocused False
         |> closeMenu
 
@@ -418,7 +442,16 @@ calculateMenuDimensionsAndPlacement maxHeight forcedPlacement container menu =
 
 calculateMenuDimensionsAndPlacementHelper : Maybe Placement -> { menuHeight : Int, containerWidth : Int } -> { above : Float, below : Float } -> { minWidth : Int, maxHeight : Int, placement : Placement }
 calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuHeight, containerWidth } { above, below } =
-    if forcedPlacement == Just Above || (Basics.round below < menuHeight && above > below && forcedPlacement /= Just Below) then
+    if
+        forcedPlacement
+            == Just Above
+            || (Basics.round below
+                    < menuHeight
+                    && shouldPreferAbove { spaceAbove = above, spaceBelow = below }
+                    && forcedPlacement
+                    /= Just Below
+               )
+    then
         { minWidth = containerWidth
         , maxHeight =
             Basics.min menuHeight (Basics.round (above - 20))
@@ -430,6 +463,11 @@ calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuHeight, containe
         , maxHeight = Basics.min menuHeight (Basics.round (below - 20))
         , placement = Below
         }
+
+
+shouldPreferAbove : { spaceAbove : Float, spaceBelow : Float } -> Bool
+shouldPreferAbove { spaceAbove, spaceBelow } =
+    spaceAbove > (spaceBelow * 1.25)
 
 
 calculateSpace : Dom.Element -> { above : Float, below : Float }

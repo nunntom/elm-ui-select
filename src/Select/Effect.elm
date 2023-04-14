@@ -1,7 +1,8 @@
 module Select.Effect exposing
     ( Effect
-    , update, updateWith
-    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+    , update
+    , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+    , sendRequest
     , perform, performWithRequest
     , simulate, simulateWithRequest
     , simulateClickOption, SimulateInputConfig
@@ -9,7 +10,7 @@ module Select.Effect exposing
     )
 
 {-| Update the Select by returning Effects instead of Cmds.
-This module is designed to help testing with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/),
+This module is designed to help testing with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/),
 allowing you to simulate the effects produced by the select and simulate input. If you are not doing this kind of testing,
 you don't need this module.
 
@@ -21,12 +22,17 @@ you don't need this module.
 
 # Update Effect
 
-@docs update, updateWith
+@docs update
 
 
 # Update Options
 
-@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus
+@docs UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+
+
+# Send Request
+
+@docs sendRequest
 
 
 # Perform Effect
@@ -109,34 +115,34 @@ update =
                 Debug.todo "Do something when the thing is selected/deselected"
 
 -}
-updateWith : List (UpdateOption effect a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
+updateWith : List (UpdateOption err effect a msg) -> (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Effect effect msg )
 updateWith options =
     Update.update (UpdateOptions.fromList options)
 
 
 {-| Options for use with updateWith.
 -}
-type alias UpdateOption effect a msg =
-    UpdateOptions.UpdateOption effect a msg
+type alias UpdateOption err effect a msg =
+    UpdateOptions.UpdateOption err effect a msg
 
 
 {-| Update with an HTTP request to retrieve matching remote results.
 Note that in order to avoid an elm/http dependency in this package, you will need to provide the request Effect yourself.
 
-Provide a function that takes the input value and returns an Effect (your app's own Effect type)
-that can be used to perform an HTTP request. Update will use this Effect when the user types into the input.
+Provide an effect (your app's own Effect type) that uses the input value and a msg tagger that can perform an HTTP request.
+Update will use this Effect when the user types into the input.
 
 When the effect is performed you must use Select.Effect.performWithRequest instead of Select.Effect.perform.
 
     type MyEffect
         = SelectEffect (Select.Effect MyEffect Msg)
-        | FetchThings String
+        | FetchThings String (Result Http.Error (List Thing) -> Msg)
 
     update : Msg -> Model -> ( Model, MyEffect )
     update msg model =
         case msg of
             SelectMsg subMsg ->
-                Select.Effect.updateWith [ Select.Effect.request fetchThings ] SelectMsg subMsg model.select
+                Select.Effect.updateWith [ Select.Effect.request FetchThings ] SelectMsg subMsg model.select
                     |> Tuple.mapFirst (\select -> { model | select = select })
                     |> Tuple.mapSecond SelectEffect
 
@@ -146,63 +152,136 @@ When the effect is performed you must use Select.Effect.performWithRequest inste
             SelectEffect selectEffect ->
                 Select.Effect.performWithRequest performEffect selectEffect
 
-            FetchThings query ->
-                fetchThings (Select.gotRequestResponse query >> SelectMsg) query
-
-    fetchThings : (Result Http.Error (List thing) -> msg) -> String -> Cmd msg
-    fetchThings tagger query =
-        Http.get
-            { url = "https://awesome-thing.api/things?search=" ++ query
-            , expect = Http.expectJson tagger (Decode.list thingDecoder)
-            }
+            FetchThings query tagger ->
+                Http.get
+                    { url = "https://awesome-thing.api/things?search=" ++ query
+                    , expect = Http.expectJson tagger (Decode.list thingDecoder)
+                    }
 
 -}
-request : (String -> effect) -> UpdateOption effect a msg
+request : (String -> (Result err (List a) -> msg) -> effect) -> UpdateOption err effect a msg
 request effect =
     UpdateOptions.Request effect
 
 
 {-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
+
+    Select.Effect.updateWith
+        [ Select.Effect.request FetchThings
+        , Select.Effect.requestDebounceDelay 500
+        ]
+        SelectMsg
+        subMsg
+        model.select
+
 -}
-requestDebounceDelay : Float -> UpdateOption effect a msg
+requestDebounceDelay : Float -> UpdateOption err effect a msg
 requestDebounceDelay delay =
     UpdateOptions.DebounceRequest delay
 
 
 {-| How many characters does a user need to type before a request is sent?
 If this is too low you may get an unmanagable number of results! Default is 3 characters.
+
+    Select.Effect.updateWith
+        [ Select.Effect.request FetchThings
+        , Select.Effect.requestMinInputLength 4
+        ]
+        SelectMsg
+        subMsg
+        model.select
+
 -}
-requestMinInputLength : Int -> UpdateOption effect a msg
+requestMinInputLength : Int -> UpdateOption err effect a msg
 requestMinInputLength len =
     UpdateOptions.RequestMinInputLength len
 
 
 {-| If provided this msg will be sent whenever the selected item changes.
+
+    Select.Effect.updateWith [ Select.Effect.onSelectedChange ThingSelected ] SelectMsg subMsg model.select
+
 -}
-onSelectedChange : (Maybe a -> msg) -> UpdateOption effect a msg
+onSelectedChange : (Maybe a -> msg) -> UpdateOption err effect a msg
 onSelectedChange msg =
     UpdateOptions.OnSelect msg
 
 
 {-| If provided this msg will be sent whenever the input value changes.
+
+    Select.Effect.updateWith [ Select.Effect.onInput InputChanged ] SelectMsg subMsg model.select
+
 -}
-onInput : (String -> msg) -> UpdateOption effect a msg
+onInput : (String -> msg) -> UpdateOption err effect a msg
 onInput msg =
     UpdateOptions.OnInput msg
 
 
 {-| If provided this msg will be sent whenever the input gets focus.
+
+    Select.Effect.updateWith [ Select.Effect.onFocus InputFocused ] SelectMsg subMsg model.select
+
 -}
-onFocus : msg -> UpdateOption effect a msg
+onFocus : msg -> UpdateOption err effect a msg
 onFocus msg =
     UpdateOptions.OnFocus msg
 
 
 {-| If provided this msg will be sent whenever the input loses focus.
+
+    Select.Effect.updateWith [ Select.Effect.onLoseFocus InputBlurred ] SelectMsg subMsg model.select
+
 -}
-onLoseFocus : msg -> UpdateOption effect a msg
+onLoseFocus : msg -> UpdateOption err effect a msg
 onLoseFocus msg =
     UpdateOptions.OnLoseFocus msg
+
+
+{-| If provided this will be sent whenever there is a keydown event in the input. The name of the key is provided.
+
+    Select.Effect.updateWith [ Select.Effect.onKeyDown InputKeyDown ] SelectMsg subMsg model.select
+
+-}
+onKeyDown : (String -> msg) -> UpdateOption err effect a msg
+onKeyDown msg =
+    UpdateOptions.OnKeyDown msg
+
+
+{-| Send a request to populate the menu items. This is useful for initialising the select with items from an api.
+Provide a function that takes the current input value and a msg tagger and returns an effect which can be used to perform an HTTP request.
+
+    init : ( Model, Effect )
+    init =
+        let
+            ( select, effect ) =
+                Select.Effect.init "thing-select"
+                    |> Select.Effect.sendRequest SelectMsg FetchThings Nothing
+        in
+        ( { select = select }
+        , effect
+        )
+
+    type MyEffect
+        = SelectEffect (Select.Effect MyEffect Msg)
+        | FetchThings String (Result Http.Error (List Thing) -> Msg)
+
+Optionally provide a function to select one the items when the response returns:
+
+    init : ThingId -> ( Model, Effect )
+    init thingId =
+        let
+            ( select, effect ) =
+                Select.Effect. "thing-select"
+                    |> Select.Effect.sendRequest SelectMsg fetchThings (Just (\{ id } -> id == thingId))
+        in
+        ( { select = select }
+        , effect
+        )
+
+-}
+sendRequest : (Msg a -> msg) -> (String -> (Result err (List a) -> msg) -> effect) -> Maybe (a -> Bool) -> Select a -> ( Select a, Effect effect msg )
+sendRequest tagger req andSelect select =
+    Update.sendRequest tagger andSelect select req
 
 
 
@@ -240,7 +319,7 @@ performWithRequest =
     Effect.perform
 
 
-{-| Simulate the select effects. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
+{-| Simulate the select effects. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/), but since this package doesn't have it as a dependency,
 you need to provide some of the functions to help with the simulation.
 
     simulateEffect : MyEffect -> SimulatedEffect Msg
@@ -267,7 +346,7 @@ simulate conf =
     Effect.simulate conf (\_ -> conf.batch [])
 
 
-{-| Simulate the select effects with a request. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
+{-| Simulate the select effects with a request. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/), but since this package doesn't have it as a dependency,
 you need to provide some of the functions to help with the simulation.
 
     simulateEffect : MyEffect -> SimulatedEffect Msg
@@ -318,14 +397,16 @@ you need to provide some of the functions from those packages here.
         Test.test "Typing United and clicking United Kingdom option selects United Kingdom" <|
             \() ->
                 ProgramTest.createElement
-                    { init = Example.init
-                    , update = Example.update
-                    , view = Example.view
+                    { init = App.init
+                    , update = App.update
+                    , view = App.view
                     }
                     |> ProgramTest.withSimulatedEffects simulateEffect
                     |> ProgramTest.start ()
-                    |> ProgramTest.fillIn "" "Choose a country" "United Kingdom"
-                    |> Select.Effect.simulateClickOption simulateConfig model.select "United Kingdom"
+                    -- Note for testing you need to focus the input before you can type into it
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id "country-select-input" ]) Test.Html.Event.focus
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateClickOption simulateConfig "country-select" "United Kingdom"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom" ]
 
 -}
