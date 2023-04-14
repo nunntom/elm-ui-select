@@ -74,7 +74,7 @@ import Internal.OptionState as OptionState
 import Internal.Placement as Placement
 import Internal.Update as Update
 import Internal.UpdateOptions as UpdateOptions exposing (UpdateOption)
-import Internal.View as View
+import Internal.View.ElmUi as View
 import Select.Filter exposing (Filter)
 
 

@@ -1,4 +1,4 @@
-module Internal.View exposing
+module Internal.View.ElmUi exposing
     ( Config
     , ViewConfig
     , defaultOptionElement
