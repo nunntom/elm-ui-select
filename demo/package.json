@@ -1,0 +1,17 @@
+{
+  "name": "elm-ui-select-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.7",
+    "vite-plugin-elm": "^2.7.2"
+  }
+}
