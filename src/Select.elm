@@ -4,9 +4,10 @@ module Select exposing
     , setItems, setSelected, setInputValue, openMenu, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
-    , Msg, update, updateWith, sendRequest
-    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
+    , Msg, update
+    , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+    , sendRequest
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState(..), withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
     , toElement
     , Effect
     )
@@ -41,17 +42,22 @@ module Select exposing
 
 # Update the Select
 
-@docs Msg, update, updateWith, sendRequest
+@docs Msg, update
 
 
 # Update Options
 
-@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+@docs UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+
+
+# Initialise with a request
+
+@docs sendRequest
 
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
 
 
 # Element
@@ -242,6 +248,8 @@ type alias Msg a =
                 SelectMsg subMsg ->
                     Select.update SelectMsg subMsg model.select
                         |> Tuple.mapFirst (\select -> { model | select = select })
+
+If you'd like to use the Effects pattern, see [Select.Effect](Select-Effect)
 
 -}
 update : (Msg a -> msg) -> Msg a -> Select a -> ( Select a, Cmd msg )
@@ -704,7 +712,7 @@ toElement attrs config (ViewConfig vc) =
 -- EFFECT
 
 
-{-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html) and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/),
+{-| For use with the [Effect pattern](https://sporto.github.io/elm-patterns/architecture/effects.html) and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/),
 see [Select.Effect](Select-Effect).
 -}
 type alias Effect effect msg =

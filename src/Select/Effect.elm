@@ -1,7 +1,7 @@
 module Select.Effect exposing
     ( Effect
-    , update, updateWith
-    , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+    , update
+    , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
     , sendRequest
     , perform, performWithRequest
     , simulate, simulateWithRequest
@@ -10,7 +10,7 @@ module Select.Effect exposing
     )
 
 {-| Update the Select by returning Effects instead of Cmds.
-This module is designed to help testing with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/),
+This module is designed to help testing with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/),
 allowing you to simulate the effects produced by the select and simulate input. If you are not doing this kind of testing,
 you don't need this module.
 
@@ -22,12 +22,12 @@ you don't need this module.
 
 # Update Effect
 
-@docs update, updateWith
+@docs update
 
 
 # Update Options
 
-@docs UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
+@docs UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
 
 
 # Send Request
@@ -319,7 +319,7 @@ performWithRequest =
     Effect.perform
 
 
-{-| Simulate the select effects. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
+{-| Simulate the select effects. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/), but since this package doesn't have it as a dependency,
 you need to provide some of the functions to help with the simulation.
 
     simulateEffect : MyEffect -> SimulatedEffect Msg
@@ -346,7 +346,7 @@ simulate conf =
     Effect.simulate conf (\_ -> conf.batch [])
 
 
-{-| Simulate the select effects with a request. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/), but since this package doesn't have it as a dependency,
+{-| Simulate the select effects with a request. This is designed to work with [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/), but since this package doesn't have it as a dependency,
 you need to provide some of the functions to help with the simulation.
 
     simulateEffect : MyEffect -> SimulatedEffect Msg
@@ -397,14 +397,16 @@ you need to provide some of the functions from those packages here.
         Test.test "Typing United and clicking United Kingdom option selects United Kingdom" <|
             \() ->
                 ProgramTest.createElement
-                    { init = Example.init
-                    , update = Example.update
-                    , view = Example.view
+                    { init = App.init
+                    , update = App.update
+                    , view = App.view
                     }
                     |> ProgramTest.withSimulatedEffects simulateEffect
                     |> ProgramTest.start ()
-                    |> ProgramTest.fillIn "" "Choose a country" "United Kingdom"
-                    |> Select.Effect.simulateClickOption simulateConfig model.select "United Kingdom"
+                    -- Note for testing you need to focus the input before you can type into it
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id "country-select-input" ]) Test.Html.Event.focus
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateClickOption simulateConfig "country-select" "United Kingdom"
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom" ]
 
 -}

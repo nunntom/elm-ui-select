@@ -9,7 +9,7 @@ A select widget for elm-ui with keyboard input/scrolling, filtering and requests
 - Automatically attempts to size and place the menu based on the position of the input in the viewport.
 - Customisable: Supply your own attributes for the input, menu or your own option Element.
 - Make HTTP requests to retrieve matching options (The package does not make the requests, but you supply the Cmd/Effect - no elm/http dependency)
-- Can be used with the Effect pattern and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/) to simulate input to the select.
+- Can be used with the Effect pattern and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/) to simulate input to the select.
 
 ### [View a live interactive demo](https://nunntom.github.io/elm-ui-select/)
 
@@ -20,8 +20,7 @@ A select widget for elm-ui with keyboard input/scrolling, filtering and requests
 -- MODEL
 
 type alias Model =
-    { countrySelect : Select Country
-    }
+    { countrySelect : Select Country }
 
 
 init : () -> ( Model, Cmd Msg )
