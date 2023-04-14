@@ -138,7 +138,7 @@ view model =
                 [ Element.spacing 50
                 , Element.height Element.fill
                 ]
-                [ Select.view [ Element.htmlAttribute <| Html.Attributes.attribute "autocomplete" "off" ]
+                [ Select.view []
                     { onChange = SelectMsg
                     , itemToString = \c -> c.name ++ " " ++ c.flag
                     , label = Input.labelAbove [] (Element.text "Choose a country")

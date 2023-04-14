@@ -117,7 +117,8 @@ inputView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfi
 inputView attrs filteredOptions ({ select } as config) viewConfig =
     Input.text
         (List.concat
-            [ attrs
+            [ [ Element.htmlAttribute <| Html.Attributes.attribute "autocomplete" "off" ]
+            , attrs
             , [ ViewEvents.onFocus config.onChange config.itemToString select viewConfig filteredOptions
                     |> Element.htmlAttribute
               , Events.onClick (InputClicked |> config.onChange)
