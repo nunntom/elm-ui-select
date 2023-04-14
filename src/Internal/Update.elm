@@ -37,7 +37,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                         Just 0
                     )
                     False
-                |> Model.setFilteredOptions filteredOptions
+                |> Model.setFilteredOptions (Just filteredOptions)
                 |> Model.setSelected Nothing
                 |> Model.setItems
                     (if request /= Nothing && val == "" then
@@ -78,7 +78,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             (case maybeOptions of
                 Just ( items, options ) ->
                     Model.setItems items model
-                        |> Model.setFilteredOptions options
+                        |> Model.setFilteredOptions (Just options)
 
                 Nothing ->
                     model
@@ -102,7 +102,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
 
         GotNewFilteredOptions ( items, options ) ->
             ( Model.setItems items model
-                |> Model.setFilteredOptions options
+                |> Model.setFilteredOptions (Just options)
             , Effect.None
             )
 
@@ -112,7 +112,7 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             )
 
         KeyDown selectOnTab filteredOptions key ->
-            Model.setFilteredOptions filteredOptions model
+            Model.setFilteredOptions (Just filteredOptions) model
                 |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
                 |> withEffect (\_ -> Effect.emitJust (Maybe.map (\ev -> ev key) onKeyDown))
 
