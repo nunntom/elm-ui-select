@@ -2,7 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Countries exposing (Country)
-import Element
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -147,12 +147,7 @@ view model =
                     , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
                     , Element.htmlAttribute <| Html.Attributes.style "top" (String.fromInt (Maybe.withDefault 0 model.moveDown) ++ "%")
                     ]
-                    [ Select.view []
-                        { onChange = SelectMsg
-                        , itemToString = \c -> c.name ++ " " ++ c.flag
-                        , label = Input.labelAbove [] (Element.text "Choose a country")
-                        , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
-                        }
+                    [ Select.view
                         |> configureIf model.clearButton (Select.withClearButton (Just clearButton))
                         |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
                         |> configureIf (model.forcePlacement == Just Select.MenuBelow) Select.withMenuAlwaysBelow
@@ -160,8 +155,17 @@ view model =
                         |> Select.withMenuMaxWidth model.maxWidth
                         |> Select.withMinInputLength model.minInputLength
                         |> Select.withSelectOnTab model.selectOnTab
-                        |> configureIf model.customMenuStyle (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen model.select))
-                        |> Select.toElement model.select
+                        |> configureIf model.customMenuStyle
+                            (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen model.select)
+                                >> Select.withOptionElement optionElement
+                            )
+                        |> Select.toElement []
+                            { select = model.select
+                            , onChange = SelectMsg
+                            , itemToString = \c -> c.name ++ " " ++ c.flag
+                            , label = Input.labelAbove [] (Element.text "Choose a country")
+                            , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
+                            }
                         |> Element.el
                             [ Element.alignTop
                             , Element.htmlAttribute <| Html.Attributes.style "z-index" "100"
@@ -313,7 +317,6 @@ clearButton =
 menuAttributes : Bool -> Select.MenuPlacement -> List (Element.Attribute msg)
 menuAttributes isOpen placement =
     [ [ Background.color (Element.rgba 1 1 1 1)
-      , Element.htmlAttribute (Html.Attributes.style "white-space" "auto")
       , Element.htmlAttribute (Html.Attributes.class "select-menu")
       , Element.htmlAttribute (Html.Attributes.style "transition" "transform 100ms ease-out, opacity 100ms ease-out")
       , Font.color (Element.rgba 0 0 0 1)
@@ -342,6 +345,30 @@ menuAttributes isOpen placement =
             []
     ]
         |> List.concat
+
+
+optionElement : Select.OptionState -> Country -> Element msg
+optionElement state country =
+    Element.row
+        [ Element.pointer
+        , Element.width Element.fill
+        , Element.spacing 10
+        , Element.paddingXY 14 10
+        , Background.color <|
+            case state of
+                Select.Highlighted ->
+                    Element.rgb 0.89 0.89 0.89
+
+                Select.Selected ->
+                    Element.rgba 0.64 0.83 0.97 0.8
+
+                Select.SelectedAndHighlighted ->
+                    Element.rgba 0.64 0.83 0.97 1
+
+                Select.Idle ->
+                    Element.rgb 1 1 1
+        ]
+        [ Element.text country.flag, Element.text country.name ]
 
 
 
