@@ -16,6 +16,7 @@
 ### Bugfixes
 
 - OptionState constructors are now exposed, meaning it's now actually possible to provide a custom option element.
+- Fixed bug where selecting an item on tab key, then focusing back and pressing tab again would select the first item.
 
 # 3.1.3
 

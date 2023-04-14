@@ -7,6 +7,7 @@ import Element.Input as Input
 import Expect
 import Html
 import Html.Attributes
+import Json.Encode as Encode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
 import Select exposing (Select)
 import Select.Effect
@@ -147,6 +148,18 @@ exampleProgramTest =
                     |> ProgramTest.ensureView (Query.find [ Selector.id (Select.toInputElementId countrySelect) ] >> Query.has [ Selector.attribute (Html.Attributes.value "🇬🇧 United Kingdom of Great Britain and Northern Ireland") ])
                     |> ProgramTest.clickButton "clear"
                     |> ProgramTest.expectViewHasNot [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
+        , Test.test "Focusing, typing then pressing tab (and blurring) selects an item. Focusing again afterward and pressing tab does not change the selected item" <|
+            \() ->
+                programTest Nothing
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Choose a country" "United King"
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) (Test.Html.Event.custom "keydown" (Encode.object [ ( "key", Encode.string "Tab" ) ]))
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.blur
+                    |> ProgramTest.ensureViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
+                    |> focusInput
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) (Test.Html.Event.custom "keydown" (Encode.object [ ( "key", Encode.string "Tab" ) ]))
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.blur
+                    |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         ]
 
 

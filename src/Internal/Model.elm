@@ -315,9 +315,9 @@ onInputChange v (Model model) =
         }
 
 
-setFilteredOptions : List (Option a) -> Model a -> Model a
+setFilteredOptions : Maybe (List (Option a)) -> Model a -> Model a
 setFilteredOptions opts (Model model) =
-    Model { model | filteredOptions = Just opts }
+    Model { model | filteredOptions = opts }
 
 
 selectOption : Option a -> Model a -> Model a
@@ -419,6 +419,7 @@ blur { clearInputValue, selectExactMatch } hasRequest filteredOptions (Model mod
      else
         Model model
     )
+        |> setFilteredOptions Nothing
         |> setFocused False
         |> closeMenu
 
