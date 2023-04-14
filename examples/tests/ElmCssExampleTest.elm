@@ -4,6 +4,7 @@ import Countries exposing (Country)
 import ElmCssEffectExample as App
 import Expect
 import Html
+import Html.Attributes
 import Html.Styled
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
 import Select.Effect
@@ -108,6 +109,23 @@ exampleProgramTest =
                 programTestWith (Select.withOpenMenuOnFocus True)
                     |> focusInput
                     |> ProgramTest.expectModel (.countrySelect >> Select.isMenuOpen >> Expect.equal True)
+        , Test.test "Clicking clear button clears the input text" <|
+            \() ->
+                programTest
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> ProgramTest.clickButton "clear"
+                    |> ProgramTest.expectView (Query.find [ Selector.id (Select.toInputElementId countrySelect) ] >> Query.has [ Selector.attribute (Html.Attributes.value "") ])
+        , Test.test "Clicking clear button clears a selected item and input text" <|
+            \() ->
+                programTest
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
+                    |> ProgramTest.ensureViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
+                    |> ProgramTest.ensureView (Query.find [ Selector.id (Select.toInputElementId countrySelect) ] >> Query.has [ Selector.attribute (Html.Attributes.value "🇬🇧 United Kingdom of Great Britain and Northern Ireland") ])
+                    |> ProgramTest.clickButton "clear"
+                    |> ProgramTest.expectViewHasNot [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
         ]
 
 

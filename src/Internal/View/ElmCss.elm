@@ -245,6 +245,7 @@ clearButtonElement onChange attribs element =
             ]
         , Attributes.tabindex -1
         , Attributes.type_ "button"
+        , Attributes.attribute "aria-label" "clear"
         , Events.onClick (onChange ClearButtonPressed)
         ]
         [ element ]
