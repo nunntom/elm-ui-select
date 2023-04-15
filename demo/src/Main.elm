@@ -11,6 +11,8 @@ import Element.Region as Region
 import Html
 import Html.Attributes
 import Html.Events
+import Http
+import Json.Decode as Decode exposing (Decoder)
 import Select exposing (Select)
 
 
@@ -19,35 +21,48 @@ import Select exposing (Select)
 
 
 type alias Model =
-    { select : Select Country
+    { countrySelect : Select Country
+    , citySelect : Select String
+    , whichSelect : WhichSelect
     , timeoutPassed : Bool
     , clearButton : Bool
     , forcePlacement : Maybe Select.MenuPlacement
-    , moveDown : Maybe Int
+    , moveDown : Int
     , maxWidth : Maybe Int
     , maxHeight : Maybe Int
     , minInputLength : Maybe Int
     , selectOnTab : Bool
     , customMenuStyle : Bool
     , placeholder : Maybe String
+    , debounce : Int
+    , requestMinChars : Int
     }
+
+
+type WhichSelect
+    = CountrySelect
+    | CitySelect
 
 
 init : String -> ( Model, Cmd Msg )
 init uniqueId =
-    ( { select =
+    ( { countrySelect =
             Select.init ("country-select-" ++ uniqueId)
                 |> Select.setItems Countries.all
+      , citySelect = Select.init ("city-select-" ++ uniqueId)
+      , whichSelect = CountrySelect
       , timeoutPassed = False
       , clearButton = False
       , forcePlacement = Nothing
-      , moveDown = Nothing
+      , moveDown = 0
       , maxWidth = Nothing
       , maxHeight = Nothing
       , minInputLength = Nothing
       , selectOnTab = True
       , customMenuStyle = False
       , placeholder = Nothing
+      , debounce = 300
+      , requestMinChars = 3
       }
     , Cmd.none
     )
@@ -58,24 +73,41 @@ init uniqueId =
 
 
 type Msg
-    = SelectMsg (Select.Msg Country)
+    = CountrySelectMsg (Select.Msg Country)
+    | CitySelectMsg (Select.Msg String)
+    | WhichSelectChanged WhichSelect
     | ClearButtonChanged Bool
     | ForcePlacementChanged (Maybe Select.MenuPlacement)
-    | MoveDownChanged (Maybe Int)
+    | MoveDownChanged Int
     | MaxWidthChanged (Maybe Int)
     | MaxHeightChanged (Maybe Int)
     | MinInputLengthChanged (Maybe Int)
     | SelectOnTabChanged Bool
     | CustomMenuStyleChanged Bool
     | PlaceholderChanged Bool
+    | DebounceChanged Int
+    | RequestMinCharsChanged Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SelectMsg selectMsg ->
-            Select.update SelectMsg selectMsg model.select
-                |> Tuple.mapFirst (\s -> { model | select = s })
+        CountrySelectMsg selectMsg ->
+            Select.update CountrySelectMsg selectMsg model.countrySelect
+                |> Tuple.mapFirst (\s -> { model | countrySelect = s })
+
+        CitySelectMsg selectMsg ->
+            Select.updateWith
+                [ Select.request fetchCities
+                , Select.requestDebounceDelay (toFloat model.debounce)
+                ]
+                CitySelectMsg
+                selectMsg
+                model.citySelect
+                |> Tuple.mapFirst (\s -> { model | citySelect = s })
+
+        WhichSelectChanged whichSelect ->
+            ( { model | whichSelect = whichSelect }, Cmd.none )
 
         ClearButtonChanged v ->
             ( { model | clearButton = v }, Cmd.none )
@@ -113,6 +145,12 @@ update msg model =
             , Cmd.none
             )
 
+        DebounceChanged v ->
+            ( { model | debounce = v }, Cmd.none )
+
+        RequestMinCharsChanged v ->
+            ( { model | requestMinChars = v }, Cmd.none )
+
 
 
 -- VIEW
@@ -134,6 +172,7 @@ view model =
                 [ Font.bold
                 , Font.size 32
                 , Font.center
+                , Element.centerX
                 ]
                 [ Element.text "elm-ui-select demo" ]
             , Element.wrappedRow
@@ -145,49 +184,69 @@ view model =
                     , Element.spacing 20
                     , Element.alignTop
                     , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
-                    , Element.htmlAttribute <| Html.Attributes.style "top" (String.fromInt (Maybe.withDefault 0 model.moveDown) ++ "%")
+                    , Element.htmlAttribute <| Html.Attributes.style "top" (String.fromInt model.moveDown ++ "%")
                     ]
-                    [ Select.view
-                        |> configureIf model.clearButton (Select.withClearButton (Just clearButton))
-                        |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
-                        |> configureIf (model.forcePlacement == Just Select.MenuBelow) Select.withMenuAlwaysBelow
-                        |> Select.withMenuMaxHeight model.maxHeight
-                        |> Select.withMenuMaxWidth model.maxWidth
-                        |> Select.withMinInputLength model.minInputLength
-                        |> Select.withSelectOnTab model.selectOnTab
-                        |> configureIf model.customMenuStyle
-                            (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen model.select)
-                                >> Select.withOptionElement optionElement
-                            )
-                        |> Select.toElement []
-                            { select = model.select
-                            , onChange = SelectMsg
-                            , itemToString = \c -> c.name ++ " " ++ c.flag
-                            , label = Input.labelAbove [] (Element.text "Choose a country")
-                            , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
-                            }
-                        |> Element.el
-                            [ Element.alignTop
-                            , Element.htmlAttribute <| Html.Attributes.style "z-index" "100"
-                            , Element.width <| Element.fillPortion 1
+                    [ case model.whichSelect of
+                        CountrySelect ->
+                            selectView model
+                                "Choose a country"
+                                CountrySelectMsg
+                                (\c -> c.name ++ " " ++ c.flag)
+                                (\c -> Element.row [ Element.spacing 10 ] [ Element.text c.flag, Element.text c.name ])
+                                model.countrySelect
+
+                        CitySelect ->
+                            selectView model "Choose a city" CitySelectMsg identity Element.text model.citySelect
+                    , Element.column
+                        [ Element.width Element.fill
+                        , Element.spacing 20
+                        , Element.htmlAttribute <| Html.Attributes.style "transition" "opacity 0.5s"
+                        , Element.htmlAttribute <|
+                            Html.Attributes.style "opacity" <|
+                                if model.moveDown > 40 then
+                                    "0"
+
+                                else
+                                    "1"
+                        , Element.htmlAttribute <|
+                            Html.Attributes.style "height" <|
+                                if model.moveDown > 60 then
+                                    "0px"
+
+                                else
+                                    "auto"
+                        ]
+                        [ [ "Type to filter the options"
+                          , "Up/down arrows navigate options (menu scrolls automatically)"
+                          , "PgUp/PgDn moves highlighted option by 10"
+                          , "Escape key closes the menu"
+                          , "Try changing some of the configuration options"
+                          ]
+                            |> List.map
+                                (\t ->
+                                    Element.row [ Element.spacing 10 ]
+                                        [ Element.text "•"
+                                        , Element.paragraph [] [ Element.text t ]
+                                        ]
+                                )
+                            |> Element.column
+                                [ Element.spacing 10
+                                , Font.size 14
+                                ]
+                        , Element.row
+                            [ Font.size 14
+                            , Element.spacing 20
                             ]
-                    , [ "Type to filter the options"
-                      , "Up/down arrows navigate options (menu scrolls automatically)"
-                      , "PgUp/PgDn moves highlighted option by 10"
-                      , "Escape key closes the menu"
-                      , "Try changing some of the configuration options"
-                      ]
-                        |> List.map
-                            (\t ->
-                                Element.row [ Element.spacing 10 ]
-                                    [ Element.text "•"
-                                    , Element.paragraph [] [ Element.text t ]
-                                    ]
-                            )
-                        |> Element.column
-                            [ Element.spacing 10
-                            , Font.size 14
+                            [ Element.link [ Font.color (Element.rgb255 0 0 255) ]
+                                { url = "https://github.com/nunntom/elm-ui-select"
+                                , label = Element.text "View on GitHub"
+                                }
+                            , Element.link [ Font.color (Element.rgb255 0 0 255) ]
+                                { url = "https://package.elm-lang.org/packages/nunntom/elm-ui-select/latest/"
+                                , label = Element.text "View docs"
+                                }
                             ]
+                        ]
                     ]
                 , Element.column
                     [ Element.spacing 20
@@ -229,23 +288,15 @@ view model =
                             Input.labelAbove [ Element.paddingEach { top = 0, bottom = 20, left = 0, right = 0 } ]
                                 (Element.text "Placement of menu:")
                         }
-                    , Element.column [ Element.spacing 20 ]
+                    , Element.column []
                         [ Element.text "Move down"
-                        , Element.html <|
-                            Html.input
-                                [ Html.Attributes.type_ "range"
-                                , Html.Attributes.min "0"
-                                , Html.Attributes.max "90"
-                                , Html.Attributes.style "appearance" "auto"
-                                , Html.Attributes.style "-webkit-appearance" "auto"
-                                , Html.Attributes.style "-moz-appearance" "auto"
-                                , Html.Attributes.style "opacity" "1"
-                                , Html.Attributes.style "position" "static"
-                                , Html.Attributes.style "outline" "none"
-                                , Html.Events.onInput (MoveDownChanged << String.toInt)
-                                , Html.Attributes.value (String.fromInt (Maybe.withDefault 0 model.moveDown))
-                                ]
-                                []
+                        , range
+                            { min = "0"
+                            , max = "70"
+                            , step = "1"
+                            , value = String.fromInt model.moveDown
+                            , onChange = MoveDownChanged << Maybe.withDefault 0 << String.toInt
+                            }
                         , Element.paragraph
                             [ Font.size 10
                             , Font.center
@@ -253,6 +304,45 @@ view model =
                             ]
                             [ Element.text "Move the input down the page to see how it affects the placement and size of the dropdown menu." ]
                         ]
+                    , Input.radioRow [ Element.spacing 10 ]
+                        { onChange = WhichSelectChanged
+                        , options =
+                            [ Input.option CountrySelect (Element.text "Countries")
+                            , Input.option CitySelect (Element.text "Cities (with api request)")
+                            ]
+                        , selected = Just model.whichSelect
+                        , label = Input.labelHidden "Select"
+                        }
+                    , case model.whichSelect of
+                        CountrySelect ->
+                            Element.none
+
+                        CitySelect ->
+                            Element.column
+                                [ Element.spacing 20
+                                , Element.width Element.fill
+                                ]
+                                [ Element.column [ Element.width Element.fill ]
+                                    [ Element.text <| "Debounce " ++ String.fromInt model.debounce ++ "ms"
+                                    , range
+                                        { min = "200"
+                                        , max = "1000"
+                                        , step = "50"
+                                        , onChange = String.toInt >> Maybe.withDefault 200 >> DebounceChanged
+                                        , value = String.fromInt model.debounce
+                                        }
+                                    ]
+                                , Element.column [ Element.width Element.fill ]
+                                    [ Element.text <| "Require " ++ String.fromInt model.requestMinChars ++ " chars before sending request (debounced)"
+                                    , range
+                                        { min = "3"
+                                        , max = "10"
+                                        , step = "1"
+                                        , onChange = String.toInt >> Maybe.withDefault 0 >> RequestMinCharsChanged
+                                        , value = String.fromInt model.requestMinChars
+                                        }
+                                    ]
+                                ]
                     , Element.column
                         [ Element.spacing 10
                         , Element.width Element.fill
@@ -276,12 +366,17 @@ view model =
                         , label = Input.labelAbove [] (Element.text "Max height of menu (pixels)")
                         , placeholder = Nothing
                         }
-                    , Input.text []
-                        { onChange = String.toInt >> MinInputLengthChanged
-                        , text = model.minInputLength |> Maybe.map String.fromInt |> Maybe.withDefault ""
-                        , label = Input.labelAbove [] (Element.text "Min input length to show menu (characters)")
-                        , placeholder = Nothing
-                        }
+                    , case model.whichSelect of
+                        CountrySelect ->
+                            Input.text []
+                                { onChange = String.toInt >> MinInputLengthChanged
+                                , text = model.minInputLength |> Maybe.map String.fromInt |> Maybe.withDefault ""
+                                , label = Input.labelAbove [] (Element.text "Min input length to show menu (characters)")
+                                , placeholder = Nothing
+                                }
+
+                        CitySelect ->
+                            Element.none
                     , Input.checkbox []
                         { onChange = SelectOnTabChanged
                         , icon = Input.defaultCheckbox
@@ -299,6 +394,34 @@ view model =
             ]
 
 
+selectView : Model -> String -> (Select.Msg a -> msg) -> (a -> String) -> (a -> Element msg) -> Select a -> Element msg
+selectView model label tagger itemToString itemToElement select =
+    Select.view
+        |> configureIf model.clearButton (Select.withClearButton (Just clearButton))
+        |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
+        |> configureIf (model.forcePlacement == Just Select.MenuBelow) Select.withMenuAlwaysBelow
+        |> Select.withMenuMaxHeight model.maxHeight
+        |> Select.withMenuMaxWidth model.maxWidth
+        |> configureIf (model.whichSelect == CountrySelect) (Select.withMinInputLength model.minInputLength)
+        |> Select.withSelectOnTab model.selectOnTab
+        |> configureIf model.customMenuStyle
+            (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen select)
+                >> Select.withOptionElement (optionElement itemToElement)
+            )
+        |> Select.toElement []
+            { select = select
+            , onChange = tagger
+            , itemToString = itemToString
+            , label = Input.labelAbove [] (Element.text label)
+            , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
+            }
+        |> Element.el
+            [ Element.alignTop
+            , Element.htmlAttribute <| Html.Attributes.style "z-index" "100"
+            , Element.width <| Element.fillPortion 1
+            ]
+
+
 configureIf : Bool -> (a -> a) -> a -> a
 configureIf condition f =
     if condition then
@@ -306,6 +429,34 @@ configureIf condition f =
 
     else
         identity
+
+
+range :
+    { min : String
+    , max : String
+    , step : String
+    , value : String
+    , onChange : String -> msg
+    }
+    -> Element msg
+range { min, max, step, value, onChange } =
+    Element.el [ Element.width Element.fill ] <|
+        Element.html <|
+            Html.input
+                [ Html.Attributes.type_ "range"
+                , Html.Attributes.min min
+                , Html.Attributes.max max
+                , Html.Attributes.step step
+                , Html.Attributes.style "appearance" "auto"
+                , Html.Attributes.style "-webkit-appearance" "auto"
+                , Html.Attributes.style "-moz-appearance" "auto"
+                , Html.Attributes.style "opacity" "1"
+                , Html.Attributes.style "position" "static"
+                , Html.Attributes.style "outline" "none"
+                , Html.Events.onInput onChange
+                , Html.Attributes.value value
+                ]
+                []
 
 
 clearButton : Select.ClearButton msg
@@ -347,12 +498,11 @@ menuAttributes isOpen placement =
         |> List.concat
 
 
-optionElement : Select.OptionState -> Country -> Element msg
-optionElement state country =
-    Element.row
+optionElement : (a -> Element msg) -> Select.OptionState -> a -> Element msg
+optionElement itemToElement state a =
+    Element.el
         [ Element.pointer
         , Element.width Element.fill
-        , Element.spacing 10
         , Element.paddingXY 14 10
         , Background.color <|
             case state of
@@ -368,10 +518,29 @@ optionElement state country =
                 Select.Idle ->
                     Element.rgb 1 1 1
         ]
-        [ Element.text country.flag, Element.text country.name ]
+        (itemToElement a)
 
 
 
+-- HTTP
+
+
+fetchCities : String -> (Result Http.Error (List String) -> msg) -> Cmd msg
+fetchCities query tagger =
+    Http.get
+        { url = "https://api.teleport.org/api/cities/?search=" ++ query
+        , expect = Http.expectJson tagger decodeCities
+        }
+
+
+decodeCities : Decoder (List String)
+decodeCities =
+    Decode.at [ "_embedded", "city:search-results" ]
+        (Decode.list (Decode.field "matching_full_name" Decode.string))
+
+
+
+-- http://geodb-free-service.wirefreethought.com/v1/geo/cities?namePrefix=oxford
 -- MAIN
 
 
