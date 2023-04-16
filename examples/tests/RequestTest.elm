@@ -1,6 +1,7 @@
 module RequestTest exposing (exampleProgramTest)
 
 import EffectRequestExample as App exposing (Cocktail)
+import Expect
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
@@ -50,6 +51,38 @@ exampleProgramTest =
                         "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate+Drink"
                         cocktailsResponse
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
+        , Test.test "Setting requestDebounceDelay to 0 sends a request at exactly requestMinInputLength and no more on further typing" <|
+            \() ->
+                ProgramTest.createElement
+                    { init = App.init
+                    , update =
+                        \msg model ->
+                            case msg of
+                                App.SelectMsg subMsg ->
+                                    Select.Effect.updateWith
+                                        [ Select.Effect.request App.FetchCocktails
+                                        , Select.Effect.requestDebounceDelay 0
+                                        , Select.Effect.requestMinInputLength 3
+                                        ]
+                                        App.SelectMsg
+                                        subMsg
+                                        model.select
+                                        |> Tuple.mapBoth (\select -> { model | select = select }) App.SelectEffect
+                    , view = App.view
+                    }
+                    |> ProgramTest.withSimulatedEffects simulateEffect
+                    |> ProgramTest.start (Encode.object [])
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Cho"
+                    |> ProgramTest.advanceTime 0
+                    |> ProgramTest.ensureHttpRequestWasMade "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Cho"
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Cho" cocktailsResponse
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Choc"
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.ensureHttpRequests "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Choc" (Expect.equal [])
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.expectHttpRequests "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate" (Expect.equal [])
         ]
 
 

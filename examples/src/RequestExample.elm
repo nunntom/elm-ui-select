@@ -64,7 +64,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.updateWith [ Select.request fetchCocktails ] SelectMsg subMsg model.select
+            Select.updateWith [ Select.request fetchCocktails ]
+                SelectMsg
+                subMsg
+                model.select
                 |> Tuple.mapFirst (\select -> { model | select = select })
 
 

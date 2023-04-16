@@ -56,7 +56,19 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.batch
                 [ case request of
                     Just _ ->
-                        if String.length val >= requestMinInputLength then
+                        if debounceRequest == 0 then
+                            if
+                                String.length val
+                                    == requestMinInputLength
+                                    && String.length val
+                                    > String.length (Model.toInputValue model)
+                            then
+                                Effect.Debounce (InputDebounceReturned >> tagger) 0 val
+
+                            else
+                                Effect.none
+
+                        else if String.length val >= requestMinInputLength then
                             Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest val
 
                         else

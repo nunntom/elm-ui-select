@@ -307,11 +307,17 @@ request effect =
     UpdateOptions.Request effect
 
 
-{-| Configure debouncing for the request. How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
+{-| Configure debouncing for the request.
+How long should we wait in milliseconds after the user stops typing to send the request? Default is 300.
+
+If set to 0, a request will be immediately whenever the input length reaches requestMinInputLength,
+no further requests will be sent on typing beyond that length and beyond that filtering will be done client side.
+This can make the input feel more responsive (options appear sooner),
+but may result in a larger result payload requiring more filtering on the client side.
 
     Select.updateWith
         [ Select.request fetchThings
-        , Select.requestDebounceDelay 500
+        , Select.requestDebounceDelay 200
         ]
         SelectMsg
         subMsg

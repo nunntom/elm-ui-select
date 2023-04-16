@@ -1,5 +1,11 @@
 # Changelog
 
+# 4.0.1 (not published yet)
+
+### Enhancements
+
+- When `requestDebounceDelay` is set to 0, a request is sent immediately only when input length reaches `requestMinInputLength`, but not on further typing beyond the minimum.
+
 # 4.0.0
 
 ### Enhancements
