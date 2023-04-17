@@ -1,4 +1,4 @@
-module Internal.UpdateOptions exposing (UpdateOption(..), UpdateOptions, fromList, toDebounceDelay)
+module Internal.UpdateOptions exposing (UpdateOption(..), UpdateOptions, fromList)
 
 
 type UpdateOption err effect a msg
@@ -67,26 +67,3 @@ fromList =
                     { opts | onKeyDown = Just msg }
         )
         init
-
-
-toDebounceDelay : { prevInputValue : Maybe String, newInputValue : String } -> UpdateOptions err effect a msg -> Maybe Float
-toDebounceDelay { prevInputValue, newInputValue } opts =
-    if opts.debounceRequest == 0 then
-        if
-            String.length newInputValue
-                >= opts.requestMinInputLength
-                && not
-                    (Maybe.map (\v -> String.startsWith v newInputValue) prevInputValue
-                        |> Maybe.withDefault False
-                    )
-        then
-            Just 0
-
-        else
-            Nothing
-
-    else if String.length newInputValue >= opts.requestMinInputLength then
-        Just opts.debounceRequest
-
-    else
-        Nothing

@@ -50,7 +50,7 @@ shouldShowNoMatchElement filteredOptions select viewConfig =
         == 0
         && Model.isOpen select
         && (String.length (Model.toInputValue select) >= Maybe.withDefault 1 viewConfig.minInputLength)
-        && (Model.toRequestState select == Nothing || Model.isSuccess select)
+        && (Model.toRequestState select == Nothing || Model.isRequestSuccess select)
 
 
 toPlacement : Model a -> ViewConfigInternal a attribute view -> Placement

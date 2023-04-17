@@ -10,7 +10,7 @@ module Internal.Model exposing
     , isLoadingQuery
     , isOpen
     , isRequestFailed
-    , isSuccess
+    , isRequestSuccess
     , onInputChange
     , openMenu
     , requiresNewFilteredOptions
@@ -283,8 +283,8 @@ isLoading (Model { requestState }) =
             False
 
 
-isSuccess : Model a -> Bool
-isSuccess (Model { requestState }) =
+isRequestSuccess : Model a -> Bool
+isRequestSuccess (Model { requestState }) =
     case requestState of
         Just (Success _) ->
             True

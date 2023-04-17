@@ -6,7 +6,7 @@ import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option as Option exposing (Option)
 import Internal.RequestState exposing (RequestState(..))
-import Internal.UpdateOptions as UpdateOptions exposing (UpdateOptions)
+import Internal.UpdateOptions exposing (UpdateOptions)
 
 
 update : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
@@ -174,7 +174,7 @@ onFocusMenu tagger hasRequest model =
     in
     ( Model.setFocused True model
         |> Model.highlightIndex selectedIdx False
-    , if not hasRequest || Model.isSuccess model then
+    , if not hasRequest || Model.isRequestSuccess model then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
             , getContainerAndMenuElementsEffect selectedIdx tagger model
@@ -247,39 +247,48 @@ getContainerAndMenuElementsEffect maybeIdx tagger model =
 
 
 doDebounceRequest : (Msg a -> msg) -> UpdateOptions err effect a msg -> Model a -> ( Model a, Effect effect msg )
-doDebounceRequest tagger ({ request, requestMinInputLength } as updateOptions) model =
+doDebounceRequest tagger ({ request, requestMinInputLength, debounceRequest } as updateOptions) model =
     case request of
         Just _ ->
             let
-                debounceDelay =
-                    UpdateOptions.toDebounceDelay
-                        { prevInputValue = Model.toPreviousQuery model
-                        , newInputValue = Model.toInputValue model
-                        }
-                        updateOptions
+                shouldDebounce =
+                    shouldDebounceRequest updateOptions model
             in
             ( if String.length (Model.toInputValue model) < requestMinInputLength then
                 model
                     |> Model.setRequestState (Just NotRequested)
                     |> Model.setItems []
 
-              else if debounceDelay /= Nothing && not (Model.isLoading model) then
+              else if shouldDebounce && not (Model.isLoading model) then
                 Model.setRequestState (Just NotRequested) model
 
               else
                 model
-            , case debounceDelay of
-                Just delay ->
-                    Effect.Debounce (InputDebounceReturned >> tagger) delay (Model.toInputValue model)
+            , if shouldDebounce then
+                Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest (Model.toInputValue model)
 
-                Nothing ->
-                    getContainerAndMenuElementsEffect Nothing tagger model
+              else
+                getContainerAndMenuElementsEffect Nothing tagger model
             )
 
         Nothing ->
             ( model
             , getContainerAndMenuElementsEffect Nothing tagger model
             )
+
+
+shouldDebounceRequest : UpdateOptions err effect a msg -> Model a -> Bool
+shouldDebounceRequest opts model =
+    if opts.debounceRequest == 0 then
+        String.length (Model.toInputValue model)
+            >= opts.requestMinInputLength
+            && not
+                (Maybe.map (\v -> String.startsWith v (Model.toInputValue model)) (Model.toPreviousQuery model)
+                    |> Maybe.withDefault False
+                )
+
+    else
+        String.length (Model.toInputValue model) >= opts.requestMinInputLength
 
 
 sendRequest : (Msg a -> msg) -> Maybe (a -> Bool) -> String -> Model d -> (String -> (Result b (List a) -> msg) -> effect) -> ( Model d, Effect effect msg )
