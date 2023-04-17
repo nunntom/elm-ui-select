@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script type="module" src="index.js"></script>
     <title>Elm-ui-select Demo</title>
+    <style>
+      @media (max-width: 720px) {
+        .responsive-desktop {
+          display: none !important;
+        }
+      }
+      @media (min-width: 720px) {
+        .responsive-mobile {
+          display: none !important;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="elm"></div>
