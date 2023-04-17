@@ -160,6 +160,18 @@ exampleProgramTest =
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) (Test.Html.Event.custom "keydown" (Encode.object [ ( "key", Encode.string "Tab" ) ]))
                     |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.blur
                     |> ProgramTest.expectViewHas [ Selector.text "You chose United Kingdom of Great Britain and Northern Ireland" ]
+        , Test.test "Shows no match element when input value doesn't match any options" <|
+            \() ->
+                programTest Nothing
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Choose a country" "zzzz"
+                    |> ProgramTest.expectViewHas [ Selector.text "No matches" ]
+        , Test.test "Doesn't show no match element when input value doesn't match any options but input length is less than withMinInputLength" <|
+            \() ->
+                programTestWith (Select.withMinInputLength (Just 5))
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Choose a country" "zzzz"
+                    |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
         ]
 
 

@@ -53,28 +53,13 @@ exampleProgramTest =
                     |> ProgramTest.expectViewHas [ Selector.text "Melt the bar in a small amount of boiling water. Add milk." ]
         , Test.test "Setting requestDebounceDelay to 0 sends a request at exactly requestMinInputLength and no more on further typing" <|
             \() ->
-                ProgramTest.createElement
-                    { init = App.init
-                    , update =
-                        \msg model ->
-                            case msg of
-                                App.SelectMsg subMsg ->
-                                    Select.Effect.updateWith
-                                        [ Select.Effect.request App.FetchCocktails
-                                        , Select.Effect.requestDebounceDelay 0
-                                        , Select.Effect.requestMinInputLength 3
-                                        ]
-                                        App.SelectMsg
-                                        subMsg
-                                        model.select
-                                        |> Tuple.mapBoth (\select -> { model | select = select }) App.SelectEffect
-                    , view = App.view
-                    }
-                    |> ProgramTest.withSimulatedEffects simulateEffect
-                    |> ProgramTest.start (Encode.object [])
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestDebounceDelay 0
+                    , Select.Effect.requestMinInputLength 3
+                    ]
                     |> focusInput
                     |> ProgramTest.fillIn "" "Find a cocktail" "Cho"
-                    |> ProgramTest.advanceTime 0
                     |> ProgramTest.ensureHttpRequestWasMade "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Cho"
                     |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Cho" cocktailsResponse
                     |> ProgramTest.fillIn "" "Find a cocktail" "Choc"
@@ -83,6 +68,122 @@ exampleProgramTest =
                     |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
                     |> ProgramTest.advanceTime 500
                     |> ProgramTest.expectHttpRequests "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate" (Expect.equal [])
+        , Test.test "Shows no match element when input value doesn't match any options after request" <|
+            \() ->
+                programTest Nothing
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolatey"
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolatey" "{\"drinks\": []}"
+                    |> ProgramTest.expectViewHas [ Selector.text "No matches" ]
+        , Test.test "Doesn't show no match element when a new request is due to be made" <|
+            \() ->
+                programTest Nothing
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Choc"
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Choc" cocktailsResponse
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Choccy"
+                    |> ProgramTest.ensureViewHasNot [ Selector.text "No matches" ]
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
+        , Test.test "Doesn't show no match element when input value doesn't match any options after request but input length is less than requestMinInputLength" <|
+            \() ->
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestMinInputLength 3
+                    ]
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolatey"
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolatey" "{\"drinks\": []}"
+                    |> ProgramTest.fillIn "" "Find a cocktail" "zz"
+                    |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
+        , Test.test "Show no match element when debounce is 0, there are matching results returned but input is typed beyond requestMinInputLength and no longer matches" <|
+            \() ->
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestDebounceDelay 0
+                    , Select.Effect.requestMinInputLength 3
+                    ]
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Cho"
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolatey"
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Cho" cocktailsResponse
+                    |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
+        , Test.test "Request is made if requestDebounceDelay is 0 and text longer than requestMinInputLength is entered in one (pasted) into the input" <|
+            \() ->
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestDebounceDelay 0
+                    , Select.Effect.requestMinInputLength 3
+                    ]
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
+                    |> ProgramTest.expectHttpRequestWasMade "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate"
+        , Test.test "Doesn't show no matches if input is deleted shorter than min and entered as something that doesn't match prev results" <|
+            \() ->
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestDebounceDelay 0
+                    , Select.Effect.requestMinInputLength 3
+                    ]
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate" cocktailsResponse
+                    |> ProgramTest.fillIn "" "Find a cocktail" "zz"
+                    |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
+        , Test.test "Doesn't show results if request is returned then input is deleted shorter than min request input length" <|
+            \() ->
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestDebounceDelay 0
+                    , Select.Effect.requestMinInputLength 3
+                    ]
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chocolate" cocktailsResponse
+                    |> ProgramTest.ensureView
+                        (Query.find [ Selector.id (Select.toMenuElementId drinkSelect) ]
+                            >> Query.children []
+                            >> Query.count (Expect.equal 2)
+                        )
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Cho"
+                    |> ProgramTest.ensureView
+                        (Query.find [ Selector.id (Select.toMenuElementId drinkSelect) ]
+                            >> Query.children []
+                            >> Query.count (Expect.equal 2)
+                        )
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Ch"
+                    |> ProgramTest.expectView
+                        (Query.find [ Selector.id (Select.toMenuElementId drinkSelect) ]
+                            >> Query.children []
+                            >> Query.count (Expect.equal 0)
+                        )
+        , Test.test "Request is made if requestDebounceDelay is 0, text longer than min length is pasted, then different text is pasted that has the same first 3 characters as previous" <|
+            \() ->
+                programTestWithUpdateOptions
+                    [ Select.Effect.request App.FetchCocktails
+                    , Select.Effect.requestDebounceDelay 0
+                    , Select.Effect.requestMinInputLength 3
+                    ]
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chocolate"
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Chomp"
+                    |> ProgramTest.expectHttpRequestWasMade "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Chomp"
+        , Test.test "Shows items if request is made and more is typed in before request returns" <|
+            \() ->
+                programTest Nothing
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Choc"
+                    |> ProgramTest.advanceTime 500
+                    |> ProgramTest.fillIn "" "Find a cocktail" "Choco"
+                    |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Choc" cocktailsResponse
+                    |> ProgramTest.expectView
+                        (Query.find [ Selector.id (Select.toMenuElementId drinkSelect) ]
+                            >> Query.children []
+                            >> Query.count (Expect.atLeast 1)
+                        )
         ]
 
 
@@ -105,6 +206,22 @@ programTest flags =
                     Nothing ->
                         []
             )
+
+
+programTestWithUpdateOptions : List (Select.Effect.UpdateOption err App.MyEffect Cocktail App.Msg) -> ProgramTest App.Model App.Msg App.MyEffect
+programTestWithUpdateOptions updateOptions =
+    ProgramTest.createElement
+        { init = App.init
+        , update =
+            \msg model ->
+                case msg of
+                    App.SelectMsg subMsg ->
+                        Select.Effect.updateWith updateOptions App.SelectMsg subMsg model.select
+                            |> Tuple.mapBoth (\select -> { model | select = select }) App.SelectEffect
+        , view = App.view
+        }
+        |> ProgramTest.withSimulatedEffects simulateEffect
+        |> ProgramTest.start (Encode.object [])
 
 
 simulateEffect : App.MyEffect -> SimulatedEffect App.Msg

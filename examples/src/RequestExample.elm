@@ -64,7 +64,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SelectMsg subMsg ->
-            Select.updateWith [ Select.request fetchCocktails ]
+            Select.updateWith
+                [ Select.request fetchCocktails
+                , Select.requestDebounceDelay 0
+                ]
                 SelectMsg
                 subMsg
                 model.select
