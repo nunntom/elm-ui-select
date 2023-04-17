@@ -6,7 +6,7 @@ import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option as Option exposing (Option)
 import Internal.RequestState exposing (RequestState(..))
-import Internal.UpdateOptions exposing (UpdateOptions)
+import Internal.UpdateOptions as UpdateOptions exposing (UpdateOptions)
 
 
 update : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
@@ -24,7 +24,7 @@ update ({ onSelect } as options) tagger msg model =
 
 
 update_ : UpdateOptions err effect a msg -> (Msg a -> msg) -> Msg a -> Model a -> ( Model a, Effect effect msg )
-update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus, onInput, onKeyDown } tagger msg model =
+update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions) tagger msg model =
     case msg of
         InputChanged val filteredOptions ->
             ( model
@@ -46,40 +46,10 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
                      else
                         Model.toItems model
                     )
-                |> Model.setRequestState
-                    (if request /= Nothing then
-                        Just NotRequested
-
-                     else
-                        Nothing
-                    )
-            , Effect.batch
-                [ case request of
-                    Just _ ->
-                        if debounceRequest == 0 then
-                            if
-                                String.length val
-                                    == requestMinInputLength
-                                    && String.length val
-                                    > String.length (Model.toInputValue model)
-                            then
-                                Effect.Debounce (InputDebounceReturned >> tagger) 0 val
-
-                            else
-                                Effect.none
-
-                        else if String.length val >= requestMinInputLength then
-                            Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest val
-
-                        else
-                            Effect.none
-
-                    Nothing ->
-                        getContainerAndMenuElementsEffect Nothing tagger model
-                , Maybe.map (\onInput_ -> onInput_ val) onInput
-                    |> Effect.emitJust
-                ]
+            , Maybe.map (\onInput_ -> onInput_ val) onInput
+                |> Effect.emitJust
             )
+                |> andThen (doDebounceRequest tagger updateOptions)
 
         OptionClicked opt ->
             ( Model.selectOption opt model
@@ -160,22 +130,22 @@ update_ { request, requestMinInputLength, debounceRequest, onFocus, onLoseFocus,
             , Effect.FocusInput (Model.toInputElementId model) (tagger NoOp)
             )
 
-        InputDebounceReturned val ->
-            if val == Model.toInputValue model then
-                Maybe.map (sendRequest tagger Nothing model) request
+        InputDebounceReturned query ->
+            if query == Model.toInputValue model then
+                Maybe.map (sendRequest tagger Nothing query model) request
                     |> Maybe.withDefault ( model, Effect.none )
 
             else
                 ( model, Effect.none )
 
-        GotRequestResponse inputVal response ->
-            if inputVal == Model.toInputValue model then
+        GotRequestResponse query response ->
+            if Model.isLoadingQuery query model then
                 case response of
                     Ok ( items, selected ) ->
                         ( model
                             |> Model.setItems items
                             |> Model.setSelected selected
-                            |> Model.setRequestState (Just Success)
+                            |> Model.setRequestState (Just <| Success query)
                         , if Model.toValue model == Nothing then
                             getContainerAndMenuElementsEffect Nothing tagger model
 
@@ -204,7 +174,7 @@ onFocusMenu tagger hasRequest model =
     in
     ( Model.setFocused True model
         |> Model.highlightIndex selectedIdx False
-    , if not hasRequest || Model.toRequestState model == Just Success then
+    , if not hasRequest || Model.isSuccess model then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
             , getContainerAndMenuElementsEffect selectedIdx tagger model
@@ -276,11 +246,47 @@ getContainerAndMenuElementsEffect maybeIdx tagger model =
         }
 
 
-sendRequest : (Msg a -> msg) -> Maybe (a -> Bool) -> Model d -> (String -> (Result b (List a) -> msg) -> effect) -> ( Model d, Effect effect msg )
-sendRequest tagger selectItem model effect =
-    ( Model.setRequestState (Just Loading) model
+doDebounceRequest : (Msg a -> msg) -> UpdateOptions err effect a msg -> Model a -> ( Model a, Effect effect msg )
+doDebounceRequest tagger ({ request, requestMinInputLength } as updateOptions) model =
+    case request of
+        Just _ ->
+            let
+                debounceDelay =
+                    UpdateOptions.toDebounceDelay
+                        { prevInputValue = Model.toPreviousQuery model
+                        , newInputValue = Model.toInputValue model
+                        }
+                        updateOptions
+            in
+            ( if String.length (Model.toInputValue model) < requestMinInputLength then
+                model
+                    |> Model.setRequestState (Just NotRequested)
+                    |> Model.setItems []
+
+              else if debounceDelay /= Nothing && not (Model.isLoading model) then
+                Model.setRequestState (Just NotRequested) model
+
+              else
+                model
+            , case debounceDelay of
+                Just delay ->
+                    Effect.Debounce (InputDebounceReturned >> tagger) delay (Model.toInputValue model)
+
+                Nothing ->
+                    getContainerAndMenuElementsEffect Nothing tagger model
+            )
+
+        Nothing ->
+            ( model
+            , getContainerAndMenuElementsEffect Nothing tagger model
+            )
+
+
+sendRequest : (Msg a -> msg) -> Maybe (a -> Bool) -> String -> Model d -> (String -> (Result b (List a) -> msg) -> effect) -> ( Model d, Effect effect msg )
+sendRequest tagger selectItem query model effect =
+    ( Model.setRequestState (Just <| Loading query) model
     , Effect.Request
-        (effect (Model.toInputValue model)
+        (effect query
             (\res ->
                 Result.mapError (\_ -> "") res
                     |> Result.map
@@ -311,3 +317,12 @@ getAt idx xs =
 withEffect : (Model a -> Effect effect msg) -> ( Model a, Effect effect msg ) -> ( Model a, Effect effect msg )
 withEffect toEffect ( model, eff ) =
     ( model, Effect.batch [ eff, toEffect model ] )
+
+
+andThen : (Model a -> ( Model a, Effect effect msg )) -> ( Model a, Effect effect msg ) -> ( Model a, Effect effect msg )
+andThen f ( model, eff ) =
+    let
+        ( model_, eff_ ) =
+            f model
+    in
+    ( model_, Effect.batch [ eff, eff_ ] )

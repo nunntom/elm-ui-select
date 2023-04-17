@@ -7,8 +7,10 @@ module Internal.Model exposing
     , init
     , isFocused
     , isLoading
+    , isLoadingQuery
     , isOpen
     , isRequestFailed
+    , isSuccess
     , onInputChange
     , openMenu
     , requiresNewFilteredOptions
@@ -35,6 +37,7 @@ module Internal.Model exposing
     , toMenuPlacement
     , toOptionElementId
     , toOptionState
+    , toPreviousQuery
     , toRelativeContainerMarkerId
     , toRequestState
     , toValue
@@ -243,6 +246,19 @@ toContainerElement (Model { containerElement }) =
     containerElement
 
 
+toPreviousQuery : Model a -> Maybe String
+toPreviousQuery (Model { requestState }) =
+    case requestState of
+        Just (Loading q) ->
+            Just q
+
+        Just (Success q) ->
+            Just q
+
+        _ ->
+            Nothing
+
+
 
 -- CHECKS
 
@@ -259,7 +275,32 @@ isFocused (Model { focused }) =
 
 isLoading : Model a -> Bool
 isLoading (Model { requestState }) =
-    requestState == Just Loading
+    case requestState of
+        Just (Loading _) ->
+            True
+
+        _ ->
+            False
+
+
+isSuccess : Model a -> Bool
+isSuccess (Model { requestState }) =
+    case requestState of
+        Just (Success _) ->
+            True
+
+        _ ->
+            False
+
+
+isLoadingQuery : String -> Model a -> Bool
+isLoadingQuery query (Model { requestState }) =
+    case requestState of
+        Just (Loading q) ->
+            q == query
+
+        _ ->
+            False
 
 
 isRequestFailed : Model a -> Bool

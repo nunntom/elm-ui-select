@@ -59,7 +59,7 @@ you don't need this module.
 import Html
 import Html.Attributes
 import Internal.Effect as Effect
-import Internal.Model exposing (Model)
+import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg)
 import Internal.Update as Update
 import Internal.UpdateOptions as UpdateOptions
@@ -265,7 +265,7 @@ Optionally provide a function to select one the items when the response returns:
 -}
 sendRequest : (Msg a -> msg) -> (String -> (Result err (List a) -> msg) -> effect) -> Maybe (a -> Bool) -> Select a -> ( Select a, Effect effect msg )
 sendRequest tagger req andSelect select =
-    Update.sendRequest tagger andSelect select req
+    Update.sendRequest tagger andSelect (Model.toInputValue select) select req
 
 
 

@@ -2,6 +2,7 @@ module RequestTest exposing (exampleProgramTest)
 
 import EffectRequestExample as App exposing (Cocktail)
 import Expect
+import Html.Attributes
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
@@ -110,7 +111,7 @@ exampleProgramTest =
                     |> ProgramTest.fillIn "" "Find a cocktail" "Cho"
                     |> ProgramTest.fillIn "" "Find a cocktail" "Chocolatey"
                     |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Cho" cocktailsResponse
-                    |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
+                    |> ProgramTest.expectViewHas [ Selector.text "No matches" ]
         , Test.test "Request is made if requestDebounceDelay is 0 and text longer than requestMinInputLength is entered in one (pasted) into the input" <|
             \() ->
                 programTestWithUpdateOptions
@@ -157,7 +158,7 @@ exampleProgramTest =
                     |> ProgramTest.fillIn "" "Find a cocktail" "Ch"
                     |> ProgramTest.expectView
                         (Query.find [ Selector.id (Select.toMenuElementId drinkSelect) ]
-                            >> Query.children []
+                            >> Query.children [ Selector.attribute <| Html.Attributes.attribute "role" "option" ]
                             >> Query.count (Expect.equal 0)
                         )
         , Test.test "Request is made if requestDebounceDelay is 0, text longer than min length is pasted, then different text is pasted that has the same first 3 characters as previous" <|
@@ -181,7 +182,7 @@ exampleProgramTest =
                     |> ProgramTest.simulateHttpOk "GET" "https://thecocktaildb.com/api/json/v1/1/search.php?s=Choc" cocktailsResponse
                     |> ProgramTest.expectView
                         (Query.find [ Selector.id (Select.toMenuElementId drinkSelect) ]
-                            >> Query.children []
+                            >> Query.children [ Selector.attribute <| Html.Attributes.attribute "role" "option" ]
                             >> Query.count (Expect.atLeast 1)
                         )
         ]

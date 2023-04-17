@@ -5,7 +5,6 @@ import Internal.Model as Model exposing (Model)
 import Internal.Option exposing (Option)
 import Internal.OptionState exposing (OptionState)
 import Internal.Placement exposing (Placement)
-import Internal.RequestState exposing (RequestState(..))
 
 
 type alias ViewConfigInternal a attribute view =
@@ -51,7 +50,7 @@ shouldShowNoMatchElement filteredOptions select viewConfig =
         == 0
         && Model.isOpen select
         && (String.length (Model.toInputValue select) >= Maybe.withDefault 1 viewConfig.minInputLength)
-        && (Model.toRequestState select == Nothing || Model.toRequestState select == Just Success)
+        && (Model.toRequestState select == Nothing || Model.isSuccess select)
 
 
 toPlacement : Model a -> ViewConfigInternal a attribute view -> Placement
