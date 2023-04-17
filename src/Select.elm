@@ -433,7 +433,7 @@ Optionally provide a function to select one the items when the response returns:
 -}
 sendRequest : (Msg a -> msg) -> (String -> (Result err (List a) -> msg) -> Cmd msg) -> Maybe (a -> Bool) -> Select a -> ( Select a, Cmd msg )
 sendRequest tagger req andSelect select =
-    Update.sendRequest tagger andSelect select req
+    Update.sendRequest tagger andSelect (Model.toInputValue select) select req
         |> Tuple.mapSecond (Effect.perform (\_ -> Cmd.none))
 
 
