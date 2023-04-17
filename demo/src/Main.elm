@@ -522,8 +522,19 @@ range { min, max, step, value, onChange } =
 
 clearButton : Select.ClearButton msg
 clearButton =
-    Select.clearButton [ Element.alignRight, Element.centerY, Element.moveLeft 12 ]
-        (Element.el [ Font.size 10, Region.description "clear selection" ] (Element.text "❌"))
+    Select.clearButton
+        [ Element.alignRight
+        , Element.centerY
+        , Element.moveLeft 12
+        , Element.moveDown 1
+        ]
+        (Element.el
+            [ Font.size 18
+            , Region.description "clear input"
+            , Element.htmlAttribute <| Html.Attributes.title "clear input"
+            ]
+            (Element.text "✕")
+        )
 
 
 menuAttributes : Bool -> Select.MenuPlacement -> List (Element.Attribute msg)
