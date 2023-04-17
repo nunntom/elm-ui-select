@@ -527,6 +527,8 @@ clearButton =
         , Element.centerY
         , Element.moveLeft 12
         , Element.moveDown 1
+        , Background.color (Element.rgba 1 1 1 1)
+        , Element.padding 4
         ]
         (Element.el
             [ Font.size 18
