@@ -312,7 +312,7 @@ defaultOptionElement toString optionState a =
                 Idle ->
                     Element.rgb 1 1 1
         ]
-        (Element.text (toString a))
+        (Element.paragraph [] [ Element.text (toString a) ])
 
 
 defaultNoMatchElement : Element msg
