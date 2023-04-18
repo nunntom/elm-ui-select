@@ -12,6 +12,7 @@ import Element exposing (Attribute)
 import Html.Styled as Html exposing (Attribute, Html)
 import Html.Styled.Attributes as Attributes
 import Html.Styled.Events as Events
+import Html.Styled.Keyed as Keyed
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option as Option exposing (Option)
@@ -184,28 +185,29 @@ menuView :
         }
     -> Html msg
 menuView attribs v =
-    List.indexedMap (optionElement v) v.options
-        |> Html.div
-            (attribs
-                ++ (Attributes.id v.menuId
-                        :: (if v.menuOpen && List.length v.options > 0 then
-                                []
+    Keyed.lazyNode "div"
+        (attribs
+            ++ (Attributes.id v.menuId
+                    :: (if v.menuOpen && List.length v.options > 0 then
+                            []
 
-                            else
-                                [ Attributes.style "visibility" "hidden"
-                                , Attributes.attribute "aria-visible"
-                                    (if v.menuOpen then
-                                        "false"
+                        else
+                            [ Attributes.style "visibility" "hidden"
+                            , Attributes.attribute "aria-visible"
+                                (if v.menuOpen then
+                                    "false"
 
-                                     else
-                                        "true"
-                                    )
-                                , Attributes.style "height" "0"
-                                , Attributes.style "overflow-y" "hidden"
-                                ]
-                           )
-                   )
-            )
+                                 else
+                                    "true"
+                                )
+                            , Attributes.style "height" "0"
+                            , Attributes.style "overflow-y" "hidden"
+                            ]
+                       )
+               )
+        )
+        (optionElement v)
+        (List.indexedMap (\k o -> ( v.toOptionId k, ( k, o ) )) v.options)
 
 
 optionElement :
@@ -215,10 +217,9 @@ optionElement :
         , onChange : Msg a -> msg
         , optionElement : OptionState -> a -> Html msg
     }
-    -> Int
-    -> Option a
+    -> ( Int, Option a )
     -> Html msg
-optionElement v i opt =
+optionElement v ( i, opt ) =
     let
         optionState =
             v.toOptionState ( i, Option.toItem opt )
