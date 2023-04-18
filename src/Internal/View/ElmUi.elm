@@ -206,16 +206,26 @@ optionElement :
     -> Option a
     -> Element msg
 optionElement v i opt =
+    let
+        optionState =
+            v.toOptionState ( i, Option.toItem opt )
+    in
     Element.row
-        [ Element.htmlAttribute (Html.Attributes.id (v.toOptionId i))
-        , htmlAttribute "role" "option"
-        , htmlAttribute "value" (Option.toString opt)
-        , Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
-        , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
-        , Events.onMouseEnter (v.onChange <| MouseEnteredOption i)
-        , Element.width Element.fill
-        ]
-        [ v.optionElement (v.toOptionState ( i, Option.toItem opt )) (Option.toItem opt) ]
+        ([ Element.htmlAttribute (Html.Attributes.id (v.toOptionId i))
+         , htmlAttribute "role" "option"
+         , htmlAttribute "value" (Option.toString opt)
+         , Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
+         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
+         , Element.width Element.fill
+         ]
+            ++ (if optionState /= Highlighted then
+                    [ Events.onMouseMove (v.onChange <| MouseEnteredOption i) ]
+
+                else
+                    []
+               )
+        )
+        [ v.optionElement optionState (Option.toItem opt) ]
 
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
