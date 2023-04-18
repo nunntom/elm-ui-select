@@ -163,11 +163,11 @@ scrollMenuTask id { option, menu, menuViewport } =
 
 calculateScrollTop : { optionTop : Float, optionBottom : Float, menuViewPortY : Float, menuHeight : Float } -> Float
 calculateScrollTop { optionTop, optionBottom, menuViewPortY, menuHeight } =
-    if optionBottom > (menuHeight + menuViewPortY) then
-        optionBottom - menuHeight
+    if optionBottom > (menuHeight + menuViewPortY - 10) then
+        optionBottom - menuHeight + 10
 
-    else if optionTop < menuViewPortY then
-        optionTop
+    else if optionTop < menuViewPortY + 10 then
+        optionTop - 10
 
     else
         menuViewPortY
