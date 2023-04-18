@@ -183,10 +183,12 @@ view model =
                 }
         ]
     <|
-        Element.column [ Element.height Element.fill ]
+        Element.column
+            [ Element.height Element.fill
+            , Element.centerX
+            ]
             [ Element.column
-                [ Element.centerX
-                , Element.spacing 50
+                [ Element.spacing 50
                 , Element.height Element.fill
                 ]
                 [ Element.paragraph
@@ -213,11 +215,21 @@ view model =
                                     "Choose a country"
                                     CountrySelectMsg
                                     (\c -> c.name ++ " " ++ c.flag)
-                                    (\c -> Element.row [ Element.spacing 10 ] [ Element.text c.flag, Element.text c.name ])
+                                    (\c ->
+                                        Element.row [ Element.spacing 10 ]
+                                            [ Element.el [ Element.alignTop ] <| Element.text c.flag
+                                            , Element.paragraph [] [ Element.text c.name ]
+                                            ]
+                                    )
                                     model.countrySelect
 
                             CitySelect ->
-                                selectView model "Choose a city" CitySelectMsg identity Element.text model.citySelect
+                                selectView model
+                                    "Choose a city"
+                                    CitySelectMsg
+                                    identity
+                                    (\c -> Element.paragraph [] [ Element.text c ])
+                                    model.citySelect
                         , Element.column
                             [ Element.width Element.fill
                             , Element.spacing 20
@@ -469,7 +481,13 @@ selectView model label tagger itemToString itemToElement select =
             (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen select)
                 >> Select.withOptionElement (optionElement itemToElement)
             )
-        |> Select.toElement []
+        |> Select.toElement
+            (if model.customMenuStyle then
+                inputAttributes
+
+             else
+                []
+            )
             { select = select
             , onChange = tagger
             , itemToString = itemToString
@@ -539,19 +557,28 @@ clearButton =
         )
 
 
+inputAttributes : List (Element.Attribute msg)
+inputAttributes =
+    [ Border.rounded 5
+    , Border.width 2
+    ]
+
+
 menuAttributes : Bool -> Select.MenuPlacement -> List (Element.Attribute msg)
 menuAttributes isOpen placement =
     [ [ Background.color (Element.rgba 1 1 1 1)
-      , Element.htmlAttribute (Html.Attributes.class "select-menu")
+      , Element.width Element.fill
+      , Element.padding 5
       , Element.htmlAttribute (Html.Attributes.style "transition" "transform 100ms ease-out, opacity 100ms ease-out")
       , Font.color (Element.rgba 0 0 0 1)
-      , Border.rounded 2
+      , Border.rounded 5
+      , Font.size 18
       , Border.width 0
       , Border.shadow
             { offset = ( 0, 4 )
-            , size = 3
+            , size = 5
             , blur = 10
-            , color = Element.rgba 0 0 0 0.5
+            , color = Element.rgba 0 0 0 0.3
             }
       ]
     , if isOpen then
@@ -577,7 +604,9 @@ optionElement itemToElement state a =
     Element.el
         [ Element.pointer
         , Element.width Element.fill
-        , Element.paddingXY 14 10
+        , Element.padding 8
+        , Border.rounded 4
+        , Element.htmlAttribute <| Html.Attributes.style "white-space" "wrap"
         , Background.color <|
             case state of
                 Select.Highlighted ->
