@@ -697,10 +697,8 @@ withOpenMenuOnFocus v (ViewConfig config) =
     ViewConfig { config | openOnFocus = v }
 
 
-
-{- Below what screen width (if any) should the mobile version display? -}
-
-
+{-| Below what screen width (if any) should the mobile version display?
+-}
 withMobileBreakpoint : Maybe Float -> ViewConfig a msg -> ViewConfig a msg
 withMobileBreakpoint v (ViewConfig config) =
     ViewConfig { config | mobileBreakpoint = v }

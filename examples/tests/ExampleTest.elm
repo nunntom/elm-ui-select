@@ -172,6 +172,16 @@ exampleProgramTest =
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "zzzz"
                     |> ProgramTest.expectViewHasNot [ Selector.text "No matches" ]
+        , Test.test "Opens mobile version at the breakpoint" <|
+            \() ->
+                programTestWith (Select.withMobileBreakpoint (Just 720))
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) ( "focus", Encode.object [ ( "view", Encode.object [ ( "innerWidth", Encode.float 720 ) ] ) ] )
+                    |> ProgramTest.expectViewHas [ Selector.attribute (Html.Attributes.attribute "data-mobile" "true") ]
+        , Test.test "Doesn't open mobile version above the breakpoint" <|
+            \() ->
+                programTestWith (Select.withMobileBreakpoint (Just 720))
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) ( "focus", Encode.object [ ( "view", Encode.object [ ( "innerWidth", Encode.float 721 ) ] ) ] )
+                    |> ProgramTest.expectViewHasNot [ Selector.attribute (Html.Attributes.attribute "data-mobile" "true") ]
         ]
 
 
