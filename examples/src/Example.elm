@@ -5,6 +5,7 @@ import Countries exposing (Country)
 import Element
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Resources.ClearButton
 import Select exposing (Select)
 
@@ -43,7 +44,13 @@ view model =
             , Element.spacing 20
             , Element.padding 30
             ]
-            [ Select.view
+            [ Element.html <|
+                Html.node "meta"
+                    [ Html.Attributes.name "viewport"
+                    , Html.Attributes.attribute "content" "width=device-width, initial-scale=1"
+                    ]
+                    []
+            , Select.view
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
                 |> Select.toElement []
                     { select = model.countrySelect

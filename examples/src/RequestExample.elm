@@ -9,6 +9,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Resources.ClearButton
@@ -103,7 +104,13 @@ view model =
             , Element.spacing 40
             , Element.width (Element.maximum 500 Element.shrink)
             ]
-            [ Select.view
+            [ Element.html <|
+                Html.node "meta"
+                    [ Html.Attributes.name "viewport"
+                    , Html.Attributes.attribute "content" "width=device-width, initial-scale=1"
+                    ]
+                    []
+            , Select.view
                 |> Select.withClearButton (Just Resources.ClearButton.clearButton)
                 |> Select.withSelectExactMatchOnBlur True
                 |> Select.toElement []
