@@ -5,7 +5,7 @@ import Html.Events
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
-import Internal.ViewConfig exposing (ViewConfigInternal)
+import Internal.ViewConfig as ViewConfig exposing (ViewConfigInternal)
 import Json.Decode as Decode
 
 
