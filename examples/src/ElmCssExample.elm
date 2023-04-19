@@ -41,7 +41,6 @@ view model =
             , Css.alignItems Css.center
             , Css.flexDirection Css.column
             , Css.marginTop (Css.px 200)
-            , Css.property "gap" "2em"
             , Css.fontFamilies [ "Arial" ]
             ]
         ]
@@ -50,8 +49,6 @@ view model =
             , Attr.attribute "content" "width=device-width, initial-scale=1"
             ]
             []
-
-        --<meta name="viewport" content="width=device-width, initial-scale=1" />
         , Html.label
             [ css
                 [ Css.fontSize (Css.rem 1.2)

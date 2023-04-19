@@ -310,6 +310,8 @@ menuView attribs v =
                                 )
                             , Attributes.style "height" "0"
                             , Attributes.style "overflow-y" "hidden"
+                            , Attributes.style "margin" "0"
+                            , Attributes.style "padding" "0"
                             ]
                        )
                )
