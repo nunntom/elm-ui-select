@@ -5,7 +5,7 @@ import Html.Events
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
-import Internal.ViewConfig exposing (ViewConfigInternal)
+import Internal.ViewConfig as ViewConfig exposing (ViewConfigInternal)
 import Json.Decode as Decode
 
 
@@ -46,10 +46,26 @@ onFocus : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a att
 onFocus onChange itemToString model viewConfig filteredOptions =
     Html.Events.on "focus" <|
         if Model.requiresNewFilteredOptions model then
-            Decode.lazy (\_ -> Decode.succeed (onChange <| InputFocused viewConfig.openOnFocus (Model.toInputText itemToString model) (Just <| optionsUpdate itemToString model viewConfig filteredOptions)))
+            Decode.lazy
+                (\_ ->
+                    Decode.succeed
+                        (onChange <|
+                            InputFocused
+                                { openMenu = viewConfig.openOnFocus
+                                , mobileBreakpoint = viewConfig.mobileBreakpoint
+                                }
+                                (Model.toInputText itemToString model)
+                                (Just <| optionsUpdate itemToString model viewConfig filteredOptions)
+                        )
+                )
 
         else
-            InputFocused viewConfig.openOnFocus (Model.toInputText itemToString model) Nothing
+            InputFocused
+                { openMenu = viewConfig.openOnFocus
+                , mobileBreakpoint = viewConfig.mobileBreakpoint
+                }
+                (Model.toInputText itemToString model)
+                Nothing
                 |> onChange
                 |> Decode.succeed
 

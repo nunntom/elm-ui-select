@@ -56,7 +56,7 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             , Effect.none
             )
 
-        InputFocused openMenu inputValue maybeOptions ->
+        InputFocused { openMenu, mobileBreakpoint } inputValue maybeOptions ->
             (case maybeOptions of
                 Just ( items, options ) ->
                     Model.setItems items model
@@ -67,7 +67,7 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             )
                 |> Model.setInputValue inputValue
                 |> (if openMenu then
-                        onFocusMenu tagger (request /= Nothing)
+                        onFocusMenu mobileBreakpoint tagger (request /= Nothing)
 
                     else
                         \m -> ( Model.setFocused True m, Effect.none )
@@ -75,7 +75,7 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
                 |> withEffect (\_ -> Effect.emitJust onFocus)
 
         InputClicked ->
-            onFocusMenu tagger (request /= Nothing) model
+            onFocusMenu Nothing tagger (request /= Nothing) model
 
         InputLostFocus config filteredOptions ->
             ( Model.blur config (request /= Nothing) filteredOptions model
@@ -98,8 +98,14 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
                 |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
                 |> withEffect (\_ -> Effect.emitJust (Maybe.map (\ev -> ev key) onKeyDown))
 
-        GotContainerAndMenuElements maybeIdx result ->
+        GotContainerAndMenuElements mobileBreakpoint maybeIdx result ->
             ( model
+                |> Model.setIsMobile
+                    (Maybe.map2 (\w bp -> w <= bp)
+                        (Result.toMaybe result |> Maybe.map (.container >> .viewport >> .width))
+                        mobileBreakpoint
+                        |> Maybe.withDefault (Model.isMobile model)
+                    )
                 |> Model.setElements
                     { container = Maybe.map .container (Result.toMaybe result)
                     , menu = Maybe.map .menu (Result.toMaybe result)
@@ -147,7 +153,7 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
                             |> Model.setSelected selected
                             |> Model.setRequestState (Just <| Success query)
                         , if Model.toValue model == Nothing then
-                            getContainerAndMenuElementsEffect Nothing tagger model
+                            getContainerAndMenuElementsEffect Nothing Nothing tagger model
 
                           else
                             Effect.none
@@ -165,8 +171,8 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             ( model, Effect.none )
 
 
-onFocusMenu : (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
-onFocusMenu tagger hasRequest model =
+onFocusMenu : Maybe Float -> (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
+onFocusMenu mobileBreakpoint tagger hasRequest model =
     let
         selectedIdx =
             Model.toValue model
@@ -177,7 +183,7 @@ onFocusMenu tagger hasRequest model =
     , if not hasRequest || Model.isRequestSuccess model then
         Effect.batch
             [ Effect.ScrollMenuToTop (tagger NoOp) (Model.toMenuElementId model)
-            , getContainerAndMenuElementsEffect selectedIdx tagger model
+            , getContainerAndMenuElementsEffect mobileBreakpoint selectedIdx tagger model
             ]
 
       else
@@ -230,17 +236,17 @@ moveHighlight : (Msg a -> msg) -> Bool -> Int -> Model a -> ( Model a, Effect ef
 moveHighlight tagger hasRequest newHighlighted model =
     if Model.isOpen model then
         ( Model.highlightIndex (Just newHighlighted) False model
-        , getContainerAndMenuElementsEffect (Just newHighlighted) tagger model
+        , getContainerAndMenuElementsEffect Nothing (Just newHighlighted) tagger model
         )
 
     else
-        onFocusMenu tagger hasRequest model
+        onFocusMenu Nothing tagger hasRequest model
 
 
-getContainerAndMenuElementsEffect : Maybe Int -> (Msg a -> msg) -> Model a -> Effect effect msg
-getContainerAndMenuElementsEffect maybeIdx tagger model =
+getContainerAndMenuElementsEffect : Maybe Float -> Maybe Int -> (Msg a -> msg) -> Model a -> Effect effect msg
+getContainerAndMenuElementsEffect mobileBreakpoint maybeIdx tagger model =
     Effect.GetContainerAndMenuElements
-        (GotContainerAndMenuElements maybeIdx >> tagger)
+        (GotContainerAndMenuElements mobileBreakpoint maybeIdx >> tagger)
         { menuId = Model.toMenuElementId model
         , containerId = Model.toRelativeContainerMarkerId model
         }
@@ -268,12 +274,12 @@ doDebounceRequest tagger ({ request, requestMinInputLength, debounceRequest } as
                 Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest (Model.toInputValue model)
 
               else
-                getContainerAndMenuElementsEffect Nothing tagger model
+                getContainerAndMenuElementsEffect Nothing Nothing tagger model
             )
 
         Nothing ->
             ( model
-            , getContainerAndMenuElementsEffect Nothing tagger model
+            , getContainerAndMenuElementsEffect Nothing Nothing tagger model
             )
 
 
