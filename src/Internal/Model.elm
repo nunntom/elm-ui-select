@@ -43,7 +43,6 @@ module Internal.Model exposing
     , toRelativeContainerMarkerId
     , toRequestState
     , toValue
-    , toViewportWidth
     , wasHighlightedByMouse
     )
 
@@ -262,11 +261,6 @@ toPreviousQuery (Model { requestState }) =
 
         _ ->
             Nothing
-
-
-toViewportWidth : Model a -> Maybe Float
-toViewportWidth (Model { containerElement }) =
-    Maybe.map (.viewport >> .width) containerElement
 
 
 
