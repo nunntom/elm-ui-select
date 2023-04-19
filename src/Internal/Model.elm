@@ -415,7 +415,6 @@ clear (Model model) =
             , selected = Nothing
             , highlighted = Nothing
             , applyFilter = False
-            , menuOpen = False
         }
 
 
