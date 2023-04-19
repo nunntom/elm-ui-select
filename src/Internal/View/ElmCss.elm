@@ -42,11 +42,15 @@ init =
 
 toStyled : List Style -> Config a msg -> ViewConfig a msg -> Html msg
 toStyled attrs ({ select } as config) viewConfig =
-    toStyled_ attrs
-        (ViewConfig.toPlacement select viewConfig)
-        (ViewConfig.toFilteredOptions select config.itemToString viewConfig)
-        config
-        viewConfig
+    if ViewConfig.isMobile select viewConfig then
+        mobileView attrs (ViewConfig.toFilteredOptions select config.itemToString viewConfig) config viewConfig
+
+    else
+        toStyled_ attrs
+            (ViewConfig.toPlacement select viewConfig)
+            (ViewConfig.toFilteredOptions select config.itemToString viewConfig)
+            config
+            viewConfig
 
 
 toStyled_ : List Style -> Placement -> List (Option a) -> Config a msg -> ViewConfig a msg -> Html msg
@@ -72,16 +76,6 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
         [ View.relativeContainerMarker select
             |> Html.fromUnstyled
         , inputView attrs filteredOptions config viewConfig
-        , if Model.toValue select /= Nothing || Model.toInputValue select /= "" then
-            viewConfig.clearButton
-                |> Maybe.map
-                    (\( attrs_, el ) ->
-                        clearButtonElement config.onChange attrs_ el
-                    )
-                |> Maybe.withDefault (Html.text "")
-
-          else
-            Html.text ""
         , if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
             Html.div
                 [ Attributes.css
@@ -117,7 +111,9 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
           else
             menuView
                 (defaultMenuAttrs placement
-                    (List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes)
+                    (Css.position Css.absolute
+                        :: List.concatMap (\toAttrs -> toAttrs placement) viewConfig.menuAttributes
+                    )
                     { menuWidth = Model.toMenuMinWidth select
                     , maxWidth = viewConfig.menuMaxWidth
                     , menuHeight = Model.toMenuMaxHeight viewConfig.menuMaxHeight viewConfig.menuPlacement select
@@ -140,36 +136,137 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
         ]
 
 
+mobileView : List Style -> List (Option a) -> Config a msg -> ViewConfig a msg -> Html msg
+mobileView attrs filteredOptions ({ select } as config) viewConfig =
+    Html.div
+        ([ Attributes.id <| Model.toContainerElementId select
+         , Attributes.class "elm-select-container"
+         ]
+            ++ (ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
+                    |> List.map Attributes.fromUnstyled
+               )
+            ++ (if Model.isOpen select then
+                    [ Attributes.css
+                        [ Css.position Css.fixed
+                        , Css.top (Css.px 0)
+                        , Css.left (Css.px 0)
+                        , Css.right (Css.px 0)
+                        , Css.bottom (Css.px 0)
+                        , Css.height (Css.pct 100)
+                        , Css.zIndex (Css.int 100)
+                        , Css.overflow Css.hidden
+                        , Css.padding4 (Css.px 60) (Css.px 20) (Css.px 40) (Css.px 20)
+                        , Css.backgroundColor (Css.rgba 0 0 0 0.15)
+                        , Css.boxSizing Css.borderBox
+                        , Css.displayFlex
+                        , Css.flexDirection Css.column
+                        ]
+                    ]
+
+                else
+                    []
+               )
+        )
+        [ View.relativeContainerMarker select
+            |> Html.fromUnstyled
+        , inputView attrs filteredOptions config viewConfig
+        , if Model.isOpen select then
+            Html.button
+                [ Attributes.attribute "role" "button"
+                , Attributes.css
+                    [ Css.fontSize (Css.px 28)
+                    , Css.position Css.fixed
+                    , Css.top (Css.px 0)
+                    , Css.right (Css.px 0)
+                    , Css.padding (Css.px 16)
+                    , Css.borderWidth (Css.px 0)
+                    , Css.backgroundColor Css.transparent
+                    ]
+                ]
+                [ Html.text "✕" ]
+
+          else
+            Html.text ""
+        , if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
+            Html.div
+                [ Attributes.css
+                    [ Css.position Css.absolute
+                    , Css.width (Css.pct 100)
+                    ]
+                ]
+                [ Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement ]
+
+          else
+            Html.text ""
+        , menuView
+            (defaultMenuAttrs Placement.Below
+                (Css.property "flex" "0 1 auto"
+                    :: List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes
+                )
+                { menuWidth = Nothing
+                , maxWidth = Nothing
+                , menuHeight = Nothing
+                }
+            )
+            { menuId = Model.toMenuElementId select
+            , toOptionId = Model.toOptionElementId select
+            , toOptionState = Model.toOptionState select
+            , onChange = config.onChange
+            , menuOpen = Model.isOpen select
+            , options = filteredOptions
+            , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+            }
+        , if Model.isOpen select then
+            View.ariaLive (List.length filteredOptions)
+                |> Html.fromUnstyled
+
+          else
+            Html.text ""
+        ]
+
+
 inputView : List Style -> List (Option a) -> Config a msg -> ViewConfig a msg -> Html msg
 inputView attrs filteredOptions ({ select } as config) viewConfig =
-    Html.input
-        ([ ViewEvents.onFocus config.onChange config.itemToString select viewConfig filteredOptions
-            |> Attributes.fromUnstyled
-         , Events.onClick (InputClicked |> config.onChange)
-         , Events.onBlur
-            (config.onChange
-                (InputLostFocus
-                    { clearInputValue = viewConfig.clearInputValueOnBlur
-                    , selectExactMatch = viewConfig.selectExactMatchOnBlur
-                    }
-                    filteredOptions
+    Html.div [ Attributes.css [ Css.position Css.relative ] ]
+        [ Html.input
+            ([ ViewEvents.onFocus config.onChange config.itemToString select viewConfig filteredOptions
+                |> Attributes.fromUnstyled
+             , Events.onClick (InputClicked |> config.onChange)
+             , Events.onBlur
+                (config.onChange
+                    (InputLostFocus
+                        { clearInputValue = viewConfig.clearInputValueOnBlur
+                        , selectExactMatch = viewConfig.selectExactMatchOnBlur
+                        }
+                        filteredOptions
+                    )
                 )
+             , Attributes.fromUnstyled <|
+                ViewEvents.onKeyDown (Model.isOpen select) (KeyDown viewConfig.selectOnTab filteredOptions >> config.onChange)
+             , Attributes.id <| Model.toInputElementId select
+             , Events.onInput (ViewEvents.onInput config.onChange config.itemToString select viewConfig)
+             , Attributes.value <| Model.toInputText config.itemToString select
+             , Attributes.attribute "autocomplete" "dont-fill-in-this-box"
+             , Attributes.css
+                [ Css.width (Css.pct 100)
+                , Css.boxSizing Css.borderBox
+                , Css.batch attrs
+                ]
+             ]
+                ++ List.map Attributes.fromUnstyled (View.inputAccessibilityAttributes select)
             )
-         , Attributes.fromUnstyled <|
-            ViewEvents.onKeyDown (Model.isOpen select) (KeyDown viewConfig.selectOnTab filteredOptions >> config.onChange)
-         , Attributes.id <| Model.toInputElementId select
-         , Events.onInput (ViewEvents.onInput config.onChange config.itemToString select viewConfig)
-         , Attributes.value <| Model.toInputText config.itemToString select
-         , Attributes.attribute "autocomplete" "dont-fill-in-this-box"
-         , Attributes.css
-            [ Css.width (Css.pct 100)
-            , Css.boxSizing Css.borderBox
-            , Css.batch attrs
-            ]
-         ]
-            ++ List.map Attributes.fromUnstyled (View.inputAccessibilityAttributes select)
-        )
-        []
+            []
+        , if Model.toValue select /= Nothing || Model.toInputValue select /= "" then
+            viewConfig.clearButton
+                |> Maybe.map
+                    (\( attrs_, el ) ->
+                        clearButtonElement config.onChange attrs_ el
+                    )
+                |> Maybe.withDefault (Html.text "")
+
+          else
+            Html.text ""
+        ]
 
 
 menuView :
@@ -243,7 +340,7 @@ optionElement v ( i, opt ) =
 
 clearButtonElement : (Msg a -> msg) -> List Style -> Html msg -> Html msg
 clearButtonElement onChange attribs element =
-    Html.button
+    Html.div
         [ Attributes.css
             [ Css.position Css.absolute
             , Css.right Css.zero
@@ -254,10 +351,9 @@ clearButtonElement onChange attribs element =
             , Css.margin Css.zero
             , Css.batch attribs
             ]
-        , Attributes.tabindex -1
-        , Attributes.type_ "button"
+        , Attributes.attribute "role" "button"
         , Attributes.attribute "aria-label" "clear"
-        , Events.onClick (onChange ClearButtonPressed)
+        , Events.preventDefaultOn "mousedown" (Decode.succeed ( onChange ClearButtonPressed, True ))
         ]
         [ element ]
 
@@ -274,8 +370,7 @@ defaultMenuAttrs :
 defaultMenuAttrs placement css { menuWidth, maxWidth, menuHeight } =
     [ Attributes.attribute "role" "listbox"
     , Attributes.css
-        [ Css.position Css.absolute
-        , case placement of
+        [ case placement of
             Placement.Above ->
                 Css.bottom (Css.pct 100)
 
@@ -295,6 +390,7 @@ defaultMenuAttrs placement css { menuWidth, maxWidth, menuHeight } =
         , Css.width (Css.pct 100)
         , Css.boxSizing Css.borderBox
         , Css.batch css
+        , Css.marginTop (Css.px 5)
         ]
     ]
 
