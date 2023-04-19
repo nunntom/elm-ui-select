@@ -1,7 +1,7 @@
 module Select.ElmCss exposing
     ( Select
     , init
-    , setItems, setSelected, setInputValue, closeMenu
+    , setItems, setSelected, setInputValue, openMenu, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith, sendRequest
@@ -26,7 +26,7 @@ module Select.ElmCss exposing
 
 # Set
 
-@docs setItems, setSelected, setInputValue, closeMenu
+@docs setItems, setSelected, setInputValue, openMenu, closeMenu
 
 
 # Get
@@ -150,6 +150,13 @@ setInputValue =
 closeMenu : Select a -> Select a
 closeMenu =
     Model.closeMenu
+
+
+{-| Open the menu
+-}
+openMenu : Select a -> Select a
+openMenu =
+    Model.openMenu
 
 
 
