@@ -3,10 +3,10 @@ module Select.ElmCss exposing
     , init
     , setItems, setSelected, setInputValue, openMenu, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
-    , isMenuOpen, isLoading, isRequestFailed, isFocused
+    , isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withElementBefore, withElementAfter
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withElementBefore, withElementAfter
     , toStyled
     , Effect
     )
@@ -36,7 +36,7 @@ module Select.ElmCss exposing
 
 # Check
 
-@docs isMenuOpen, isLoading, isRequestFailed, isFocused
+@docs isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
 
 
 # Update the Select
@@ -51,7 +51,7 @@ module Select.ElmCss exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withElementBefore, withElementAfter
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withElementBefore, withElementAfter
 
 
 # Element
@@ -221,6 +221,13 @@ isRequestFailed =
 isFocused : Select a -> Bool
 isFocused =
     Model.isFocused
+
+
+{-| When the select was last interacted with, did it appear to be on a mobile device, based on [`withMobileBreakpoint`](#withMobileBreakpoint)?
+-}
+isMobile : Select a -> Bool
+isMobile =
+    Model.isMobile
 
 
 
@@ -649,6 +656,13 @@ withSelectOnTab v (ViewConfig config) =
 withMinInputLength : Maybe Int -> ViewConfig a msg -> ViewConfig a msg
 withMinInputLength v (ViewConfig config) =
     ViewConfig { config | minInputLength = v }
+
+
+{-| At what minimum browser width (if any) should we show the mobile version?
+-}
+withMobileBreakpoint : Maybe Float -> ViewConfig a msg -> ViewConfig a msg
+withMobileBreakpoint v (ViewConfig config) =
+    ViewConfig { config | mobileBreakpoint = v }
 
 
 {-| Should the menu be opened when the input gets focus?
