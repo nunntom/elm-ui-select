@@ -90,7 +90,7 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
                     )
                     <|
                         menuView
-                            (defaultMenuAttrs
+                            (defaultMenuAttrs placement
                                 { menuWidth = Model.toMenuMinWidth select
                                 , maxWidth = viewConfig.menuMaxWidth
                                 , menuHeight = Model.toMenuMaxHeight viewConfig.menuMaxHeight viewConfig.menuPlacement select
@@ -124,6 +124,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
     Element.column
         ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
          , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
+         , Element.htmlAttribute (Html.Attributes.attribute "data-mobile" "true")
          , Element.width Element.fill
          , View.relativeContainerMarker select
             |> Element.html
@@ -167,7 +168,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
           else
             Element.none
         , menuView
-            (defaultMenuAttrs
+            (defaultMenuAttrs Placement.Below
                 { menuWidth = Nothing
                 , maxWidth = Nothing
                 , menuHeight = Nothing
@@ -327,12 +328,14 @@ clearButtonElement onChange attribs element =
 
 
 defaultMenuAttrs :
-    { menuWidth : Maybe Int
-    , maxWidth : Maybe Int
-    , menuHeight : Maybe Int
-    }
+    Placement
+    ->
+        { menuWidth : Maybe Int
+        , maxWidth : Maybe Int
+        , menuHeight : Maybe Int
+        }
     -> List (Attribute msg)
-defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
+defaultMenuAttrs placement { menuWidth, maxWidth, menuHeight } =
     [ Element.shrink
         |> (Maybe.map Element.maximum menuHeight |> Maybe.withDefault identity)
         |> Element.height
@@ -345,7 +348,6 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
 
             Nothing ->
                 Element.fill
-    , Element.moveDown 10
     , style "overflow-y" "auto"
     , Border.solid
     , Border.color (Element.rgb 0.8 0.8 0.8)
@@ -354,6 +356,12 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
     , Background.color (Element.rgb 1 1 1)
     , Element.paddingXY 0 5
     , htmlAttribute "role" "listbox"
+    , case placement of
+        Placement.Above ->
+            Element.moveUp 10
+
+        Placement.Below ->
+            Element.moveDown 10
     ]
 
 

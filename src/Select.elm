@@ -7,7 +7,7 @@ module Select exposing
     , Msg, update
     , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
     , sendRequest
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState(..), withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState(..), withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withMobileBreakpoint
     , toElement
     , Effect
     )
@@ -57,7 +57,7 @@ module Select exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withMobileBreakpoint
 
 
 # Element
@@ -695,6 +695,15 @@ withMinInputLength v (ViewConfig config) =
 withOpenMenuOnFocus : Bool -> ViewConfig a msg -> ViewConfig a msg
 withOpenMenuOnFocus v (ViewConfig config) =
     ViewConfig { config | openOnFocus = v }
+
+
+
+{- Below what screen width (if any) should the mobile version display? -}
+
+
+withMobileBreakpoint : Maybe Float -> ViewConfig a msg -> ViewConfig a msg
+withMobileBreakpoint v (ViewConfig config) =
+    ViewConfig { config | mobileBreakpoint = v }
 
 
 {-| Turn the ViewConfig into an Element.
