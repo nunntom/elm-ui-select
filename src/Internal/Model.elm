@@ -8,6 +8,7 @@ module Internal.Model exposing
     , isFocused
     , isLoading
     , isLoadingQuery
+    , isMobile
     , isOpen
     , isRequestFailed
     , isRequestSuccess
@@ -19,6 +20,7 @@ module Internal.Model exposing
     , setFilteredOptions
     , setFocused
     , setInputValue
+    , setIsMobile
     , setItems
     , setRequestState
     , setSelected
@@ -75,6 +77,7 @@ type alias InternalState a =
     , requestState : Maybe RequestState
     , applyFilter : Bool
     , focused : Bool
+    , isMobile : Bool
     }
 
 
@@ -98,6 +101,7 @@ init id =
         , requestState = Nothing
         , applyFilter = False
         , focused = False
+        , isMobile = False
         }
 
 
@@ -319,6 +323,11 @@ requiresNewFilteredOptions (Model { filteredOptions }) =
     filteredOptions == Nothing
 
 
+isMobile : Model a -> Bool
+isMobile (Model model) =
+    model.isMobile
+
+
 
 -- UPDATE
 
@@ -468,6 +477,11 @@ blur { clearInputValue, selectExactMatch } hasRequest filteredOptions (Model mod
         |> setFilteredOptions Nothing
         |> setFocused False
         |> closeMenu
+
+
+setIsMobile : Bool -> Model a -> Model a
+setIsMobile v (Model model) =
+    Model { model | isMobile = v }
 
 
 
