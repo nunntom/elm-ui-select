@@ -104,6 +104,7 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
                             , menuOpen = Model.isOpen select
                             , options = filteredOptions
                             , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+                            , closeOnSelect = viewConfig.closeOnSelect
                             }
               ]
             , if Model.isOpen select then
@@ -182,6 +183,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             , menuOpen = Model.isOpen select
             , options = filteredOptions
             , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+            , closeOnSelect = viewConfig.closeOnSelect
             }
         ]
 
@@ -205,7 +207,14 @@ inputView attrs filteredOptions ({ select } as config) viewConfig =
                         )
                     )
               , Element.htmlAttribute <|
-                    ViewEvents.onKeyDown (Model.isOpen select) (KeyDown viewConfig.selectOnTab filteredOptions >> config.onChange)
+                    ViewEvents.onKeyDown (Model.isOpen select)
+                        (KeyDown
+                            { selectOnTab = viewConfig.selectOnTab
+                            , closeOnSelect = viewConfig.closeOnSelect
+                            }
+                            filteredOptions
+                            >> config.onChange
+                        )
               , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId select)
               , Element.inFront <|
                     if Model.toValue select /= Nothing || Model.toInputValue select /= "" then
@@ -243,6 +252,7 @@ menuView :
         , menuOpen : Bool
         , options : List (Option a)
         , optionElement : OptionState -> a -> Element msg
+        , closeOnSelect : Bool
         }
     -> Element msg
 menuView attribs v =
@@ -275,6 +285,7 @@ optionElement :
         , toOptionId : Int -> String
         , onChange : Msg a -> msg
         , optionElement : OptionState -> a -> Element msg
+        , closeOnSelect : Bool
     }
     -> Int
     -> Option a
@@ -289,7 +300,7 @@ optionElement v i opt =
          , htmlAttribute "role" "option"
          , htmlAttribute "value" (Option.toString opt)
          , Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
-         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True )))
+         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked v.closeOnSelect opt, True )))
          , Element.width Element.fill
          ]
             ++ (if optionState /= Highlighted then

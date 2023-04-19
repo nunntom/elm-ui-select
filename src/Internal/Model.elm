@@ -376,13 +376,23 @@ setFilteredOptions opts (Model model) =
     Model { model | filteredOptions = opts }
 
 
-selectOption : Option a -> Model a -> Model a
-selectOption opt (Model model) =
+selectOption : Bool -> Option a -> Model a -> Model a
+selectOption closeMenu_ opt (Model model) =
     Model
         { model
-            | menuOpen = False
+            | menuOpen =
+                if closeMenu_ then
+                    False
+
+                else
+                    model.menuOpen
             , selected = Just (Option.toItem opt)
-            , highlighted = Nothing
+            , highlighted =
+                if closeMenu_ then
+                    Nothing
+
+                else
+                    model.highlighted
             , inputValue = Option.toString opt
             , applyFilter = False
         }
@@ -453,7 +463,7 @@ blur { clearInputValue, selectExactMatch } hasRequest filteredOptions (Model mod
     (if model.selected == Nothing then
         case ( selectExactMatch, Option.findByString filteredOptions model.inputValue ) of
             ( True, Just option ) ->
-                selectOption option (Model model)
+                selectOption True option (Model model)
 
             _ ->
                 if clearInputValue then

@@ -51,8 +51,8 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             )
                 |> andThen (doDebounceRequest tagger updateOptions)
 
-        OptionClicked opt ->
-            ( Model.selectOption opt model
+        OptionClicked closeOnSelect opt ->
+            ( Model.selectOption closeOnSelect opt model
             , Effect.none
             )
 
@@ -67,11 +67,18 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             )
                 |> Model.setInputValue inputValue
                 |> Model.setIsMobile isMobile
+                |> Model.setFocused True
+                |> (if isMobile then
+                        Model.openMenu
+
+                    else
+                        identity
+                   )
                 |> (if openMenu then
                         onFocusMenu tagger (request /= Nothing)
 
                     else
-                        \m -> ( Model.setFocused True m, Effect.none )
+                        \m -> ( m, Effect.none )
                    )
                 |> withEffect (\_ -> Effect.emitJust onFocus)
 
@@ -94,10 +101,10 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             , Effect.none
             )
 
-        KeyDown selectOnTab filteredOptions key ->
+        KeyDown { closeOnSelect, selectOnTab } filteredOptions key ->
             Model.setFilteredOptions (Just filteredOptions) model
                 |> Model.setFocused True
-                |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
+                |> handleKey closeOnSelect selectOnTab tagger (request /= Nothing) key filteredOptions
                 |> withEffect (\_ -> Effect.emitJust (Maybe.map (\ev -> ev key) onKeyDown))
 
         GotContainerAndMenuElements maybeIdx result ->
@@ -190,13 +197,13 @@ onFocusMenu tagger hasRequest model =
     )
 
 
-handleKey : Bool -> (Msg a -> msg) -> Bool -> String -> List (Option a) -> Model a -> ( Model a, Effect effect msg )
-handleKey selectOnTab tagger hasRequest key filteredOptions model =
+handleKey : Bool -> Bool -> (Msg a -> msg) -> Bool -> String -> List (Option a) -> Model a -> ( Model a, Effect effect msg )
+handleKey closeOnSelect selectOnTab tagger hasRequest key filteredOptions model =
     let
         selectHighlighted =
             case Model.toHighlighted model |> Maybe.andThen (\idx -> getAt idx filteredOptions) of
                 Just opt ->
-                    ( Model.selectOption opt model, Effect.none )
+                    ( Model.selectOption closeOnSelect opt model, Effect.none )
 
                 Nothing ->
                     ( Model.closeMenu model, Effect.none )
