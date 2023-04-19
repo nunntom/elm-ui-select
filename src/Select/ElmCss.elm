@@ -6,7 +6,7 @@ module Select.ElmCss exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withElementBefore, withElementAfter
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
     , toStyled
     , Effect
     )
@@ -51,7 +51,7 @@ module Select.ElmCss exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withElementBefore, withElementAfter
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
 
 
 # Element
@@ -670,6 +670,13 @@ withMobileBreakpoint v (ViewConfig config) =
 withOpenMenuOnFocus : Bool -> ViewConfig a msg -> ViewConfig a msg
 withOpenMenuOnFocus v (ViewConfig config) =
     ViewConfig { config | openOnFocus = v }
+
+
+{-| Should the menu close after an item is selected?
+-}
+withCloseOnSelect : Bool -> ViewConfig a msg -> ViewConfig a msg
+withCloseOnSelect v (ViewConfig config) =
+    ViewConfig { config | closeOnSelect = v }
 
 
 {-| Place an Html element just before the input

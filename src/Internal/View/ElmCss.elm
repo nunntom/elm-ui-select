@@ -106,6 +106,7 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
                     , menuOpen = Model.isOpen select
                     , options = filteredOptions
                     , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+                    , closeOnSelect = viewConfig.closeOnSelect
                     }
                 )
 
@@ -127,6 +128,7 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
                 , menuOpen = Model.isOpen select
                 , options = filteredOptions
                 , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+                , closeOnSelect = viewConfig.closeOnSelect
                 }
         , if Model.isOpen select then
             View.ariaLive (List.length filteredOptions)
@@ -150,7 +152,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             ++ (ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
                     |> List.map Attributes.fromUnstyled
                )
-            ++ (if Model.isFocused select then
+            ++ (if Model.isOpen select then
                     [ Attributes.css
                         [ Css.position Css.fixed
                         , Css.top (Css.px 0)
@@ -176,7 +178,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             |> Html.fromUnstyled
         , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
-        , if Model.isFocused select then
+        , if Model.isOpen select then
             Html.button
                 [ Attributes.attribute "role" "button"
                 , Attributes.css
@@ -194,13 +196,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
           else
             Html.text ""
         , if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
-            Html.div
-                [ Attributes.css
-                    [ Css.position Css.absolute
-                    , Css.width (Css.pct 100)
-                    ]
-                ]
-                [ Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement ]
+            Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement
 
           else
             Html.text ""
@@ -216,9 +212,10 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             , toOptionId = Model.toOptionElementId select
             , toOptionState = Model.toOptionState select
             , onChange = config.onChange
-            , menuOpen = Model.isFocused select
+            , menuOpen = Model.isOpen select
             , options = filteredOptions
             , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+            , closeOnSelect = viewConfig.closeOnSelect
             }
         , if Model.isOpen select then
             View.ariaLive (List.length filteredOptions)
@@ -249,11 +246,17 @@ inputView attrs filteredOptions ({ select } as config) viewConfig =
                     )
                 )
              , Attributes.fromUnstyled <|
-                ViewEvents.onKeyDown (Model.isOpen select) (KeyDown viewConfig.selectOnTab filteredOptions >> config.onChange)
+                ViewEvents.onKeyDown (Model.isOpen select)
+                    (KeyDown
+                        { closeOnSelect = viewConfig.closeOnSelect
+                        , selectOnTab = viewConfig.selectOnTab
+                        }
+                        filteredOptions
+                        >> config.onChange
+                    )
              , Attributes.id <| Model.toInputElementId select
              , Events.onInput (ViewEvents.onInput config.onChange config.itemToString select viewConfig)
              , Attributes.value <| Model.toInputText config.itemToString select
-             , Attributes.attribute "autocomplete" "dont-fill-in-this-box"
              , Attributes.css
                 [ Css.width (Css.pct 100)
                 , Css.boxSizing Css.borderBox
@@ -286,6 +289,7 @@ menuView :
         , menuOpen : Bool
         , options : List (Option a)
         , optionElement : OptionState -> a -> Html msg
+        , closeOnSelect : Bool
         }
     -> Html msg
 menuView attribs v =
@@ -320,6 +324,7 @@ optionElement :
         , toOptionId : Int -> String
         , onChange : Msg a -> msg
         , optionElement : OptionState -> a -> Html msg
+        , closeOnSelect : Bool
     }
     -> ( Int, Option a )
     -> Html msg
@@ -333,7 +338,7 @@ optionElement v ( i, opt ) =
          , Attributes.attribute "role" "option"
          , Attributes.attribute "value" (Option.toString opt)
          , Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True ))
-         , Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked opt, True ))
+         , Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked v.closeOnSelect opt, True ))
          ]
             ++ (if optionState /= Highlighted then
                     [ Events.on "mousemove" (Decode.succeed (v.onChange <| MouseEnteredOption i)) ]
@@ -380,10 +385,13 @@ defaultMenuAttrs placement css { menuWidth, maxWidth, menuHeight } =
     , Attributes.css
         [ case placement of
             Placement.Above ->
-                Css.bottom (Css.pct 100)
+                Css.batch
+                    [ Css.bottom (Css.pct 100)
+                    , Css.marginTop (Css.px 5)
+                    ]
 
             Placement.Below ->
-                Css.batch []
+                Css.batch [ Css.marginTop (Css.px 5) ]
         , Maybe.map (toFloat >> Css.px >> Css.maxHeight) menuHeight
             |> Maybe.withDefault (Css.batch [])
         , Maybe.map (toFloat >> Css.px >> Css.maxWidth) maxWidth
@@ -398,7 +406,6 @@ defaultMenuAttrs placement css { menuWidth, maxWidth, menuHeight } =
         , Css.width (Css.pct 100)
         , Css.boxSizing Css.borderBox
         , Css.batch css
-        , Css.marginTop (Css.px 5)
         ]
     ]
 
@@ -452,7 +459,12 @@ defaultNoMatchElement =
             , Css.border3 (Css.px 1) Css.solid (Css.rgba 0 0 0 0.5)
             , Css.borderRadius (Css.px 5)
             , Css.backgroundColor (Css.rgb 255 255 255)
+            , Css.border3 (Css.px 1) Css.solid (Css.rgb 204 204 204)
+            , Css.borderRadius (Css.px 5)
+            , Css.backgroundColor (Css.rgb 255 255 255)
             , Css.width (Css.pct 100)
+            , Css.boxSizing Css.borderBox
+            , Css.marginTop (Css.px 5)
             ]
         ]
         [ Html.text "No matches" ]
