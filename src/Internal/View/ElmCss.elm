@@ -145,6 +145,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
     Html.div
         ([ Attributes.id <| Model.toContainerElementId select
          , Attributes.class "elm-select-container"
+         , Attributes.attribute "data-mobile" "true"
          ]
             ++ (ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
                     |> List.map Attributes.fromUnstyled
