@@ -6,7 +6,7 @@ module Select.ElmCss exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withElementBefore, withElementAfter
     , toStyled
     , Effect
     )
@@ -51,7 +51,7 @@ module Select.ElmCss exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withElementBefore, withElementAfter
 
 
 # Element
@@ -649,6 +649,20 @@ withMinInputLength v (ViewConfig config) =
 withOpenMenuOnFocus : Bool -> ViewConfig a msg -> ViewConfig a msg
 withOpenMenuOnFocus v (ViewConfig config) =
     ViewConfig { config | openOnFocus = v }
+
+
+{-| Place an Html element just before the input
+-}
+withElementBefore : Maybe (Html msg) -> ViewConfig a msg -> ViewConfig a msg
+withElementBefore v (ViewConfig config) =
+    ViewConfig { config | before = v }
+
+
+{-| Place an Html element after the input and menu
+-}
+withElementAfter : Maybe (Html msg) -> ViewConfig a msg -> ViewConfig a msg
+withElementAfter v (ViewConfig config) =
+    ViewConfig { config | after = v }
 
 
 {-| Turn the ViewConfig into an Element.

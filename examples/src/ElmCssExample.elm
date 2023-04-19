@@ -4,7 +4,7 @@ import Browser
 import Countries exposing (Country)
 import Css
 import Html.Styled as Html exposing (Html)
-import Html.Styled.Attributes exposing (css)
+import Html.Styled.Attributes as Attr exposing (css)
 import Select.ElmCss as Select exposing (Select)
 
 
@@ -45,14 +45,21 @@ view model =
             , Css.fontFamilies [ "Arial" ]
             ]
         ]
-        [ Html.label
+        [ Html.node "meta"
+            [ Attr.name "viewport"
+            , Attr.attribute "content" "width=device-width, initial-scale=1"
+            ]
+            []
+
+        --<meta name="viewport" content="width=device-width, initial-scale=1" />
+        , Html.label
             [ css
                 [ Css.fontSize (Css.rem 1.2)
                 , Css.lineHeight (Css.rem 1.5)
                 ]
             ]
-            [ Html.text "Choose a country"
-            , Select.view
+            [ Select.view
+                |> Select.withElementBefore (Just <| Html.text "Choose a country")
                 |> Select.withClearButton
                     (Just <|
                         Select.clearButton

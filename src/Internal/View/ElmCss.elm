@@ -75,6 +75,7 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
         )
         [ View.relativeContainerMarker select
             |> Html.fromUnstyled
+        , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
         , if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
             Html.div
@@ -133,6 +134,9 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
 
           else
             Html.text ""
+        , viewConfig.after
+            |> Maybe.map (\after -> Html.div [] [ after ])
+            |> Maybe.withDefault (Html.text "")
         ]
 
 
@@ -155,7 +159,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
                         , Css.height (Css.pct 100)
                         , Css.zIndex (Css.int 100)
                         , Css.overflow Css.hidden
-                        , Css.padding4 (Css.px 60) (Css.px 20) (Css.px 40) (Css.px 20)
+                        , Css.padding2 (Css.px 40) (Css.px 20)
                         , Css.backgroundColor (Css.rgba 0 0 0 0.15)
                         , Css.boxSizing Css.borderBox
                         , Css.displayFlex
@@ -169,6 +173,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
         )
         [ View.relativeContainerMarker select
             |> Html.fromUnstyled
+        , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
         , if Model.isOpen select then
             Html.button
@@ -200,9 +205,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             Html.text ""
         , menuView
             (defaultMenuAttrs Placement.Below
-                (Css.property "flex" "0 1 auto"
-                    :: List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes
-                )
+                (List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes)
                 { menuWidth = Nothing
                 , maxWidth = Nothing
                 , menuHeight = Nothing
@@ -222,6 +225,9 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
 
           else
             Html.text ""
+        , viewConfig.after
+            |> Maybe.map (\after -> Html.div [] [ after ])
+            |> Maybe.withDefault (Html.text "")
         ]
 
 
@@ -353,7 +359,8 @@ clearButtonElement onChange attribs element =
             ]
         , Attributes.attribute "role" "button"
         , Attributes.attribute "aria-label" "clear"
-        , Events.preventDefaultOn "mousedown" (Decode.succeed ( onChange ClearButtonPressed, True ))
+        , Events.preventDefaultOn "mousedown" (Decode.succeed ( onChange NoOp, True ))
+        , Events.preventDefaultOn "click" (Decode.succeed ( onChange ClearButtonPressed, True ))
         ]
         [ element ]
 
