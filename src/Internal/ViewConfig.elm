@@ -1,4 +1,4 @@
-module Internal.ViewConfig exposing (ViewConfigInternal, init, isMobile, shouldShowNoMatchElement, toFilteredOptions, toPlacement)
+module Internal.ViewConfig exposing (ViewConfigInternal, init, shouldShowNoMatchElement, toFilteredOptions, toPlacement)
 
 import Internal.Filter as Filter exposing (Filter)
 import Internal.Model as Model exposing (Model)
@@ -67,9 +67,3 @@ toPlacement select viewConfig =
 toFilteredOptions : Model a -> (a -> String) -> ViewConfigInternal a attribute view -> List (Option a)
 toFilteredOptions select itemToString viewConfig =
     Model.toFilteredOptions True viewConfig.minInputLength itemToString viewConfig.filter select
-
-
-isMobile : Model a -> ViewConfigInternal a attribute view -> Bool
-isMobile select { mobileBreakpoint } =
-    Maybe.map2 (\w bp -> w <= bp) (Model.toViewportWidth select) mobileBreakpoint
-        |> Maybe.withDefault False

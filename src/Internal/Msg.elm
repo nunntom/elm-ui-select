@@ -9,7 +9,7 @@ type Msg a
     | OptionClicked (Option a)
     | InputFocused
         { openMenu : Bool
-        , mobileBreakpoint : Maybe Float
+        , isMobile : Bool
         }
         String
         (Maybe ( List a, List (Option a) ))
@@ -22,7 +22,7 @@ type Msg a
         (List (Option a))
     | MouseEnteredOption Int
     | KeyDown Bool (List (Option a)) String
-    | GotContainerAndMenuElements (Maybe Float) (Maybe Int) (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })
+    | GotContainerAndMenuElements (Maybe Int) (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })
     | ClearButtonPressed
     | InputDebounceReturned String
     | GotRequestResponse String (Result String ( List a, Maybe a ))

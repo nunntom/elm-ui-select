@@ -44,30 +44,28 @@ onInput onChange itemToString model viewConfig v =
 
 onFocus : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> Attribute msg
 onFocus onChange itemToString model viewConfig filteredOptions =
+    let
+        decodeEvent updateFiltered =
+            Decode.map
+                (\width ->
+                    onChange <|
+                        InputFocused
+                            { openMenu = viewConfig.openOnFocus
+                            , isMobile =
+                                Maybe.map2 (\w bp -> w <= bp) width viewConfig.mobileBreakpoint
+                                    |> Maybe.withDefault False
+                            }
+                            (Model.toInputText itemToString model)
+                            updateFiltered
+                )
+                (Decode.maybe <| Decode.at [ "view", "innerWidth" ] Decode.float)
+    in
     Html.Events.on "focus" <|
         if Model.requiresNewFilteredOptions model then
-            Decode.lazy
-                (\_ ->
-                    Decode.succeed
-                        (onChange <|
-                            InputFocused
-                                { openMenu = viewConfig.openOnFocus
-                                , mobileBreakpoint = viewConfig.mobileBreakpoint
-                                }
-                                (Model.toInputText itemToString model)
-                                (Just <| optionsUpdate itemToString model viewConfig filteredOptions)
-                        )
-                )
+            Decode.lazy (\_ -> decodeEvent (Just <| optionsUpdate itemToString model viewConfig filteredOptions))
 
         else
-            InputFocused
-                { openMenu = viewConfig.openOnFocus
-                , mobileBreakpoint = viewConfig.mobileBreakpoint
-                }
-                (Model.toInputText itemToString model)
-                Nothing
-                |> onChange
-                |> Decode.succeed
+            decodeEvent Nothing
 
 
 optionsUpdate : (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> ( List a, List (Option a) )

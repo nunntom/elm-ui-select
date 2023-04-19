@@ -47,7 +47,7 @@ init =
 
 toElement : List (Attribute msg) -> Config a msg -> ViewConfig a msg -> Element msg
 toElement attrs ({ select } as config) viewConfig =
-    if ViewConfig.isMobile select viewConfig then
+    if Model.isMobile select then
         mobileView attrs (ViewConfig.toFilteredOptions select config.itemToString viewConfig) config viewConfig
 
     else
