@@ -11,6 +11,7 @@ import Element exposing (Attribute, Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Html.Attributes
@@ -46,11 +47,15 @@ init =
 
 toElement : List (Attribute msg) -> Config a msg -> ViewConfig a msg -> Element msg
 toElement attrs ({ select } as config) viewConfig =
-    toElement_ attrs
-        (ViewConfig.toPlacement select viewConfig)
-        (ViewConfig.toFilteredOptions select config.itemToString viewConfig)
-        config
-        viewConfig
+    if ViewConfig.isMobile select viewConfig then
+        mobileView attrs (ViewConfig.toFilteredOptions select config.itemToString viewConfig) config viewConfig
+
+    else
+        toElement_ attrs
+            (ViewConfig.toPlacement select viewConfig)
+            (ViewConfig.toFilteredOptions select config.itemToString viewConfig)
+            config
+            viewConfig
 
 
 toElement_ : List (Attribute msg) -> Placement -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
@@ -111,6 +116,74 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
             ]
         )
         (inputView attrs filteredOptions config viewConfig)
+
+
+mobileView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
+mobileView attrs filteredOptions ({ select } as config) viewConfig =
+    Element.column
+        ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
+         , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
+         , Element.width Element.fill
+         , View.relativeContainerMarker select
+            |> Element.html
+            |> Element.inFront
+         ]
+            ++ (ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
+                    |> List.map Element.htmlAttribute
+               )
+            ++ (if Model.isOpen select then
+                    [ Element.htmlAttribute (Html.Attributes.style "position" "fixed")
+                    , Element.htmlAttribute (Html.Attributes.style "top" "0")
+                    , Element.htmlAttribute (Html.Attributes.style "left" "0")
+                    , Element.htmlAttribute (Html.Attributes.style "right" "0")
+                    , Element.htmlAttribute (Html.Attributes.style "bottom" "0")
+                    , Element.htmlAttribute (Html.Attributes.style "height" "100%")
+                    , Element.htmlAttribute (Html.Attributes.style "z-index" "100")
+                    , Element.htmlAttribute (Html.Attributes.style "overflow" "hidden")
+                    , Element.paddingXY 20 40
+                    , Background.color (Element.rgba 0 0 0 0.15)
+                    , Element.inFront <|
+                        Input.button
+                            [ Element.alignRight
+                            , Element.alignTop
+                            , Element.padding 16
+                            , Font.size 28
+                            , Element.pointer
+                            ]
+                            { onPress = Nothing
+                            , label = Element.text "✕"
+                            }
+                    ]
+
+                else
+                    []
+               )
+        )
+        [ inputView attrs filteredOptions config viewConfig
+        , if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
+            Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement
+
+          else
+            Element.none
+        , menuView
+            (defaultMenuAttrs
+                { menuWidth = Nothing
+                , maxWidth = Nothing
+                , menuHeight = Nothing
+                }
+                ++ (Element.htmlAttribute (Html.Attributes.style "flex" "0 1 auto")
+                        :: List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes
+                   )
+            )
+            { menuId = Model.toMenuElementId select
+            , toOptionId = Model.toOptionElementId select
+            , toOptionState = Model.toOptionState select
+            , onChange = config.onChange
+            , menuOpen = Model.isOpen select
+            , options = filteredOptions
+            , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
+            }
+        ]
 
 
 inputView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
@@ -261,8 +334,7 @@ defaultMenuAttrs { menuWidth, maxWidth, menuHeight } =
 
             Nothing ->
                 Element.fill
-
-    --, Element.scrollbarY
+    , Element.moveDown 10
     , style "overflow-y" "auto"
     , Border.solid
     , Border.color (Element.rgb 0.8 0.8 0.8)
