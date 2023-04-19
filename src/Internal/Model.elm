@@ -41,6 +41,7 @@ module Internal.Model exposing
     , toRelativeContainerMarkerId
     , toRequestState
     , toValue
+    , toViewportWidth
     , wasHighlightedByMouse
     )
 
@@ -257,6 +258,11 @@ toPreviousQuery (Model { requestState }) =
 
         _ ->
             Nothing
+
+
+toViewportWidth : Model a -> Maybe Float
+toViewportWidth (Model { containerElement }) =
+    Maybe.map (.viewport >> .width) containerElement
 
 
 
@@ -495,13 +501,13 @@ calculateMenuDimensionsAndPlacementHelper forcedPlacement { menuHeight, containe
     then
         { minWidth = containerWidth
         , maxHeight =
-            Basics.min menuHeight (Basics.round (above - 20))
+            Basics.min menuHeight (Basics.round (above - 50))
         , placement = Above
         }
 
     else
         { minWidth = containerWidth
-        , maxHeight = Basics.min menuHeight (Basics.round (below - 20))
+        , maxHeight = Basics.min menuHeight (Basics.round (below - 50))
         , placement = Below
         }
 
