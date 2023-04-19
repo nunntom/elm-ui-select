@@ -23,6 +23,7 @@ type alias ViewConfigInternal a attribute view =
     , minInputLength : Maybe Int
     , openOnFocus : Bool
     , mobileBreakpoint : Maybe Float
+    , mobileView : Maybe (view -> view)
     , before : Maybe view
     , after : Maybe view
     }
@@ -45,6 +46,7 @@ init =
     , minInputLength = Nothing
     , openOnFocus = True
     , mobileBreakpoint = Just 760
+    , mobileView = Nothing
     , before = Nothing
     , after = Nothing
     }
