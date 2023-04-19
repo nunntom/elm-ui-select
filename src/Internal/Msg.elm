@@ -6,7 +6,7 @@ import Internal.Option exposing (Option)
 
 type Msg a
     = InputChanged String (List (Option a))
-    | OptionClicked (Option a)
+    | OptionClicked Bool (Option a)
     | InputFocused
         { openMenu : Bool
         , isMobile : Bool
@@ -21,7 +21,12 @@ type Msg a
         }
         (List (Option a))
     | MouseEnteredOption Int
-    | KeyDown Bool (List (Option a)) String
+    | KeyDown
+        { closeOnSelect : Bool
+        , selectOnTab : Bool
+        }
+        (List (Option a))
+        String
     | GotContainerAndMenuElements (Maybe Int) (Result Dom.Error { menu : Dom.Viewport, container : Dom.Element })
     | ClearButtonPressed
     | InputDebounceReturned String

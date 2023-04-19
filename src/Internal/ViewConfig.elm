@@ -22,6 +22,7 @@ type alias ViewConfigInternal a attribute view =
     , selectOnTab : Bool
     , minInputLength : Maybe Int
     , openOnFocus : Bool
+    , closeOnSelect : Bool
     , mobileBreakpoint : Maybe Float
     , before : Maybe view
     , after : Maybe view
@@ -44,6 +45,7 @@ init =
     , selectOnTab = True
     , minInputLength = Nothing
     , openOnFocus = True
+    , closeOnSelect = True
     , mobileBreakpoint = Just 760
     , before = Nothing
     , after = Nothing
