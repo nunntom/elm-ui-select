@@ -150,7 +150,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             ++ (ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
                     |> List.map Attributes.fromUnstyled
                )
-            ++ (if Model.isOpen select then
+            ++ (if Model.isFocused select then
                     [ Attributes.css
                         [ Css.position Css.fixed
                         , Css.top (Css.px 0)
@@ -176,7 +176,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             |> Html.fromUnstyled
         , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
-        , if Model.isOpen select then
+        , if Model.isFocused select then
             Html.button
                 [ Attributes.attribute "role" "button"
                 , Attributes.css
@@ -216,7 +216,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             , toOptionId = Model.toOptionElementId select
             , toOptionState = Model.toOptionState select
             , onChange = config.onChange
-            , menuOpen = Model.isOpen select
+            , menuOpen = Model.isFocused select
             , options = filteredOptions
             , optionElement = Maybe.withDefault (defaultOptionElement config.itemToString) viewConfig.optionElement
             }

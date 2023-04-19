@@ -96,6 +96,7 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
 
         KeyDown selectOnTab filteredOptions key ->
             Model.setFilteredOptions (Just filteredOptions) model
+                |> Model.setFocused True
                 |> handleKey selectOnTab tagger (request /= Nothing) key filteredOptions
                 |> withEffect (\_ -> Effect.emitJust (Maybe.map (\ev -> ev key) onKeyDown))
 
