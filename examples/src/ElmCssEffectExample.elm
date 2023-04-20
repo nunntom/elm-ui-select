@@ -88,7 +88,7 @@ view model =
                     , itemToString = \c -> c.flag ++ " " ++ c.name
                     }
             ]
-        , Html.div []
+        , Html.div [ css [ Css.marginTop (Css.em 2) ] ]
             [ Maybe.map (\{ name } -> Html.text ("You chose " ++ name)) (Select.toValue model.countrySelect)
                 |> Maybe.withDefault (Html.text "")
             ]
