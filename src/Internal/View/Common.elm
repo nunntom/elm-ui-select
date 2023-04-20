@@ -4,7 +4,7 @@ import Html exposing (Attribute, Html)
 import Html.Attributes exposing (style)
 import Html.Events as Events
 import Internal.Model as Model exposing (Model)
-import Internal.Msg exposing (Msg(..))
+import Internal.Msg exposing (Msg)
 import Internal.Option exposing (Option)
 import Internal.View.Events as Events
 import Internal.ViewConfig exposing (ViewConfigInternal)
