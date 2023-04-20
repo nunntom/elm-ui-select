@@ -12,7 +12,7 @@ type Effect effect msg
     | Batch (List (Effect effect msg))
     | Request effect
     | Emit msg
-    | Debounce (String -> msg) Float String
+    | Delay msg Float
     | FocusInput String msg
     | None
 
@@ -51,9 +51,9 @@ perform toCmd effect =
             Task.succeed ()
                 |> Task.perform (\_ -> msg)
 
-        Debounce msg delay val ->
+        Delay msg delay ->
             Process.sleep delay
-                |> Task.perform (\_ -> msg val)
+                |> Task.perform (\_ -> msg)
 
         FocusInput id msg ->
             Dom.focus id
@@ -107,9 +107,9 @@ simulate conf simulateRequest effect =
             conf.sleep 0
                 |> conf.perform (\_ -> msg)
 
-        Debounce msg delay val ->
+        Delay msg delay ->
             conf.sleep delay
-                |> conf.perform (\_ -> msg val)
+                |> conf.perform (\_ -> msg)
 
         FocusInput _ msg ->
             conf.sleep 0
@@ -195,8 +195,8 @@ map toMsg effect =
         Emit msg ->
             Emit (toMsg msg)
 
-        Debounce msg delay val ->
-            Debounce (msg >> toMsg) delay val
+        Delay msg delay ->
+            Delay (toMsg msg) delay
 
         FocusInput id msg ->
             FocusInput id (toMsg msg)
@@ -227,8 +227,8 @@ mapEffect toEffect effect =
         Emit msg ->
             Emit msg
 
-        Debounce msg delay val ->
-            Debounce msg delay val
+        Delay msg delay ->
+            Delay msg delay
 
         FocusInput id msg ->
             FocusInput id msg

@@ -281,7 +281,7 @@ doDebounceRequest tagger ({ request, requestMinInputLength, debounceRequest } as
               else
                 model
             , if shouldDebounce then
-                Effect.Debounce (InputDebounceReturned >> tagger) debounceRequest (Model.toInputValue model)
+                Effect.Delay (InputDebounceReturned (Model.toInputValue model) |> tagger) debounceRequest
 
               else
                 getContainerAndMenuElementsEffect Nothing tagger model
