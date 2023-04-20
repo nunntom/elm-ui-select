@@ -92,7 +92,7 @@ init id =
     Model
         { id = id
         , items = []
-        , filteredOptions = Nothing
+        , filteredOptions = Just []
         , selected = Nothing
         , inputValue = ""
         , highlighted = Nothing
