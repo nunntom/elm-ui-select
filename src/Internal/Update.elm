@@ -68,6 +68,7 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
                 |> Model.setInputValue inputValue
                 |> Model.setIsMobile isMobile
                 |> Model.setFocused True
+                |> Model.setIgnoreClick True
                 |> (if isMobile then
                         Model.openMenu
 
@@ -81,9 +82,19 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
                         \m -> ( m, Effect.none )
                    )
                 |> withEffect (\_ -> Effect.emitJust onFocus)
+                |> withEffect (\_ -> Effect.Delay (tagger DelayAfterFocusFinished) 300)
+
+        DelayAfterFocusFinished ->
+            ( Model.setIgnoreClick False model
+            , Effect.none
+            )
 
         InputClicked ->
-            onFocusMenu tagger (request /= Nothing) model
+            if Model.shouldIgnoreClick model then
+                ( model, Effect.none )
+
+            else
+                onFocusMenu tagger (request /= Nothing) model
 
         InputLostFocus config filteredOptions ->
             ( Model.blur config (request /= Nothing) filteredOptions model
