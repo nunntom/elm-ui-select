@@ -24,6 +24,7 @@ type alias ViewConfigInternal a attribute view =
     , openOnFocus : Bool
     , closeOnSelect : Bool
     , mobileBreakpoint : Maybe Float
+    , mobileViewAttributes : List attribute
     , before : Maybe view
     , after : Maybe view
     }
@@ -47,6 +48,7 @@ init =
     , openOnFocus = True
     , closeOnSelect = True
     , mobileBreakpoint = Just 760
+    , mobileViewAttributes = []
     , before = Nothing
     , after = Nothing
     }
