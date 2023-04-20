@@ -64,7 +64,7 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
         (List.concat
             [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
               , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
-              , View.relativeContainerMarker select
+              , View.relativeContainerMarker config.onChange config.itemToString select viewConfig filteredOptions
                     |> Element.html
                     |> Element.inFront
               , Element.width Element.fill
@@ -125,7 +125,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
         ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
          , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
          , Element.width Element.fill
-         , View.relativeContainerMarker select
+         , View.relativeContainerMarker config.onChange config.itemToString select viewConfig filteredOptions
             |> Element.html
             |> Element.inFront
          ]

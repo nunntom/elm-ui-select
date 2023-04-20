@@ -2,7 +2,12 @@ module Internal.View.Common exposing (ariaLive, inputAccessibilityAttributes, re
 
 import Html exposing (Attribute, Html)
 import Html.Attributes exposing (style)
+import Html.Events as Events
 import Internal.Model as Model exposing (Model)
+import Internal.Msg exposing (Msg(..))
+import Internal.Option exposing (Option)
+import Internal.View.Events as Events
+import Internal.ViewConfig exposing (ViewConfigInternal)
 
 
 inputAccessibilityAttributes : Model a -> List (Attribute msg)
@@ -53,19 +58,34 @@ ariaLive optionCount =
         ]
 
 
-relativeContainerMarker : Model a -> Html msg
-relativeContainerMarker model =
+relativeContainerMarker : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> Html msg
+relativeContainerMarker onChange itemToString model viewConfig filteredOptions =
     Html.div
-        [ Html.Attributes.style "position" "absolute"
-        , Html.Attributes.style "height" "100%"
-        , Html.Attributes.style "width" "100%"
-        , Html.Attributes.style "top" "0"
-        , Html.Attributes.style "left" "0"
-        , Html.Attributes.style "bottom" "0"
-        , Html.Attributes.style "right" "0"
-        , Html.Attributes.style "visibility" "hidden"
-        , Html.Attributes.style "pointer-events" "none"
-        , Html.Attributes.style "z-index" "-100"
-        , Html.Attributes.id (Model.toRelativeContainerMarkerId model)
+        [ Html.Attributes.style "display" "contents"
         ]
-        []
+        [ Html.node "style"
+            []
+            [ Html.text """
+@keyframes elm-select-start {
+  from {opacity: 0.1;}
+  to {opacity: 0;}
+}
+            """
+            ]
+        , Html.div
+            [ Html.Attributes.style "position" "absolute"
+            , Html.Attributes.style "height" "100%"
+            , Html.Attributes.style "width" "100%"
+            , Html.Attributes.style "top" "0"
+            , Html.Attributes.style "left" "0"
+            , Html.Attributes.style "bottom" "0"
+            , Html.Attributes.style "right" "0"
+            , Html.Attributes.style "visibility" "hidden"
+            , Html.Attributes.style "pointer-events" "none"
+            , Html.Attributes.style "z-index" "-100"
+            , Html.Attributes.style "animation" "elm-select-start 1ms"
+            , Html.Attributes.id (Model.toRelativeContainerMarkerId model)
+            , Events.on "animationend" (Events.onStartDecoder onChange itemToString model viewConfig filteredOptions)
+            ]
+            []
+        ]
