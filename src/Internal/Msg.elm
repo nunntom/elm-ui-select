@@ -13,6 +13,7 @@ type Msg a
         }
         String
         (Maybe ( List a, List (Option a) ))
+    | DelayAfterFocusFinished
     | GotNewFilteredOptions Bool ( List a, List (Option a) )
     | GotIsMobile Bool
     | InputClicked

@@ -19,11 +19,13 @@ module Internal.Model exposing
     , setElements
     , setFilteredOptions
     , setFocused
+    , setIgnoreClick
     , setInputValue
     , setIsMobile
     , setItems
     , setRequestState
     , setSelected
+    , shouldIgnoreClick
     , toContainerElement
     , toContainerElementId
     , toCurrentFilteredOptions
@@ -77,6 +79,7 @@ type alias InternalState a =
     , applyFilter : Bool
     , focused : Bool
     , isMobile : Bool
+    , ignoreClick : Bool
     }
 
 
@@ -101,6 +104,7 @@ init id =
         , applyFilter = False
         , focused = False
         , isMobile = False
+        , ignoreClick = False
         }
 
 
@@ -322,6 +326,11 @@ isMobile (Model model) =
     model.isMobile
 
 
+shouldIgnoreClick : Model a -> Bool
+shouldIgnoreClick (Model model) =
+    model.ignoreClick || model.menuOpen
+
+
 
 -- UPDATE
 
@@ -486,6 +495,11 @@ blur { clearInputValue, selectExactMatch } hasRequest filteredOptions (Model mod
 setIsMobile : Bool -> Model a -> Model a
 setIsMobile v (Model model) =
     Model { model | isMobile = v }
+
+
+setIgnoreClick : Bool -> Model a -> Model a
+setIgnoreClick v (Model model) =
+    Model { model | ignoreClick = v }
 
 
 
