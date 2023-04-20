@@ -180,7 +180,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
         , inputView attrs filteredOptions config viewConfig
         , if Model.isOpen select then
             Html.button
-                [ Attributes.attribute "role" "button"
+                [ Attributes.attribute "type" "button"
                 , Attributes.css
                     [ Css.fontSize (Css.px 28)
                     , Css.position Css.fixed
