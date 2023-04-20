@@ -180,19 +180,18 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
         , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
         , if Model.isOpen select then
-            Html.button
-                [ Attributes.attribute "type" "button"
+            Html.div
+                [ Attributes.attribute "aria-role" "button"
+                , Attributes.attribute "aria-label" "close menu"
+                , Events.preventDefaultOn "mousedown" (Decode.succeed ( config.onChange NoOp, True ))
+                , Events.preventDefaultOn "click" (Decode.succeed ( config.onChange MobileCloseButtonPressed, True ))
                 , Attributes.css
-                    [ Css.fontSize (Css.px 28)
-                    , Css.position Css.fixed
+                    [ Css.position Css.fixed
                     , Css.top (Css.px 0)
                     , Css.right (Css.px 0)
-                    , Css.padding (Css.px 16)
-                    , Css.borderWidth (Css.px 0)
-                    , Css.backgroundColor Css.transparent
                     ]
                 ]
-                [ Html.text "✕" ]
+                [ Maybe.withDefault defaultMobileCloseButton viewConfig.mobileCloseButton ]
 
           else
             Html.text ""
@@ -228,6 +227,19 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             |> Maybe.map (\after -> Html.div [] [ after ])
             |> Maybe.withDefault (Html.text "")
         ]
+
+
+defaultMobileCloseButton : Html msg
+defaultMobileCloseButton =
+    Html.div
+        [ Attributes.css
+            [ Css.fontSize (Css.px 28)
+            , Css.padding (Css.px 16)
+            , Css.borderWidth (Css.px 0)
+            , Css.backgroundColor Css.transparent
+            ]
+        ]
+        [ Html.text "✕" ]
 
 
 inputView : List Style -> List (Option a) -> Config a msg -> ViewConfig a msg -> Html msg

@@ -9,6 +9,7 @@ module Select.ElmCss exposing
     , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
     , toStyled
     , Effect
+    , withMobileCloseButton
     )
 
 {-| A select widget for elm-ui.
@@ -670,6 +671,13 @@ withMobileBreakpoint v (ViewConfig config) =
 withMobileViewStyles : List Style -> ViewConfig a msg -> ViewConfig a msg
 withMobileViewStyles v (ViewConfig config) =
     ViewConfig { config | mobileViewAttributes = v }
+
+
+{-| Replace the default mobile menu close button with an element of your own.
+-}
+withMobileCloseButton : Maybe (Html msg) -> ViewConfig a msg -> ViewConfig a msg
+withMobileCloseButton v (ViewConfig config) =
+    ViewConfig { config | mobileCloseButton = v }
 
 
 {-| Should the menu be opened when the input gets focus?
