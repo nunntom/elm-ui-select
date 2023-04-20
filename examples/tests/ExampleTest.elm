@@ -99,7 +99,15 @@ exampleProgramTest =
                     |> focusInput
                     |> ProgramTest.fillIn "" "Choose a country" "United"
                     |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
-                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.focus
+                    |> focusInput
+                    |> ProgramTest.expectViewHas [ Selector.text "🇦🇩 Andorra" ]
+        , Test.test "Choosing an option and then clicking on the input shows all the options again" <|
+            \() ->
+                programTest Nothing
+                    |> focusInput
+                    |> ProgramTest.fillIn "" "Choose a country" "United"
+                    |> Select.Effect.simulateClickOption simulateInputConfig "country-select" "🇬🇧 United Kingdom of Great Britain and Northern Ireland"
+                    |> ProgramTest.simulateDomEvent (Query.find [ Selector.id (Select.toInputElementId countrySelect) ]) Test.Html.Event.click
                     |> ProgramTest.expectViewHas [ Selector.text "🇦🇩 Andorra" ]
         , Test.test "Programatically selecting an item shows the correct input value and selects the item" <|
             \() ->
