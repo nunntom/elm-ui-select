@@ -6,7 +6,7 @@ module Select.ElmCss exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
     , toStyled
     , Effect
     )
@@ -51,7 +51,7 @@ module Select.ElmCss exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
 
 
 # Element
@@ -663,6 +663,13 @@ withMinInputLength v (ViewConfig config) =
 withMobileBreakpoint : Maybe Float -> ViewConfig a msg -> ViewConfig a msg
 withMobileBreakpoint v (ViewConfig config) =
     ViewConfig { config | mobileBreakpoint = v }
+
+
+{-| Add some styles to the full screen mobile container. This is only for the menu open state.
+-}
+withMobileViewStyles : List Style -> ViewConfig a msg -> ViewConfig a msg
+withMobileViewStyles v (ViewConfig config) =
+    ViewConfig { config | mobileViewAttributes = v }
 
 
 {-| Should the menu be opened when the input gets focus?

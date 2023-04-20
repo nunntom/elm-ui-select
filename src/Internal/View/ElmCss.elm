@@ -162,11 +162,12 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
                         , Css.height (Css.pct 100)
                         , Css.zIndex (Css.int 100)
                         , Css.overflow Css.hidden
-                        , Css.padding2 (Css.px 40) (Css.px 20)
+                        , Css.padding4 (Css.px 50) (Css.px 20) (Css.px 40) (Css.px 20)
                         , Css.backgroundColor (Css.rgba 0 0 0 0.15)
                         , Css.boxSizing Css.borderBox
                         , Css.displayFlex
                         , Css.flexDirection Css.column
+                        , Css.batch viewConfig.mobileViewAttributes
                         ]
                     ]
 
