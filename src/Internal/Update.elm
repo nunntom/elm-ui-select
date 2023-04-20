@@ -90,8 +90,9 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
             , Effect.emitJust onLoseFocus
             )
 
-        GotNewFilteredOptions ( items, options ) ->
+        GotNewFilteredOptions isMobile ( items, options ) ->
             ( Model.setItems items model
+                |> Model.setIsMobile isMobile
                 |> Model.setFilteredOptions (Just options)
             , Effect.None
             )
@@ -172,6 +173,9 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
 
             else
                 ( model, Effect.none )
+
+        GotIsMobile isMobile ->
+            ( Model.setIsMobile isMobile model, Effect.none )
 
         NoOp ->
             ( model, Effect.none )

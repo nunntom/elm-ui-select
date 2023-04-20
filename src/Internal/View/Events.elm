@@ -1,4 +1,4 @@
-module Internal.View.Events exposing (onFocus, onInput, onKeyDown, updateFilteredOptions)
+module Internal.View.Events exposing (onFocus, onInput, onKeyDown, onStartDecoder, updateFilteredOptions)
 
 import Html exposing (Attribute)
 import Html.Events
@@ -6,7 +6,7 @@ import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
 import Internal.Option exposing (Option)
 import Internal.ViewConfig exposing (ViewConfigInternal)
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 
 
 onKeyDown : Bool -> (String -> msg) -> Attribute msg
@@ -47,18 +47,16 @@ onFocus onChange itemToString model viewConfig filteredOptions =
     let
         decodeEvent updateFiltered =
             Decode.map
-                (\width ->
+                (\isMobile ->
                     onChange <|
                         InputFocused
                             { openMenu = viewConfig.openOnFocus
-                            , isMobile =
-                                Maybe.map2 (\w bp -> w <= bp) width viewConfig.mobileBreakpoint
-                                    |> Maybe.withDefault False
+                            , isMobile = isMobile
                             }
                             (Model.toInputText itemToString model)
                             updateFiltered
                 )
-                (Decode.maybe <| Decode.at [ "view", "innerWidth" ] Decode.float)
+                (isMobileDecoder viewConfig)
     in
     Html.Events.on "focus" <|
         if Model.requiresNewFilteredOptions model then
@@ -83,13 +81,49 @@ updateFilteredOptions : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfig
 updateFilteredOptions onChange itemToString model viewConfig filteredOptions =
     if Model.requiresNewFilteredOptions model then
         let
-            options _ =
-                optionsUpdate itemToString model viewConfig filteredOptions
+            decoder =
+                newFilteredOptionsDecoder itemToString model viewConfig filteredOptions
+                    |> Decode.map onChange
         in
-        [ Html.Events.on "keydown" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> onChange)))
-        , Html.Events.on "touchstart" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> onChange)))
-        , Html.Events.on "mousemove" (Decode.lazy (\_ -> Decode.succeed (GotNewFilteredOptions (options ()) |> onChange)))
+        [ Html.Events.on "keydown" decoder
+        , Html.Events.on "touchstart" decoder
+        , Html.Events.on "mousemove" decoder
         ]
 
     else
         []
+
+
+isMobileDecoder : ViewConfigInternal a attribute view -> Decoder Bool
+isMobileDecoder viewConfig =
+    Decode.maybe
+        (Decode.oneOf
+            [ Decode.at [ "view", "innerWidth" ] Decode.float
+            , Decode.at [ "target", "ownerDocument", "defaultView", "innerWidth" ] Decode.float
+            ]
+        )
+        |> Decode.map
+            (\width ->
+                Maybe.map2 (\w bp -> w <= bp) width viewConfig.mobileBreakpoint
+                    |> Maybe.withDefault False
+            )
+
+
+newFilteredOptionsDecoder : (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> Decoder (Msg a)
+newFilteredOptionsDecoder itemToString model viewConfig filteredOptions =
+    let
+        options _ =
+            optionsUpdate itemToString model viewConfig filteredOptions
+    in
+    Decode.lazy (\_ -> Decode.map (\isMobile -> GotNewFilteredOptions isMobile (options ())) (isMobileDecoder viewConfig))
+
+
+onStartDecoder : (Msg a -> msg) -> (a -> String) -> Model a -> ViewConfigInternal a attribute view -> List (Option a) -> Decoder msg
+onStartDecoder onChange itemToString model viewConfig filteredOptions =
+    if Model.requiresNewFilteredOptions model then
+        newFilteredOptionsDecoder itemToString model viewConfig filteredOptions
+            |> Decode.map onChange
+
+    else
+        isMobileDecoder viewConfig
+            |> Decode.map (GotIsMobile >> onChange)

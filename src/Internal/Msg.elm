@@ -13,7 +13,8 @@ type Msg a
         }
         String
         (Maybe ( List a, List (Option a) ))
-    | GotNewFilteredOptions ( List a, List (Option a) )
+    | GotNewFilteredOptions Bool ( List a, List (Option a) )
+    | GotIsMobile Bool
     | InputClicked
     | InputLostFocus
         { clearInputValue : Bool
