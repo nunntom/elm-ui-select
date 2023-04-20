@@ -73,7 +73,7 @@ toStyled_ attrs placement filteredOptions ({ select } as config) viewConfig =
                 |> List.map Attributes.fromUnstyled
             ]
         )
-        [ View.relativeContainerMarker select
+        [ View.relativeContainerMarker config.onChange config.itemToString select viewConfig filteredOptions
             |> Html.fromUnstyled
         , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
@@ -175,7 +175,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
                     []
                )
         )
-        [ View.relativeContainerMarker select
+        [ View.relativeContainerMarker config.onChange config.itemToString select viewConfig filteredOptions
             |> Html.fromUnstyled
         , Maybe.withDefault (Html.text "") viewConfig.before
         , inputView attrs filteredOptions config viewConfig
