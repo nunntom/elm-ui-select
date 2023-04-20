@@ -191,6 +191,9 @@ update_ ({ request, onFocus, onLoseFocus, onInput, onKeyDown } as updateOptions)
         NoOp ->
             ( model, Effect.none )
 
+        MobileCloseButtonPressed ->
+            ( Model.closeMenu model, Effect.none )
+
 
 onFocusMenu : (Msg a -> msg) -> Bool -> Model a -> ( Model a, Effect effect msg )
 onFocusMenu tagger hasRequest model =

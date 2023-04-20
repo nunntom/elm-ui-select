@@ -33,4 +33,5 @@ type Msg a
     | ClearButtonPressed
     | InputDebounceReturned String
     | GotRequestResponse String (Result String ( List a, Maybe a ))
+    | MobileCloseButtonPressed
     | NoOp
