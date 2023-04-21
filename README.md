@@ -1,6 +1,6 @@
 # Elm-Ui Select
 
-A select widget for elm-ui with keyboard input, filtering, menu scrolling and requests.
+A select widget for elm-ui with keyboard input/scrolling, filtering and requests.
 
 ## Features:
 
@@ -9,7 +9,9 @@ A select widget for elm-ui with keyboard input, filtering, menu scrolling and re
 - Automatically attempts to size and place the menu based on the position of the input in the viewport.
 - Customisable: Supply your own attributes for the input, menu or your own option Element.
 - Make HTTP requests to retrieve matching options (The package does not make the requests, but you supply the Cmd/Effect - no elm/http dependency)
-- Can be used with the Effect pattern and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/3.6.3/) to simulate input to the select.
+- Can be used with the Effect pattern and [elm-program-test](https://package.elm-lang.org/packages/avh4/elm-program-test/4.0.0/) to simulate input to the select.
+
+### [View a live interactive demo](https://nunntom.github.io/elm-ui-select/)
 
 ## Example
 
@@ -18,8 +20,7 @@ A select widget for elm-ui with keyboard input, filtering, menu scrolling and re
 -- MODEL
 
 type alias Model =
-    { countrySelect : Select Country
-    }
+    { countrySelect : Select Country }
 
 
 init : () -> ( Model, Cmd Msg )
@@ -50,13 +51,14 @@ update msg model =
 
 view : Model -> Element Msg
 view model =
-    Select.view []
-        { onChange = CountrySelectMsg
-        , label = Input.labelAbove [] (text "Choose a country")
-        , placeholder = Just (Input.placeholder [] (text "Type to search"))
-        , itemToString = \c -> c.flag ++ " " ++ c.name
-        }
-        |> Select.toElement model.countrySelect
+    Select.view
+        |> Select.toElement []
+            { select = model.countrySelect
+            , onChange = CountrySelectMsg
+            , itemToString = \c -> c.flag ++ " " ++ c.name
+            , label = Input.labelAbove [] (text "Choose a country")
+            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            }
 
 ```
 
@@ -74,17 +76,18 @@ init =
 
 view : List Country -> PageModel -> Element Msg
 view countries model =
-    Select.view []
-        { onChange = CountrySelectMsg
-        , label = Input.labelAbove [] (text "Choose a country")
-        , placeholder = Just (Input.placeholder [] (text "Type to search"))
-        , itemToString = \c -> c.flag ++ " " ++ c.name
-        }
-        |> Select.toElement (Select.setItems countries model.countrySelect)
+    Select.view
+        |> Select.toElement []
+            { onChange = CountrySelectMsg
+            , select = Select.setItems countries model.countrySelect
+            , label = Input.labelAbove [] (text "Choose a country")
+            , placeholder = Just (Input.placeholder [] (text "Type to search"))
+            , itemToString = \c -> c.flag ++ " " ++ c.name
+            }
 
 
 ```
 
 ## Limitations
 
-There are issues when the input is placed within a parent element that has overflow scroll or auto: the menu may be clipped by the parent. This can be overcome by using [Select.withMenuPositionFixed](https://package.elm-lang.org/packages/nunntom/elm-ui-select/3.1.3/Select/#withMenuPositionFixed), but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
+There are issues when the input is placed within a parent element that has overflow scroll or auto: the menu may be clipped by the parent. This can be overcome by using [Select.withMenuPositionFixed](https://package.elm-lang.org/packages/nunntom/elm-ui-select/4.0.0/Select/#withMenuPositionFixed), but if the parent also has a transform applied, it gets clipped again. This means any parent with e.g. Element.scrollBarY + Element.moveDown/moveLeft etc. can cause issues. This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
