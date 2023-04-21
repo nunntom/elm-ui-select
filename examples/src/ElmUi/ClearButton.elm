@@ -1,9 +1,9 @@
-module Resources.ClearButton exposing (clearButton)
+module ElmUi.ClearButton exposing (clearButton)
 
 import Element
 import Element.Font as Font
 import Element.Region as Region
-import Select
+import Select.ElmUi as Select
 
 
 clearButton : Select.ClearButton msg

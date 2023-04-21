@@ -1,4 +1,4 @@
-module EffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
+module ElmUi.EffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
 
 {- This example shows how the select can be used with effects.
    And is useful for testing the elm-ui-select package as a whole.
@@ -10,8 +10,8 @@ import Element
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
-import Resources.ClearButton
-import Select exposing (Select)
+import ElmUi.ClearButton as ClearButton
+import Select.ElmUi as Select exposing (Select)
 import Select.Effect
 
 
@@ -64,7 +64,7 @@ view model =
                     ]
                     []
             , Select.view
-                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
+                |> Select.withClearButton (Just ClearButton.clearButton)
                 |> Select.toElement []
                     { select = model.countrySelect
                     , onChange = CountrySelectMsg

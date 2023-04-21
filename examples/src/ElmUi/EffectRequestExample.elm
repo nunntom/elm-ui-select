@@ -1,4 +1,4 @@
-module EffectRequestExample exposing (Cocktail, Model, Msg(..), MyEffect(..), cocktailDecoder, init, main, update, view)
+module ElmUi.EffectRequestExample exposing (Cocktail, Model, Msg(..), MyEffect(..), cocktailDecoder, init, main, update, view)
 
 import Browser
 import Element exposing (Element)
@@ -10,8 +10,8 @@ import Html exposing (Html)
 import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
-import Resources.ClearButton
-import Select exposing (Select)
+import ElmUi.ClearButton as ClearButton
+import Select.ElmUi as Select exposing (Select)
 import Select.Effect
 
 
@@ -148,7 +148,7 @@ view model =
                     ]
                     []
             , Select.view
-                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
+                |> Select.withClearButton (Just ClearButton.clearButton)
                 |> Select.toElement []
                     { select = model.select
                     , onChange = SelectMsg

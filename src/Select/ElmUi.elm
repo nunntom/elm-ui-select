@@ -1,4 +1,4 @@
-module Select exposing
+module Select.ElmUi exposing
     ( Select
     , init
     , setItems, setSelected, setInputValue, openMenu, closeMenu

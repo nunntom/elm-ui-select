@@ -1,7 +1,7 @@
-module ElmCssExampleTest exposing (exampleProgramTest)
+module ElmCss.ExampleTest exposing (exampleProgramTest)
 
 import Countries exposing (Country)
-import ElmCssEffectExample as App
+import ElmCss.EffectExample as App
 import Expect
 import Html
 import Html.Attributes

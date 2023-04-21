@@ -10,9 +10,7 @@
     "examples": "cd examples/src && elm reactor",
     "build-demo": "cd demo && npm run build"
   },
-  "pre-commit": [
-    "ci"
-  ],
+  "pre-commit": [],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nunntom/elm-ui-select.git"

@@ -1,4 +1,4 @@
-module RequestExample exposing (main)
+module ElmUi.RequestExample exposing (main)
 
 {- This example shows how the select can be used to make requests based on the user input. -}
 
@@ -12,8 +12,8 @@ import Html exposing (Html)
 import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
-import Resources.ClearButton
-import Select exposing (Select)
+import ElmUi.ClearButton as ClearButton
+import Select.ElmUi as Select exposing (Select)
 
 
 main : Program () Model Msg
@@ -111,7 +111,7 @@ view model =
                     ]
                     []
             , Select.view
-                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
+                |> Select.withClearButton (Just ClearButton.clearButton)
                 |> Select.withSelectExactMatchOnBlur True
                 |> Select.toElement []
                     { select = model.select

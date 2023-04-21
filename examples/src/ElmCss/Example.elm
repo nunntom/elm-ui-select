@@ -1,4 +1,4 @@
-module ElmCssExample exposing (main)
+module ElmCss.Example exposing (main)
 
 import Browser
 import Countries exposing (Country)

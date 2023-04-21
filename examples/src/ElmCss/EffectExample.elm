@@ -1,4 +1,4 @@
-module ElmCssEffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
+module ElmCss.EffectExample exposing (Model, Msg(..), MyEffect(..), init, main, update, view)
 
 import Browser
 import Countries exposing (Country)

@@ -1,7 +1,7 @@
-module ExampleTest exposing (exampleProgramTest)
+module ElmUi.ExampleTest exposing (exampleProgramTest)
 
 import Countries exposing (Country)
-import EffectExample as App
+import ElmUi.EffectExample as App
 import Element
 import Element.Input as Input
 import Expect
@@ -9,7 +9,7 @@ import Html
 import Html.Attributes
 import Json.Encode as Encode
 import ProgramTest exposing (ProgramTest, SimulatedEffect)
-import Select exposing (Select)
+import Select.ElmUi as Select exposing (Select)
 import Select.Effect
 import SimulateInput
 import SimulatedEffect.Cmd as SimulatedCmd

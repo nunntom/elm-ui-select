@@ -1,4 +1,4 @@
-module Example exposing (main)
+module ElmUi.Example exposing (main)
 
 import Browser
 import Countries exposing (Country)
@@ -6,8 +6,8 @@ import Element
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
-import Resources.ClearButton
-import Select exposing (Select)
+import ElmUi.ClearButton as ClearButton
+import Select.ElmUi as Select exposing (Select)
 
 
 main : Program () Model Msg
@@ -51,7 +51,7 @@ view model =
                     ]
                     []
             , Select.view
-                |> Select.withClearButton (Just Resources.ClearButton.clearButton)
+                |> Select.withClearButton (Just ClearButton.clearButton)
                 |> Select.toElement []
                     { select = model.countrySelect
                     , onChange = CountrySelectMsg
