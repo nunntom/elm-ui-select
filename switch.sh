@@ -10,7 +10,7 @@ if [ -z "$(git status --porcelain)" ]; then
         rm src/Internal/View/ElmCss.elm
         rm -rfd examples/src/ElmCss
         rm -rfd examples/tests/ElmCss
-        find . -type f -name "*.elm" -exec sed -i 's/import Select\.ElmUi/import Select/g' {} +
+        find . -type f -name "*.elm" -exec sed -i 's/import Select\.ElmUi as Select/import Select/g' {} +
         find . -type f -name "*.elm" -exec sed -i 's/module Select\.ElmUi/module Select/g' {} +
         sed -i ':a;N;$!ba;s/\s\+"Select\.ElmCss",//g' elm.json
         sed -i 's/"Select\.ElmUi",/"Select",/g' elm.json
@@ -22,7 +22,7 @@ if [ -z "$(git status --porcelain)" ]; then
         rm src/Internal/View/ElmUi.elm
         rm -rfd examples/src/ElmUi
         rm -rfd examples/tests/ElmUi
-        find . -type f -name "*.elm" -exec sed -i 's/import Select\.ElmCss/import Select/g' {} +
+        find . -type f -name "*.elm" -exec sed -i 's/import Select as Select\.ElmCss/import Select/g' {} +
         find . -type f -name "*.elm" -exec sed -i 's/module Select\.ElmCss/module Select/g' {} +
         sed -i ':a;N;$!ba;s/\s\+"Select\.ElmUi",//g' elm.json
         sed -i 's/"Select\.ElmCss",/"Select",/g' elm.json
