@@ -74,13 +74,12 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
 
                     else
                         Element.none
-              , Placement.toAttribute
-                    (if viewConfig.positionFixed then
-                        Placement.Below
+              , (if viewConfig.positionFixed || placement == Placement.Below then
+                    Element.below
 
-                     else
-                        placement
-                    )
+                 else
+                    Element.above
+                )
                 <|
                     (if viewConfig.positionFixed then
                         positionFixedEl placement (Model.toContainerElement select)
