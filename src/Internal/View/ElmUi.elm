@@ -147,14 +147,13 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
                         Input.button
                             [ Element.alignRight
                             , Element.alignTop
-                            , Element.padding 16
-                            , Font.size 28
                             , Element.pointer
                             ]
-                            { onPress = Nothing
-                            , label = Element.text "✕"
+                            { onPress = Just (config.onChange MobileCloseButtonPressed)
+                            , label = Maybe.withDefault defaultMobileCloseButton viewConfig.mobileCloseButton
                             }
                     ]
+                        ++ viewConfig.mobileViewAttributes
 
                 else
                     []
@@ -186,6 +185,15 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             , closeOnSelect = viewConfig.closeOnSelect
             }
         ]
+
+
+defaultMobileCloseButton : Element msg
+defaultMobileCloseButton =
+    Element.el
+        [ Element.padding 16
+        , Font.size 28
+        ]
+        (Element.text "✕")
 
 
 inputView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg

@@ -7,7 +7,7 @@ module Select.ElmUi exposing
     , Msg, update
     , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
     , sendRequest
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState(..), withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withMobileBreakpoint
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState(..), withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withMobileBreakpoint, withMobileViewAttributes, withMobileCloseButton
     , toElement
     , Effect
     )
@@ -57,7 +57,7 @@ module Select.ElmUi exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withMobileBreakpoint
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, OptionState, withOptionElement, defaultOptionElement, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withOpenMenuOnFocus, withMobileBreakpoint, withMobileViewAttributes, withMobileCloseButton
 
 
 # Element
@@ -702,6 +702,20 @@ withOpenMenuOnFocus v (ViewConfig config) =
 withMobileBreakpoint : Maybe Float -> ViewConfig a msg -> ViewConfig a msg
 withMobileBreakpoint v (ViewConfig config) =
     ViewConfig { config | mobileBreakpoint = v }
+
+
+{-| Add some attributes to the full screen mobile container. This is only for the menu open state.
+-}
+withMobileViewAttributes : List (Attribute msg) -> ViewConfig a msg -> ViewConfig a msg
+withMobileViewAttributes v (ViewConfig config) =
+    ViewConfig { config | mobileViewAttributes = v }
+
+
+{-| Replace the default mobile menu close button with an element of your own.
+-}
+withMobileCloseButton : Maybe (Element msg) -> ViewConfig a msg -> ViewConfig a msg
+withMobileCloseButton v (ViewConfig config) =
+    ViewConfig { config | mobileCloseButton = v }
 
 
 {-| Turn the ViewConfig into an Element.
