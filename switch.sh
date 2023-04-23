@@ -13,7 +13,7 @@ if [ -z "$(git status --porcelain)" ]; then
         find . -type f -name "*.elm" -exec sed -i 's/import Select\.ElmUi/import Select/g' {} +
         find . -type f -name "*.elm" -exec sed -i 's/module Select\.ElmUi/module Select/g' {} +
         sed -i ':a;N;$!ba;s/\s\+"Select\.ElmCss",//g' elm.json
-        sed -i 's/"Select\.ElmUi",/Select/g' elm.json
+        sed -i 's/"Select\.ElmUi",/"Select",/g' elm.json
         npx elm-json uninstall rtfeldman/elm-css --yes
     elif [ $1 == 'elm-css' ]
         echo "switching to elm-css"
@@ -25,7 +25,7 @@ if [ -z "$(git status --porcelain)" ]; then
         find . -type f -name "*.elm" -exec sed -i 's/import Select\.ElmCss/import Select/g' {} +
         find . -type f -name "*.elm" -exec sed -i 's/module Select\.ElmCss/module Select/g' {} +
         sed -i ':a;N;$!ba;s/\s\+"Select\.ElmUi",//g' elm.json
-        sed -i 's/"Select\.ElmCss",/Select/g' elm.json
+        sed -i 's/"Select\.ElmCss",/"Select",/g' elm.json
         npx elm-json uninstall mdgriffith/elm-ui --yes
     then
         echo "css"
