@@ -6,10 +6,9 @@ module Select.ElmCss exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
+    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withMobileCloseButton, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
     , toStyled
     , Effect
-    , withMobileCloseButton
     )
 
 {-| A select widget for elm-ui.
@@ -52,7 +51,7 @@ module Select.ElmCss exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
+@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withMobileCloseButton, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
 
 
 # Element
