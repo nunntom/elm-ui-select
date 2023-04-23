@@ -6,7 +6,7 @@ module Select.ElmCss exposing
     , isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
     , Msg, update, updateWith, sendRequest
     , UpdateOption, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
-    , ViewConfig, view, withMenuAttributes, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withMobileCloseButton, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
+    , ViewConfig, view, withMenuStyles, MenuPlacement(..), withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState(..), withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withMobileCloseButton, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
     , toStyled
     , Effect
     )
@@ -51,7 +51,7 @@ module Select.ElmCss exposing
 
 # Configure View
 
-@docs ViewConfig, view, withMenuAttributes, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withMobileCloseButton, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
+@docs ViewConfig, view, withMenuStyles, MenuPlacement, withMenuMaxHeight, withMenuMaxWidth, withNoMatchElement, withOptionElement, defaultOptionElement, OptionState, withClearButton, ClearButton, clearButton, withFilter, withMenuAlwaysAbove, withMenuAlwaysBelow, withMenuPlacementAuto, withMenuPositionFixed, withClearInputValueOnBlur, withSelectExactMatchOnBlur, withSelectOnTab, withMinInputLength, withMobileBreakpoint, withMobileViewStyles, withMobileCloseButton, withOpenMenuOnFocus, withCloseOnSelect, withElementBefore, withElementAfter
 
 
 # Element
@@ -117,13 +117,12 @@ You'd probably only do this if you want to select from things that are owned/man
 
     view : Model -> Html Msg
     view model =
-        Select.view []
-            { onChange = SelectMsg
-            , label = Input.labelAbove [] (Element.text "Choose a thing")
-            , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-            , itemToString = identity
-            }
-            |> Select.toElement (Select.setItems model.things model.select)
+        Select.view
+            |> Select.toHtml []
+                { select = Select.setItems model.things model.select
+                , onChange = SelectMsg
+                , itemToString = identity
+                }
 
 -}
 setItems : List a -> Select a -> Select a
@@ -417,13 +416,12 @@ sendRequest tagger req andSelect select =
 
     view : Model -> Html Msg
     view model =
-        Select.view []
-            { onChange = SelectMsg
-            , label = Input.labelAbove [] (text "Choose a thing")
-            , placeholder = Just (Input.placeholder [] (text "Type to search"))
-            , itemToString = .name
-            }
-            |> Select.toElement model.thingsSelect
+        Select.view
+            |> Select.toHtml []
+                { select = model.thingsSelect
+                , onChange = SelectMsg
+                , itemToString = .name
+                }
 
 -}
 type ViewConfig a msg
@@ -481,33 +479,32 @@ withMenuMaxWidth width (ViewConfig config) =
     ViewConfig { config | menuMaxWidth = width }
 
 
-{-| Set arbitrary attributes for the menu element. You can call this multiple times and it will accumulate attributes.
-You can define different attributes based on whether the menu appears above or below the input.
+{-| Set arbitrary css for the menu element. You can call this multiple times and it will accumulate styles.
+You can define different styles based on whether the menu appears above or below the input.
 
-    Select.view []
-        { onChange = SelectMsg
-        , label = Input.labelAbove [] (Element.text "Choose a thing")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = .name
-        }
-        |> Select.withMenuAttributes
+    Select.view
+        |> Select.withMenuStyles
             (\placement ->
-                [ Element.Font.size 16
-                , Element.Border.width 2
+                [ Css.fontSize (Css.px 16)
+                , Css.borderWidth (Css.px 2)
                 ]
                     ++ (case placement of
                             Select.MenuAbove ->
-                                [ Element.moveUp 10 ]
+                                [ Css.transform (Css.translateY (Css.px 10)) ]
 
                             Select.MenuBelow ->
-                                [ Element.moveDown 10 ]
+                                [ Css.transform (Css.translateY (Css.px -10)) ]
                        )
             )
-        |> Select.toElement model.select
+        |> Select.toHtml []
+            { select = model.select
+            , onChange = SelectMsg
+            , itemToString = .name
+            }
 
 -}
-withMenuAttributes : (MenuPlacement -> List Style) -> ViewConfig a msg -> ViewConfig a msg
-withMenuAttributes attribs (ViewConfig config) =
+withMenuStyles : (MenuPlacement -> List Style) -> ViewConfig a msg -> ViewConfig a msg
+withMenuStyles attribs (ViewConfig config) =
     ViewConfig { config | menuAttributes = config.menuAttributes ++ [ mapPlacement >> attribs ] }
 
 
@@ -520,34 +517,34 @@ type MenuPlacement
 
 {-| Provide your own element for the options in the menu, based on the current [state](#OptionState) of the option.
 
-    Select.view []
-        { onChange = SelectMsg
-        , label = Input.labelAbove [] (Element.text "Choose a thing")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = .name
-        }
+    Select.view
         |> Select.withOptionElement
             (\state item ->
-                Element.el
-                    [ Element.width Element.fill
-                    , Element.paddingXY 14 10
-                    , Background.color <|
-                        case optionState of
-                            Idle ->
-                                Element.rgb 1 1 1
+                Html.div
+                    [ Attributes.css
+                        [ Css.padding2 (Css.px 10) (Css.px 14)
+                        , Css.backgroundColor <|
+                            case optionState of
+                                Idle ->
+                                    Css.rgb 255 255 255
 
-                            Highlighted ->
-                                Element.rgb 0.95 0.95 0.95
+                                Highlighted ->
+                                    Css.rgb 198 200 255
 
-                            Selected ->
-                                Element.rgba 0.64 0.83 0.97 0.8
+                                Selected ->
+                                    Css.rgba 150 200 230 0.8
 
-                            SelectedAndHighlighted ->
-                                Element.rgba 0.64 0.83 0.97 1
+                                SelectedAndHighlighted ->
+                                    Css.rgba 150 200 230 1
+                        ]
                     ]
-                    (Element.text item.name)
+                    [ Html.text item.name ]
             )
-        |> Select.toElement model.select
+        |> Select.toHtml []
+            { select = model.select
+            , onChange = SelectMsg
+            , itemToString = .name
+            }
 
 -}
 withOptionElement : (OptionState -> a -> Html msg) -> ViewConfig a msg -> ViewConfig a msg
@@ -579,25 +576,26 @@ withNoMatchElement element (ViewConfig config) =
     ViewConfig { config | noMatchElement = Just element }
 
 
-{-| Add a button to clear the input. This element is positioned as Element.inFront.
+{-| Add a button to clear the input. This element is positioned relative top right of the input by default but you can override this.
 
-    Select.view []
-        { onChange = SelectMsg
-        , label = Input.labelAbove [] (Element.text "Choose a thing")
-        , placeholder = Just (Input.placeholder [] (Element.text "Type to search"))
-        , itemToString = .name
-        }
+    Select.view
         |> Select.withClearButton
-            (Just
-                (Select.clearButton
-                    [ Element.alignRight
-                    , Element.centerY
-                    , Element.moveLeft 12
+            (Just <|
+                Select.clearButton
+                    [ Css.height (Css.pct 100)
+                    , Css.displayFlex
+                    , Css.alignItems Css.center
+                    , Css.marginRight (Css.em 1)
+                    , Css.fontSize (Css.rem 0.6)
+                    , Css.cursor Css.pointer
                     ]
-                    (Element.el [ Element.Region.description "clear selection" ] (Element.text "❌"))
-                )
+                    (Html.text "✕")
             )
-        |> Select.toElement model.select
+        |> Select.toHtml []
+            { select = model.select
+            , onChange = SelectMsg
+            , itemToString = .name
+            }
 
 -}
 withClearButton : Maybe (ClearButton msg) -> ViewConfig a msg -> ViewConfig a msg
@@ -619,7 +617,7 @@ clearButton attribs label =
 
 
 {-| Use style: position fixed for the menu. This can be used if the select is inside a scrollable container to allow the menu to overflow the parent.
-Note that if any transforms (e.g. Element.moveUp/Element.moveLeft) are applied to the parent, this no longer works and the menu will be clipped.
+Note that if any transforms (e.g. Css.transform (Css.translate..) are applied to the parent, this no longer works and the menu will be clipped.
 This is due to [a feature of the current CSS spec](https://bugs.chromium.org/p/chromium/issues/detail?id=20574).
 Also if the container or window is scrolled or resized without the input losing focus, the menu will appear detached from the input!
 To overcome this you may want to listen to scroll and resize events on the parent and window and use [closeMenu](#closeMenu) to hide the menu.
@@ -707,7 +705,7 @@ withElementAfter v (ViewConfig config) =
     ViewConfig { config | after = v }
 
 
-{-| Turn the ViewConfig into an Element.
+{-| Turn the ViewConfig into an Html element.
 -}
 toStyled :
     List Style
