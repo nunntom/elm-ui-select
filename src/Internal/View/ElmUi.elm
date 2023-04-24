@@ -142,7 +142,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
                     , Element.htmlAttribute (Html.Attributes.style "z-index" "100")
                     , Element.htmlAttribute (Html.Attributes.style "overflow" "hidden")
                     , Element.paddingXY 20 40
-                    , Background.color (Element.rgba 0 0 0 0.15)
+                    , Background.color (Element.rgb 1 1 1)
                     , Element.inFront <|
                         Input.button
                             [ Element.alignRight
