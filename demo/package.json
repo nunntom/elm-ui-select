@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "postinstall": "npx elm-git-install",
     "start": "vite",
     "build": "vite build"
   },
