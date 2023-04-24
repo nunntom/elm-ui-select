@@ -3,7 +3,7 @@ module Select.ElmUi exposing
     , init
     , setItems, setSelected, setInputValue, openMenu, closeMenu
     , toValue, toInputValue, toInputElementId, toMenuElementId
-    , isMenuOpen, isLoading, isRequestFailed, isFocused
+    , isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
     , Msg, update
     , UpdateOption, updateWith, request, requestMinInputLength, requestDebounceDelay, onSelectedChange, onInput, onFocus, onLoseFocus, onKeyDown
     , sendRequest
@@ -37,7 +37,7 @@ module Select.ElmUi exposing
 
 # Check
 
-@docs isMenuOpen, isLoading, isRequestFailed, isFocused
+@docs isMenuOpen, isLoading, isRequestFailed, isFocused, isMobile
 
 
 # Update the Select
@@ -228,6 +228,13 @@ isRequestFailed =
 isFocused : Select a -> Bool
 isFocused =
     Model.isFocused
+
+
+{-| When the select was last interacted with, did it appear to be on a mobile device, based on [`withMobileBreakpoint`](#withMobileBreakpoint)?
+-}
+isMobile : Select a -> Bool
+isMobile =
+    Model.isMobile
 
 
 
