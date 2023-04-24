@@ -1,0 +1,8 @@
+{
+    "git-dependencies": {
+        "direct": {
+            "https://github.com/nunntom/elm-ui-select.git": "4d45177af803924ddb7c355e7ead4c00bb2b2399"
+        },
+        "indirect": {}
+    }
+}

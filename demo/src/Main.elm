@@ -13,7 +13,7 @@ import Html.Attributes
 import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
-import Select exposing (Select)
+import Select.ElmUi as Select exposing (Select)
 
 
 
@@ -28,7 +28,6 @@ type alias Model =
     , clearButton : Bool
     , forcePlacement : Maybe Select.MenuPlacement
     , moveDown : Int
-    , maxWidth : Maybe Int
     , maxHeight : Maybe Int
     , minInputLength : Maybe Int
     , selectOnTab : Bool
@@ -56,7 +55,6 @@ init uniqueId =
       , clearButton = False
       , forcePlacement = Nothing
       , moveDown = 0
-      , maxWidth = Nothing
       , maxHeight = Nothing
       , minInputLength = Nothing
       , selectOnTab = True
@@ -70,6 +68,16 @@ init uniqueId =
     )
 
 
+isMobileOpen : Model -> Bool
+isMobileOpen model =
+    case model.whichSelect of
+        CountrySelect ->
+            Select.isMobile model.countrySelect && Select.isMenuOpen model.countrySelect
+
+        CitySelect ->
+            Select.isMobile model.citySelect && Select.isMenuOpen model.citySelect
+
+
 
 -- UPDATE
 
@@ -81,7 +89,6 @@ type Msg
     | ClearButtonChanged Bool
     | ForcePlacementChanged (Maybe Select.MenuPlacement)
     | MoveDownChanged Int
-    | MaxWidthChanged (Maybe Int)
     | MaxHeightChanged (Maybe Int)
     | MinInputLengthChanged (Maybe Int)
     | SelectOnTabChanged Bool
@@ -121,9 +128,6 @@ update msg model =
 
         MoveDownChanged v ->
             ( { model | moveDown = v }, Cmd.none )
-
-        MaxWidthChanged v ->
-            ( { model | maxWidth = v }, Cmd.none )
 
         MaxHeightChanged v ->
             ( { model | maxHeight = v }, Cmd.none )
@@ -172,15 +176,19 @@ view model =
         [ Element.padding 50
         , Element.height Element.fill
         , Element.inFront <|
-            Input.button
-                [ Element.alignRight
-                , Element.alignTop
-                , Element.padding 20
-                , Element.htmlAttribute <| Html.Attributes.class "responsive-mobile"
-                ]
-                { onPress = Just HamburgerPressed
-                , label = hamburger
-                }
+            if isMobileOpen model then
+                Element.none
+
+            else
+                Input.button
+                    [ Element.alignRight
+                    , Element.alignTop
+                    , Element.padding 20
+                    , Element.htmlAttribute <| Html.Attributes.class "responsive-mobile"
+                    ]
+                    { onPress = Just HamburgerPressed
+                    , label = hamburger
+                    }
         ]
     <|
         Element.column
@@ -254,6 +262,7 @@ view model =
                               , "PgUp/PgDn moves highlighted option by 10"
                               , "Escape key closes the menu"
                               , "Try changing some of the configuration options"
+                              , "Make sure to try on mobile and destop!"
                               ]
                                 |> List.map
                                     (\t ->
@@ -351,34 +360,6 @@ optionsView model =
             , checked = model.placeholder /= Nothing
             , label = Input.labelRight [] (Element.text "Placeholder")
             }
-        , Input.radio [ Element.spacing 10 ]
-            { onChange = ForcePlacementChanged
-            , options =
-                [ Input.option Nothing (Element.text "Auto")
-                , Input.option (Just Select.MenuAbove) (Element.text "Always above")
-                , Input.option (Just Select.MenuBelow) (Element.text "Always below")
-                ]
-            , selected = Just model.forcePlacement
-            , label =
-                Input.labelAbove [ Element.paddingEach { top = 0, bottom = 20, left = 0, right = 0 } ]
-                    (Element.text "Placement of menu:")
-            }
-        , Element.column []
-            [ Element.text "Move down"
-            , range
-                { min = "0"
-                , max = "70"
-                , step = "1"
-                , value = String.fromInt model.moveDown
-                , onChange = MoveDownChanged << Maybe.withDefault 0 << String.toInt
-                }
-            , Element.paragraph
-                [ Font.size 10
-                , Font.center
-                , Font.alignLeft
-                ]
-                [ Element.text "Move the input down the page to see how it affects the placement and size of the dropdown menu." ]
-            ]
         , Input.radioRow [ Element.spacing 10 ]
             { onChange = WhichSelectChanged
             , options =
@@ -418,29 +399,6 @@ optionsView model =
                             }
                         ]
                     ]
-        , Element.column
-            [ Element.spacing 10
-            , Element.width Element.fill
-            ]
-            [ Input.text []
-                { onChange = String.toInt >> MaxWidthChanged
-                , text = model.maxWidth |> Maybe.map String.fromInt |> Maybe.withDefault ""
-                , label = Input.labelAbove [] (Element.text "Max width of menu (pixels)")
-                , placeholder = Nothing
-                }
-            , Element.paragraph
-                [ Font.size 10
-                , Font.center
-                , Font.alignLeft
-                ]
-                [ Element.text """Limits the width of the dropdown menu, but only as far as the width of the input!""" ]
-            ]
-        , Input.text []
-            { onChange = String.toInt >> MaxHeightChanged
-            , text = model.maxHeight |> Maybe.map String.fromInt |> Maybe.withDefault ""
-            , label = Input.labelAbove [] (Element.text "Max height of menu (pixels)")
-            , placeholder = Nothing
-            }
         , case model.whichSelect of
             CountrySelect ->
                 Input.text []
@@ -464,6 +422,46 @@ optionsView model =
             , checked = model.customMenuStyle
             , label = Input.labelRight [] (Element.text "Add some custom styles to the menu")
             }
+        , Element.column
+            [ Element.spacing 20
+            , Element.width Element.fill
+            , Element.htmlAttribute <| Html.Attributes.class "responsive-desktop"
+            ]
+            [ Input.radio [ Element.spacing 10 ]
+                { onChange = ForcePlacementChanged
+                , options =
+                    [ Input.option Nothing (Element.text "Auto")
+                    , Input.option (Just Select.MenuAbove) (Element.text "Always above")
+                    , Input.option (Just Select.MenuBelow) (Element.text "Always below")
+                    ]
+                , selected = Just model.forcePlacement
+                , label =
+                    Input.labelAbove [ Element.paddingEach { top = 0, bottom = 20, left = 0, right = 0 } ]
+                        (Element.text "Placement of menu:")
+                }
+            , Element.column []
+                [ Element.text "Move down"
+                , range
+                    { min = "0"
+                    , max = "70"
+                    , step = "1"
+                    , value = String.fromInt model.moveDown
+                    , onChange = MoveDownChanged << Maybe.withDefault 0 << String.toInt
+                    }
+                , Element.paragraph
+                    [ Font.size 10
+                    , Font.center
+                    , Font.alignLeft
+                    ]
+                    [ Element.text "Move the input down the page to see how it affects the placement and size of the dropdown menu." ]
+                ]
+            , Input.text []
+                { onChange = String.toInt >> MaxHeightChanged
+                , text = model.maxHeight |> Maybe.map String.fromInt |> Maybe.withDefault ""
+                , label = Input.labelAbove [] (Element.text "Max height of menu (pixels)")
+                , placeholder = Nothing
+                }
+            ]
         ]
 
 
@@ -474,13 +472,15 @@ selectView model label tagger itemToString itemToElement select =
         |> configureIf (model.forcePlacement == Just Select.MenuAbove) Select.withMenuAlwaysAbove
         |> configureIf (model.forcePlacement == Just Select.MenuBelow) Select.withMenuAlwaysBelow
         |> Select.withMenuMaxHeight model.maxHeight
-        |> Select.withMenuMaxWidth model.maxWidth
         |> configureIf (model.whichSelect == CountrySelect) (Select.withMinInputLength model.minInputLength)
         |> Select.withSelectOnTab model.selectOnTab
         |> configureIf model.customMenuStyle
             (Select.withMenuAttributes (menuAttributes <| Select.isMenuOpen select)
                 >> Select.withOptionElement (optionElement itemToElement)
+                >> Select.withMobileCloseButton (Just mobileCloseButton)
             )
+        |> configureIf model.customMenuStyle
+            (Select.withMobileViewAttributes mobileViewAttributes)
         |> Select.toElement
             (if model.customMenuStyle then
                 inputAttributes
@@ -491,7 +491,18 @@ selectView model label tagger itemToString itemToElement select =
             { select = select
             , onChange = tagger
             , itemToString = itemToString
-            , label = Input.labelAbove [] (Element.text label)
+            , label =
+                Input.labelAbove
+                    (if Select.isMobile select && Select.isMenuOpen select && model.customMenuStyle then
+                        [ Font.color (Element.rgb 1 1 1)
+                        , Font.bold
+                        , Element.paddingXY 0 4
+                        ]
+
+                     else
+                        []
+                    )
+                    (Element.text label)
             , placeholder = Maybe.map (Element.text >> Input.placeholder []) model.placeholder
             }
         |> Element.el
@@ -547,6 +558,11 @@ clearButton =
         , Element.moveDown 1
         , Background.color (Element.rgba 1 1 1 1)
         , Element.padding 4
+        , Element.htmlAttribute <| Html.Attributes.style "transition" "background-color 300ms ease-out"
+        , Border.rounded 100
+        , Element.mouseOver
+            [ Background.color (Element.rgba 0 0 0 0.08)
+            ]
         ]
         (Element.el
             [ Font.size 18
@@ -607,6 +623,7 @@ optionElement itemToElement state a =
         , Element.padding 8
         , Border.rounded 4
         , Element.htmlAttribute <| Html.Attributes.style "white-space" "wrap"
+        , Element.htmlAttribute <| Html.Attributes.style "transition" "background-color 200ms ease-out"
         , Background.color <|
             case state of
                 Select.Highlighted ->
@@ -622,6 +639,29 @@ optionElement itemToElement state a =
                     Element.rgb 1 1 1
         ]
         (itemToElement a)
+
+
+mobileViewAttributes : List (Element.Attribute msg)
+mobileViewAttributes =
+    [ Background.color (Element.rgba 0 0 0 0.86)
+    ]
+
+
+mobileCloseButton : Element msg
+mobileCloseButton =
+    Element.el
+        [ Font.color (Element.rgb 1 1 1)
+        , Font.size 32
+        , Element.padding 8
+        , Border.rounded 100
+        , Element.moveDown 10
+        , Element.moveLeft 10
+        , Element.htmlAttribute <| Html.Attributes.style "transition" "background-color 300ms ease-out"
+        , Element.mouseOver
+            [ Background.color (Element.rgba 1 1 1 0.15)
+            ]
+        ]
+        (Element.text "✕")
 
 
 hamburger : Element msg

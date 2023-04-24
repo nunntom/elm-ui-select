@@ -12,6 +12,7 @@
   "devDependencies": {
     "elm": "^0.19.1-5",
     "elm-format": "^0.8.7",
+    "elm-git-install": "^0.1.4",
     "vite-plugin-elm": "^2.7.2"
   }
 }

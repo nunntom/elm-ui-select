@@ -1,6 +1,7 @@
 {
     "type": "application",
     "source-directories": [
+        "elm-stuff/gitdeps/github.com/nunntom/elm-ui-select.git/src",
         "src"
     ],
     "elm-version": "0.19.1",
@@ -12,7 +13,6 @@
             "elm/http": "2.0.0",
             "elm/json": "1.1.3",
             "mdgriffith/elm-ui": "1.1.8",
-            "nunntom/elm-ui-select": "4.0.0",
             "supermario/elm-countries": "1.1.1"
         },
         "indirect": {
