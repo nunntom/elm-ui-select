@@ -422,6 +422,7 @@ defaultNoMatchElement =
         , Border.color (Element.rgb 0.8 0.8 0.8)
         , Border.width 1
         , Border.rounded 5
+        , Element.moveDown 10
         , Background.color (Element.rgb 1 1 1)
         , Element.width Element.fill
         ]
