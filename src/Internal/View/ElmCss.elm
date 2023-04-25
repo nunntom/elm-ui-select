@@ -205,7 +205,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
                 (List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes)
                 { menuWidth = Nothing
                 , maxWidth = Nothing
-                , menuHeight = Nothing
+                , menuHeight = viewConfig.menuMaxHeight
                 }
             )
             { menuId = Model.toMenuElementId select

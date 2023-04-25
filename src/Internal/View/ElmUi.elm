@@ -169,7 +169,7 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             (defaultMenuAttrs Placement.Below
                 { menuWidth = Nothing
                 , maxWidth = Nothing
-                , menuHeight = Nothing
+                , menuHeight = viewConfig.menuMaxHeight
                 }
                 ++ (Element.htmlAttribute (Html.Attributes.style "flex" "0 1 auto")
                         :: List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes
