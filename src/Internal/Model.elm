@@ -1,5 +1,6 @@
 module Internal.Model exposing
-    ( Model
+    ( InternalState
+    , Model
     , blur
     , clear
     , closeMenu

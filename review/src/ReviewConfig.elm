@@ -11,7 +11,6 @@ when inside the directory containing this file.
 
 -}
 
-
 import Docs.NoMissing exposing (exposedModules, onlyExposed)
 import Docs.ReviewAtDocs
 import Docs.ReviewLinksAndSections
@@ -37,7 +36,7 @@ import Simplify
 
 config : List Rule
 config =
-    [Docs.NoMissing.rule
+    [ Docs.NoMissing.rule
         { document = onlyExposed
         , from = exposedModules
         }

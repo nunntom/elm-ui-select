@@ -71,8 +71,6 @@ module Select exposing
 
 -}
 
-import Element exposing (Attribute, Element)
-import Element.Input as Input
 import Internal.Effect as Effect
 import Internal.Model as Model exposing (Model)
 import Internal.Msg as Msg
@@ -82,6 +80,8 @@ import Internal.Update as Update
 import Internal.UpdateOptions as UpdateOptions exposing (UpdateOption)
 import Internal.View.ElmUi as View
 import Select.Filter exposing (Filter)
+import Ui
+import Ui.Input as Input
 
 
 
@@ -536,7 +536,7 @@ You can define different attributes based on whether the menu appears above or b
             }
 
 -}
-withMenuAttributes : (MenuPlacement -> List (Attribute msg)) -> ViewConfig a msg -> ViewConfig a msg
+withMenuAttributes : (MenuPlacement -> List (Ui.Attribute msg)) -> ViewConfig a msg -> ViewConfig a msg
 withMenuAttributes attribs (ViewConfig config) =
     ViewConfig { config | menuAttributes = config.menuAttributes ++ [ mapPlacement >> attribs ] }
 
@@ -581,7 +581,7 @@ type MenuPlacement
             }
 
 -}
-withOptionElement : (OptionState -> a -> Element msg) -> ViewConfig a msg -> ViewConfig a msg
+withOptionElement : (OptionState -> a -> Ui.Element msg) -> ViewConfig a msg -> ViewConfig a msg
 withOptionElement toEl (ViewConfig config) =
     ViewConfig { config | optionElement = Just (\state -> toEl (mapOptionState state)) }
 
@@ -589,7 +589,7 @@ withOptionElement toEl (ViewConfig config) =
 {-| The default option element. Use this with withOptionElement only if you want the
 item text on the options to be different from that used in the input and search filtering.
 -}
-defaultOptionElement : (a -> String) -> (OptionState -> a -> Element msg)
+defaultOptionElement : (a -> String) -> (OptionState -> a -> Ui.Element msg)
 defaultOptionElement itemToString =
     \state -> View.defaultOptionElement itemToString (reverseMapOptionState state)
 
@@ -605,7 +605,7 @@ type OptionState
 
 {-| Provide your own element to show when there are no matches based on the filter and input value. This appears below the input.
 -}
-withNoMatchElement : Element msg -> ViewConfig a msg -> ViewConfig a msg
+withNoMatchElement : Ui.Element msg -> ViewConfig a msg -> ViewConfig a msg
 withNoMatchElement element (ViewConfig config) =
     ViewConfig { config | noMatchElement = Just element }
 
@@ -634,18 +634,18 @@ withNoMatchElement element (ViewConfig config) =
 -}
 withClearButton : Maybe (ClearButton msg) -> ViewConfig a msg -> ViewConfig a msg
 withClearButton cb (ViewConfig config) =
-    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attrs el) -> ( List.map (Element.mapAttribute never) attrs, el )) cb }
+    ViewConfig { config | clearButton = Maybe.map (\(ClearButton attrs el) -> ( List.map (Ui.mapAttribute never) attrs, el )) cb }
 
 
 {-| A button to clear the input
 -}
 type ClearButton msg
-    = ClearButton (List (Attribute Never)) (Element msg)
+    = ClearButton (List (Ui.Attribute Never)) (Ui.Element msg)
 
 
 {-| Create a clear button
 -}
-clearButton : List (Attribute Never) -> Element msg -> ClearButton msg
+clearButton : List (Ui.Attribute Never) -> Ui.Element msg -> ClearButton msg
 clearButton attribs label =
     ClearButton attribs label
 
@@ -707,16 +707,16 @@ withMobileBreakpoint v (ViewConfig config) =
 {-| Turn the ViewConfig into an Element.
 -}
 toElement :
-    List (Attribute msg)
+    List (Ui.Attribute msg)
     ->
         { select : Model a
         , onChange : Msg a -> msg
         , itemToString : a -> String
-        , label : Input.Label msg
-        , placeholder : Maybe (Input.Placeholder msg)
+        , label : Input.Label
+        , placeholder : Maybe String
         }
     -> ViewConfig a msg
-    -> Element msg
+    -> Ui.Element msg
 toElement attrs config (ViewConfig vc) =
     View.toElement attrs config vc
 

@@ -7,32 +7,31 @@ module Internal.View.ElmUi exposing
     )
 
 import Browser.Dom as Dom
-import Element exposing (Attribute, Element)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Events as Events
-import Element.Font as Font
-import Element.Input as Input
-import Element.Region as Region
 import Html.Attributes
 import Html.Events
 import Internal.Model as Model exposing (Model)
 import Internal.Msg exposing (Msg(..))
-import Internal.Option as Option exposing (Option)
+import Internal.Option as InternalOption
 import Internal.OptionState exposing (OptionState(..))
 import Internal.Placement as Placement exposing (Placement)
 import Internal.View.Common as View
 import Internal.View.Events as ViewEvents
 import Internal.ViewConfig as ViewConfig exposing (ViewConfigInternal)
 import Json.Decode as Decode
+import Ui exposing (Attribute, Element, alignRight, alignTop, background, below, border, borderColor, clipY, column, down, el, fill, height, heightMax, html, inFront, move, none, padding, paddingXY, pointer, px, rgb, rgba, rounded, row, shrink, text, up, width, widthMax, widthMin)
+import Ui.Accessibility as Region
+import Ui.Events as Events
+import Ui.Font as Font
+import Ui.Input as Input
+import Ui.Prose as Prose
 
 
 type alias Config a msg =
     { select : Model a
     , onChange : Msg a -> msg
     , itemToString : a -> String
-    , label : Input.Label msg
-    , placeholder : Maybe (Input.Placeholder msg)
+    , label : Input.Label
+    , placeholder : Maybe String
     }
 
 
@@ -58,22 +57,22 @@ toElement attrs ({ select } as config) viewConfig =
             viewConfig
 
 
-toElement_ : List (Attribute msg) -> Placement -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
+toElement_ : List (Attribute msg) -> Placement -> List (InternalOption.Option a) -> Config a msg -> ViewConfig a msg -> Element msg
 toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
-    Element.el
+    el
         (List.concat
-            [ [ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
-              , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
+            [ [ Ui.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
+              , Ui.htmlAttribute (Html.Attributes.class "elm-select-container")
               , View.relativeContainerMarker config.onChange config.itemToString select viewConfig filteredOptions
-                    |> Element.html
-                    |> Element.inFront
-              , Element.width Element.fill
-              , Element.below <|
+                    |> html
+                    |> inFront
+              , width fill
+              , below <|
                     if ViewConfig.shouldShowNoMatchElement filteredOptions select viewConfig then
                         Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement
 
                     else
-                        Element.none
+                        none
               , Placement.toAttribute
                     (if viewConfig.positionFixed then
                         Placement.Below
@@ -108,53 +107,51 @@ toElement_ attrs placement filteredOptions ({ select } as config) viewConfig =
                             }
               ]
             , if Model.isOpen select then
-                [ Element.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
+                [ Ui.htmlAttribute <| Html.Attributes.style "z-index" "21" ]
 
               else
                 []
             , ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
-                |> List.map Element.htmlAttribute
+                |> List.map Ui.htmlAttribute
             ]
         )
         (inputView attrs filteredOptions config viewConfig)
 
 
-mobileView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
+mobileView : List (Attribute msg) -> List (InternalOption.Option a) -> Config a msg -> ViewConfig a msg -> Element msg
 mobileView attrs filteredOptions ({ select } as config) viewConfig =
-    Element.column
-        ([ Element.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
-         , Element.htmlAttribute (Html.Attributes.class "elm-select-container")
-         , Element.htmlAttribute (Html.Attributes.attribute "data-mobile" "true")
-         , Element.width Element.fill
+    column
+        ([ Ui.htmlAttribute (Html.Attributes.id <| Model.toContainerElementId select)
+         , Ui.htmlAttribute (Html.Attributes.class "elm-select-container")
+         , Ui.htmlAttribute (Html.Attributes.attribute "data-mobile" "true")
+         , width fill
          , View.relativeContainerMarker config.onChange config.itemToString select viewConfig filteredOptions
-            |> Element.html
-            |> Element.inFront
+            |> html
+            |> inFront
          ]
             ++ (ViewEvents.updateFilteredOptions config.onChange config.itemToString select viewConfig filteredOptions
-                    |> List.map Element.htmlAttribute
+                    |> List.map Ui.htmlAttribute
                )
             ++ (if Model.isOpen select then
-                    [ Element.htmlAttribute (Html.Attributes.style "position" "fixed")
-                    , Element.htmlAttribute (Html.Attributes.style "top" "0")
-                    , Element.htmlAttribute (Html.Attributes.style "left" "0")
-                    , Element.htmlAttribute (Html.Attributes.style "right" "0")
-                    , Element.htmlAttribute (Html.Attributes.style "bottom" "0")
-                    , Element.htmlAttribute (Html.Attributes.style "height" "100%")
-                    , Element.htmlAttribute (Html.Attributes.style "z-index" "100")
-                    , Element.htmlAttribute (Html.Attributes.style "overflow" "hidden")
-                    , Element.paddingXY 20 40
-                    , Background.color (Element.rgba 0 0 0 0.15)
-                    , Element.inFront <|
-                        Input.button
-                            [ Element.alignRight
-                            , Element.alignTop
-                            , Element.padding 16
+                    [ Ui.htmlAttribute (Html.Attributes.style "position" "fixed")
+                    , Ui.htmlAttribute (Html.Attributes.style "top" "0")
+                    , Ui.htmlAttribute (Html.Attributes.style "left" "0")
+                    , Ui.htmlAttribute (Html.Attributes.style "right" "0")
+                    , Ui.htmlAttribute (Html.Attributes.style "bottom" "0")
+                    , Ui.htmlAttribute (Html.Attributes.style "height" "100%")
+                    , Ui.htmlAttribute (Html.Attributes.style "z-index" "100")
+                    , Ui.htmlAttribute (Html.Attributes.style "overflow" "hidden")
+                    , paddingXY 20 40
+                    , background (rgba 0 0 0 0.15)
+                    , inFront <|
+                        el
+                            [ alignRight
+                            , alignTop
+                            , padding 16
                             , Font.size 28
-                            , Element.pointer
+                            , pointer
                             ]
-                            { onPress = Nothing
-                            , label = Element.text "✕"
-                            }
+                            (text "✕")
                     ]
 
                 else
@@ -166,14 +163,14 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
             Maybe.withDefault defaultNoMatchElement viewConfig.noMatchElement
 
           else
-            Element.none
+            none
         , menuView
             (defaultMenuAttrs Placement.Below
                 { menuWidth = Nothing
                 , maxWidth = Nothing
                 , menuHeight = Nothing
                 }
-                ++ (Element.htmlAttribute (Html.Attributes.style "flex" "0 1 auto")
+                ++ (Ui.htmlAttribute (Html.Attributes.style "flex" "0 1 auto")
                         :: List.concatMap (\toAttrs -> toAttrs Placement.Below) viewConfig.menuAttributes
                    )
             )
@@ -189,13 +186,14 @@ mobileView attrs filteredOptions ({ select } as config) viewConfig =
         ]
 
 
-inputView : List (Attribute msg) -> List (Option a) -> Config a msg -> ViewConfig a msg -> Element msg
+inputView : List (Attribute msg) -> List (InternalOption.Option a) -> Config a msg -> ViewConfig a msg -> Element msg
 inputView attrs filteredOptions ({ select } as config) viewConfig =
     Input.text
+        -- Containers now width fill by default (instead of width shrink). I couldn't update that here so I recommend you review these attributes
         (List.concat
             [ attrs
             , [ ViewEvents.onFocus config.onChange config.itemToString select viewConfig filteredOptions
-                    |> Element.htmlAttribute
+                    |> Ui.htmlAttribute
               , Events.onClick (InputClicked |> config.onChange)
               , Events.onLoseFocus
                     (config.onChange
@@ -206,7 +204,7 @@ inputView attrs filteredOptions ({ select } as config) viewConfig =
                             filteredOptions
                         )
                     )
-              , Element.htmlAttribute <|
+              , Ui.htmlAttribute <|
                     ViewEvents.onKeyDown (Model.isOpen select)
                         (KeyDown
                             { selectOnTab = viewConfig.selectOnTab
@@ -215,23 +213,23 @@ inputView attrs filteredOptions ({ select } as config) viewConfig =
                             filteredOptions
                             >> config.onChange
                         )
-              , Element.htmlAttribute (Html.Attributes.id <| Model.toInputElementId select)
-              , Element.inFront <|
+              , Ui.htmlAttribute (Html.Attributes.id <| Model.toInputElementId select)
+              , inFront <|
                     if Model.toValue select /= Nothing || Model.toInputValue select /= "" then
                         viewConfig.clearButton
                             |> Maybe.map (\( attrs_, el ) -> clearButtonElement config.onChange attrs_ el)
-                            |> Maybe.withDefault Element.none
+                            |> Maybe.withDefault none
 
                     else
-                        Element.none
+                        none
               ]
-            , List.map Element.htmlAttribute (View.inputAccessibilityAttributes select)
-            , [ Element.below <|
+            , List.map Ui.htmlAttribute (View.inputAccessibilityAttributes select)
+            , [ below <|
                     if Model.isOpen select then
-                        Element.html <| View.ariaLive (List.length filteredOptions)
+                        html <| View.ariaLive (List.length filteredOptions)
 
                     else
-                        Element.none
+                        none
               ]
             ]
         )
@@ -250,16 +248,16 @@ menuView :
         , toOptionState : ( Int, a ) -> OptionState
         , onChange : Msg a -> msg
         , menuOpen : Bool
-        , options : List (Option a)
+        , options : List (InternalOption.Option a)
         , optionElement : OptionState -> a -> Element msg
         , closeOnSelect : Bool
         }
     -> Element msg
 menuView attribs v =
     List.indexedMap (optionElement v) v.options
-        |> Element.column
+        |> column
             (attribs
-                ++ (Element.htmlAttribute <| Html.Attributes.id v.menuId)
+                ++ (Ui.htmlAttribute <| Html.Attributes.id v.menuId)
                 :: (if v.menuOpen && List.length v.options > 0 then
                         []
 
@@ -272,8 +270,8 @@ menuView attribs v =
                              else
                                 "true"
                             )
-                        , Element.height (Element.px 0)
-                        , Element.clipY
+                        , height (px 0)
+                        , clipY
                         ]
                    )
             )
@@ -288,20 +286,21 @@ optionElement :
         , closeOnSelect : Bool
     }
     -> Int
-    -> Option a
+    -> InternalOption.Option a
     -> Element msg
 optionElement v i opt =
     let
         optionState =
-            v.toOptionState ( i, Option.toItem opt )
+            v.toOptionState ( i, InternalOption.toItem opt )
     in
-    Element.row
-        ([ Element.htmlAttribute (Html.Attributes.id (v.toOptionId i))
+    row
+        -- Containers now width fill by default (instead of width shrink). I couldn't update that here so I recommend you review these attributes
+        ([ Ui.htmlAttribute (Html.Attributes.id (v.toOptionId i))
          , htmlAttribute "role" "option"
-         , htmlAttribute "value" (Option.toString opt)
-         , Element.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
-         , Element.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked v.closeOnSelect opt, True )))
-         , Element.width Element.fill
+         , htmlAttribute "value" (InternalOption.toString opt)
+         , Ui.htmlAttribute (Html.Events.preventDefaultOn "mousedown" (Decode.succeed ( v.onChange NoOp, True )))
+         , Ui.htmlAttribute (Html.Events.preventDefaultOn "click" (Decode.succeed ( v.onChange <| OptionClicked v.closeOnSelect opt, True )))
+         , width fill
          ]
             ++ (if optionState /= Highlighted then
                     [ Events.onMouseMove (v.onChange <| MouseEnteredOption i) ]
@@ -310,21 +309,25 @@ optionElement v i opt =
                     []
                )
         )
-        [ v.optionElement optionState (Option.toItem opt) ]
+        [ v.optionElement optionState (InternalOption.toItem opt) ]
 
 
 clearButtonElement : (Msg a -> msg) -> List (Attribute msg) -> Element msg -> Element msg
 clearButtonElement onChange attribs element =
-    Input.button
+    el
         (attribs
-            ++ [ Element.htmlAttribute <|
+            ++ [ Ui.htmlAttribute <|
                     Html.Events.preventDefaultOn "click" (Decode.succeed ( onChange ClearButtonPressed, True ))
                , Region.description "clear"
+               , Input.button (onChange ClearButtonPressed)
                ]
         )
-        { onPress = Just (onChange ClearButtonPressed)
-        , label = element
-        }
+        element
+
+
+attributeNone : Attribute msg
+attributeNone =
+    Ui.htmlAttribute <| Html.Attributes.class ""
 
 
 defaultMenuAttrs :
@@ -336,38 +339,42 @@ defaultMenuAttrs :
         }
     -> List (Attribute msg)
 defaultMenuAttrs placement { menuWidth, maxWidth, menuHeight } =
-    [ Element.shrink
-        |> (Maybe.map Element.maximum menuHeight |> Maybe.withDefault identity)
-        |> Element.height
-    , Element.width <|
-        case menuWidth of
-            Just w ->
-                Element.shrink
-                    |> Element.minimum w
-                    |> (Maybe.map Element.maximum maxWidth |> Maybe.withDefault identity)
+    (case menuWidth of
+        Just w ->
+            [ width shrink, widthMin w, widthMax (Maybe.withDefault w maxWidth) ]
 
-            Nothing ->
-                Element.fill
-    , style "overflow-y" "auto"
-    , Border.solid
-    , Border.color (Element.rgb 0.8 0.8 0.8)
-    , Border.width 1
-    , Border.rounded 5
-    , Background.color (Element.rgb 1 1 1)
-    , Element.paddingXY 0 5
-    , htmlAttribute "role" "listbox"
-    , case placement of
-        Placement.Above ->
-            Element.moveUp 10
+        Nothing ->
+            []
+    )
+        ++ [ case menuHeight of
+                Just menuHeight_ ->
+                    heightMax menuHeight_
 
-        Placement.Below ->
-            Element.moveDown 10
-    ]
+                Nothing ->
+                    attributeNone
+           , height shrink
+
+           --   , style "overflow-y" "auto"
+           , borderColor (rgb 204 204 204)
+           , border 1
+           , rounded 5
+           , background (rgb 255 255 255)
+           , paddingXY 0 5
+           , htmlAttribute "role" "listbox"
+           , move <|
+                case placement of
+                    Placement.Above ->
+                        up 10
+
+                    Placement.Below ->
+                        down 0
+           ]
 
 
 positionFixedEl : Placement -> Maybe Dom.Element -> Element msg -> Element msg
 positionFixedEl placement container =
-    Element.el
+    el
+        -- Containers now width fill by default (instead of width shrink). I couldn't update that here so I recommend you review these attributes
         (style "position" "fixed"
             :: (if placement == Placement.Above then
                     [ style "transform"
@@ -385,46 +392,43 @@ positionFixedEl placement container =
 
 defaultOptionElement : (a -> String) -> OptionState -> a -> Element msg
 defaultOptionElement toString optionState a =
-    Element.el
-        [ Element.width Element.fill
-        , Element.pointer
-        , Element.paddingXY 14 10
-        , Background.color <|
+    el
+        [ pointer
+        , paddingXY 14 10
+        , background <|
             case optionState of
                 Highlighted ->
-                    Element.rgb 0.89 0.89 0.89
+                    rgb 227 227 227
 
                 Selected ->
-                    Element.rgba 0.64 0.83 0.97 0.8
+                    rgba 164 211 249 0.8
 
                 SelectedAndHighlighted ->
-                    Element.rgba 0.64 0.83 0.97 1
+                    rgba 164 211 249 1
 
                 Idle ->
-                    Element.rgb 1 1 1
+                    rgb 255 255 255
         ]
-        (Element.paragraph [] [ Element.text (toString a) ])
+        (Prose.paragraph [ width shrink ] [ text (toString a) ])
 
 
 defaultNoMatchElement : Element msg
 defaultNoMatchElement =
-    Element.el
-        [ Element.padding 5
-        , Border.solid
-        , Border.color (Element.rgb 0.8 0.8 0.8)
-        , Border.width 1
-        , Border.rounded 5
-        , Background.color (Element.rgb 1 1 1)
-        , Element.width Element.fill
+    el
+        [ padding 5
+        , borderColor (rgb 204 204 204)
+        , border 1
+        , rounded 5
+        , background (rgb 255 255 255)
         ]
-        (Element.text "No matches")
+        (text "No matches")
 
 
 htmlAttribute : String -> String -> Attribute msg
 htmlAttribute prop val =
-    Element.htmlAttribute (Html.Attributes.attribute prop val)
+    Ui.htmlAttribute (Html.Attributes.attribute prop val)
 
 
 style : String -> String -> Attribute msg
 style prop val =
-    Element.htmlAttribute (Html.Attributes.style prop val)
+    Ui.htmlAttribute (Html.Attributes.style prop val)
